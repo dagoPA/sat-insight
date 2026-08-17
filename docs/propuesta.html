@@ -1607,6 +1607,93 @@
     </div>
   </section>
 
+  <!-- ============ VEREDICTO ============ -->
+  <section class="section">
+    <div class="rail">Veredicto</div>
+    <div class="body">
+      <h2>Lo que decidió la fase 1</h2>
+      <p class="lead-in">
+        La puerta se juega contra <em class="term">cobertura</em>, la densidad construida que
+        aporta un producto ajeno a estos compuestos. Los rasgos de textura entran filtrados por
+        dos criterios fijados antes de mirar desempeño: reproducirse entre las dos mitades del
+        mismo polígono con r de 0.60 o más, y quedar bajo 0.30 de correlación con el tamaño del
+        polígono. El óptico conserva 22 de 63 rasgos, el radar 47.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Brazo óptico · 2,403 AGEB</th><th>Kappa</th><th>Acapulco</th><th>Iztapalapa</th><th>Mérida</th><th>Tapachula</th><th>Tuxtla</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>densidad</td><td class="num">0.319</td><td class="num">0.466</td><td class="num">0.001</td><td class="num">0.377</td><td class="num">0.345</td><td class="num">0.408</td></tr>
+            <tr><td>completo</td><td class="num">0.235</td><td class="num">0.233</td><td class="num">0.009</td><td class="num">0.517</td><td class="num">0.250</td><td class="num">0.166</td></tr>
+            <tr><td>cobertura</td><td class="num">0.174</td><td class="num">0.307</td><td class="num">−0.125</td><td class="num">0.264</td><td class="num">0.227</td><td class="num">0.196</td></tr>
+            <tr><td>textura</td><td class="num">0.145</td><td class="num">−0.171</td><td class="num">0.096</td><td class="num">0.308</td><td class="num">0.111</td><td class="num">0.379</td></tr>
+            <tr><td>azar</td><td class="num">0.017</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Brazo radar · 2,233 AGEB</th><th>Kappa</th><th>Acapulco</th><th>Iztapalapa</th><th>Mérida</th><th>Tapachula</th><th>Tuxtla</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>completo</td><td class="num">0.314</td><td class="num">0.344</td><td class="num">0.157</td><td class="num">0.408</td><td class="num">0.214</td><td class="num">0.446</td></tr>
+            <tr><td>textura</td><td class="num">0.276</td><td class="num">0.235</td><td class="num">0.182</td><td class="num">0.425</td><td class="num">0.255</td><td class="num">0.283</td></tr>
+            <tr><td>densidad</td><td class="num">0.253</td><td class="num">0.271</td><td class="num">−0.013</td><td class="num">0.317</td><td class="num">0.214</td><td class="num">0.475</td></tr>
+            <tr><td>cobertura</td><td class="num">0.182</td><td class="num">0.287</td><td class="num">−0.086</td><td class="num">0.269</td><td class="num">0.199</td><td class="num">0.244</td></tr>
+            <tr><td>azar</td><td class="num">0.001</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="thesis">
+        <p>
+          <strong>La puerta pasa en el brazo de radar y falla en la textura óptica.</strong> El
+          radar le gana a la densidad construida independiente por un factor de 1.7 y queda
+          positivo en los cinco pliegues. La textura óptica, con el filtro aplicado, cae por
+          debajo de <em class="term">cobertura</em> y sale negativa en Acapulco: ahí resta.
+        </p>
+      </div>
+
+      <h3>La métrica que importa para política pública</h3>
+      <p>
+        Colapsada a binaria —grado alto o muy alto contra el resto—, el área bajo la curva fuera
+        de pliegue da 0.720 en el óptico y 0.679 en el radar. El agregado favorece al óptico y el
+        mínimo por ciudad invierte el orden: el peor pliegue del radar llega a 0.710 y el del
+        óptico se queda en 0.610. El radar rinde más parejo entre ciudades, que es la propiedad
+        que interesa para transferir.
+      </p>
+
+      <h3>Tres límites que el número esconde</h3>
+      <ul>
+        <li>
+          <strong>Ninguno de los dos brazos predice jamás «Muy alto».</strong> Esa columna de la
+          matriz de confusión está en cero. Con 18 casos entre 2,403 no hay nada que aprender, y
+          el kappa cuadrático apenas lo registra.
+        </li>
+        <li>
+          <strong>Iztapalapa queda cerca de cero en todo.</strong> Tiene 1.1 % de AGEB en grado
+          alto, así que en ese pliegue casi no hay nada que distinguir y el resultado no informa.
+        </li>
+        <li>
+          <strong>La muestra evaluada está recortada.</strong> El mínimo de 640 píxeles que exige
+          la GLCM deja fuera al 56 % de las AGEB de grado muy alto y al 29 % de las de grado alto,
+          y baja la proporción de grado alto de 13.4 % a 10.3 %.
+        </li>
+      </ul>
+
+      <p>
+        Con eso, la fase 2 sigue adelante con el radar como brazo primario y la textura óptica
+        como control negativo documentado. Un kappa de 0.3 es concordancia moderada, suficiente
+        para descartar que la señal sea densidad construida y lejos de un resultado fuerte.
+      </p>
+    </div>
+  </section>
+
   <!-- ============ PLAN ============ -->
   <section class="section">
     <div class="rail">Plan</div>
