@@ -1,0 +1,151 @@
+"""Interfaz de línea de comandos."""
+
+import argparse
+import json
+import logging
+import sys
+from pathlib import Path
+
+from satinsight import aoi as modulo_aoi
+from satinsight.catalog import (
+    COLECCION_S1,
+    COLECCION_S2,
+    abrir_catalogo,
+    buscar,
+    por_nubosidad,
+    resumen_nubes,
+)
+from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.raster import a_db, estirar, leer_ventana, percentiles
+from satinsight.render import guardar_rgb
+
+PERIODO_CENSO = "2020-01-01/2020-12-31"
+
+log = logging.getLogger("satinsight")
+
+
+def cmd_aoi(_: argparse.Namespace) -> int:
+    """Lista los recuadros piloto disponibles."""
+    for clave, area in sorted(modulo_aoi.PILOTO.items()):
+        alto, ancho = area.forma_aproximada()
+        print(f"{clave:<12} {area.nombre:<22} {area.entidad:<18} ~{ancho}x{alto} px @10 m")
+    return 0
+
+
+def cmd_probe(args: argparse.Namespace) -> int:
+    """Reporta cuántas escenas hay disponibles sobre un AOI."""
+    area = modulo_aoi.obtener(args.aoi)
+    catalogo = abrir_catalogo()
+    print(f"{area.nombre} · {args.periodo}")
+
+    escenas_s2 = buscar(COLECCION_S2, area.bbox, args.periodo, catalogo)
+    resumen = resumen_nubes(escenas_s2)
+    print(f"  Sentinel-2  {resumen['escenas']:>4} escenas")
+    print(f"              nubes mediana {resumen['mediana']}%")
+    print(f"              {resumen['pct_mayor_50']}% por encima del 50% de nubes")
+    print(f"              {resumen['pct_mayor_80']}% por encima del 80%")
+
+    escenas_s1 = buscar(COLECCION_S1, area.bbox, args.periodo, catalogo)
+    print(f"  Sentinel-1  {len(escenas_s1):>4} escenas")
+    return 0
+
+
+def cmd_panels(args: argparse.Namespace) -> int:
+    """Descarga una muestra y renderiza los cuatro paneles de inspección."""
+    area = modulo_aoi.obtener(args.aoi)
+    destino = Path(args.salida)
+    catalogo = abrir_catalogo()
+    stats: dict[str, object] = {
+        "aoi_clave": area.clave,
+        "aoi_nombre": area.nombre,
+        "aoi_bbox": list(area.bbox),
+        "periodo": args.periodo,
+        "resolucion_px_m": 10,
+    }
+
+    log.info("consultando Sentinel-2")
+    escenas_s2 = buscar(COLECCION_S2, area.bbox, args.periodo, catalogo)
+    stats["s2"] = resumen_nubes(escenas_s2)
+    ordenadas = por_nubosidad(escenas_s2)
+    despejada, nublada = ordenadas[0], ordenadas[-1]
+
+    log.info("fecha despejada: %s", despejada.datetime.date())
+    bandas = [leer_ventana(despejada.assets[b].href, area.bbox) for b in ("B04", "B03", "B02")]
+    forma = bandas[0].shape
+    guardar_rgb(*(estirar(b) for b in bandas), destino / "s2_despejada.png")
+    stats["s2_despejada"] = {
+        "fecha": str(despejada.datetime.date()),
+        "nubes": round(despejada.properties["eo:cloud_cover"], 1),
+    }
+
+    log.info("fecha nublada: %s", nublada.datetime.date())
+    bandas = [leer_ventana(nublada.assets[b].href, area.bbox, forma) for b in ("B04", "B03", "B02")]
+    guardar_rgb(*(estirar(b) for b in bandas), destino / "s2_nublada.png")
+    stats["s2_nublada"] = {
+        "fecha": str(nublada.datetime.date()),
+        "nubes": round(nublada.properties["eo:cloud_cover"], 1),
+    }
+
+    log.info("componiendo Sentinel-2")
+    compuesto, usadas = compuesto_s2(escenas_s2, area.bbox, forma, max_escenas=args.max_s2)
+    guardar_rgb(
+        *(estirar(compuesto[b]) for b in ("B04", "B03", "B02")),
+        destino / "s2_compuesto.png",
+    )
+    stats["s2_compuesto"] = {"escenas_usadas": usadas}
+
+    log.info("consultando y componiendo Sentinel-1")
+    escenas_s1 = buscar(COLECCION_S1, area.bbox, args.periodo, catalogo)
+    sar, meta = compuesto_s1(escenas_s1, area.bbox, forma, max_escenas=args.max_s1)
+    vv_db, vh_db = a_db(sar["vv"]), a_db(sar["vh"])
+    guardar_rgb(
+        estirar(vv_db), estirar(vh_db), estirar(vv_db - vh_db), destino / "s1_compuesto.png"
+    )
+    stats["s1"] = {
+        "escenas_disponibles": meta["escenas_disponibles"],
+        "escenas_usadas": meta["escenas_usadas"],
+        "orbita": meta["orbita"],
+        "vv_db_p5_p95": list(percentiles(vv_db)),
+        "vh_db_p5_p95": list(percentiles(vh_db)),
+    }
+    stats["aoi_px"] = [forma[1], forma[0]]
+
+    (destino / "stats.json").write_text(json.dumps(stats, indent=2, ensure_ascii=False))
+    print(json.dumps(stats, indent=2, ensure_ascii=False))
+    return 0
+
+
+def construir_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
+    parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
+    sub = parser.add_subparsers(dest="comando", required=True)
+
+    sub.add_parser("aoi", help="lista los recuadros piloto").set_defaults(func=cmd_aoi)
+
+    probe = sub.add_parser("probe", help="cuenta escenas disponibles sobre un AOI")
+    probe.add_argument("aoi", help="clave del recuadro, por ejemplo tuxtla")
+    probe.add_argument("--periodo", default=PERIODO_CENSO)
+    probe.set_defaults(func=cmd_probe)
+
+    panels = sub.add_parser("panels", help="renderiza los paneles de inspección")
+    panels.add_argument("aoi", help="clave del recuadro, por ejemplo tuxtla")
+    panels.add_argument("--periodo", default=PERIODO_CENSO)
+    panels.add_argument("--salida", default="docs/figs", help="carpeta de destino")
+    panels.add_argument("--max-s2", type=int, default=36, help="escenas máximas del compuesto S2")
+    panels.add_argument("--max-s1", type=int, default=24, help="escenas máximas del compuesto S1")
+    panels.set_defaults(func=cmd_panels)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = construir_parser().parse_args(argv)
+    logging.basicConfig(
+        level=logging.INFO if args.verbose else logging.WARNING,
+        format="%(message)s",
+    )
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
