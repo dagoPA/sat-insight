@@ -10,7 +10,7 @@ import pandas as pd
 
 from satinsight import aoi as modulo_aoi
 from satinsight.agebs import CIUDADES, agebs_de_ciudad, resumen_grados
-from satinsight.baseline import comparar, resumen
+from satinsight.baseline import comparar, diagnostico_transferencia, resumen
 from satinsight.catalog import (
     COLECCION_S1,
     COLECCION_S2,
@@ -156,7 +156,7 @@ def cmd_baseline(args: argparse.Namespace) -> int:
         return 1
 
     tabla = pd.read_parquet(origen)
-    detalle = comparar(tabla)
+    detalle = comparar(tabla, estandarizar=args.estandarizar)
     print(f"\n{len(tabla)} AGEB · partición dejando una ciudad fuera\n")
     print(resumen(detalle).to_string(index=False))
     print("\npor pliegue:\n")
@@ -166,6 +166,37 @@ def cmd_baseline(args: argparse.Namespace) -> int:
     if args.salida:
         detalle.to_csv(args.salida, index=False)
         print(f"\ndetalle → {args.salida}")
+    return 0
+
+
+def cmd_diagnostico(args: argparse.Namespace) -> int:
+    """Reporta, por conjunto de rasgos, si describen la ciudad o el rezago."""
+    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    if not origen.exists():
+        print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
+        return 1
+
+    tabla = pd.read_parquet(origen)
+    print(f"\n{len(tabla)} AGEB · {tabla['ciudad'].nunique()} ciudades\n")
+    print("Razón entre la varianza que explica la ciudad y la que explica el grado.")
+    print("Por encima de uno, el rasgo describe dónde se midió más que qué se midió.\n")
+
+    for conjunto in ("cobertura", "densidad", "textura"):
+        detalle = diagnostico_transferencia(tabla, conjunto).dropna(subset=["razon"])
+        if detalle.empty:
+            continue
+        bajo, medio, alto = detalle["razon"].quantile([0.25, 0.5, 0.75])
+        peores = ", ".join(detalle.head(3)["rasgo"])
+        print(
+            f"  {conjunto:<10} n={len(detalle):<3} "
+            f"cuartiles {bajo:>6.1f} /{medio:>6.1f} /{alto:>6.1f}"
+        )
+        print(f"  {'':<10} peores: {peores}")
+
+    print(
+        "\nSe lee junto con la fiabilidad por mitades, nunca solo: un rasgo que es ruido "
+        "sale con razón baja\nporque el ruido no correlaciona con nada."
+    )
     return 0
 
 
@@ -208,7 +239,17 @@ def construir_parser() -> argparse.ArgumentParser:
     base.add_argument("sensor", choices=SENSORES)
     base.add_argument("--rasgos", help="parquet de rasgos ya extraído")
     base.add_argument("--salida", help="csv donde dejar el detalle por pliegue")
+    base.add_argument(
+        "--estandarizar",
+        action="store_true",
+        help="centra cada rasgo dentro de su ciudad; ablación, no el modo normal",
+    )
     base.set_defaults(func=cmd_baseline)
+
+    diag = sub.add_parser("diagnostico", help="mide si los rasgos describen la ciudad o el rezago")
+    diag.add_argument("sensor", choices=SENSORES)
+    diag.add_argument("--rasgos", help="parquet de rasgos ya extraído")
+    diag.set_defaults(func=cmd_diagnostico)
 
     return parser
 
