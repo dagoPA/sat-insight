@@ -79,8 +79,8 @@ def seleccionar_crs(items: list["Item"]) -> tuple[str, list["Item"]]:
     mantiene los dos brazos de la ciudad sobre la misma retícula: en Mérida el radar trae
     32 escenas en la zona 15 contra una sola en la 16, así que la mayoría coincide.
 
-    Se lee de la extensión de proyección del STAC en vez de abrir los rásteres, que
-    costaría una petición de red por escena.
+    Se lee de la extensión de proyección del STAC, que ahorra la petición de red por escena
+    que costaría abrir cada ráster.
     """
     grupos: dict[str, list[Item]] = {}
     for item in items:

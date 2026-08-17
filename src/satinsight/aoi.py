@@ -61,8 +61,8 @@ class AOI:
         límites en WGS84. El margen se da en metros y se convierte a grados corrigiendo la
         longitud por la latitud del centro, para que el borde sea parejo en ambos ejes.
 
-        Sirve para que las ciudades de la fase 1 salgan de sus AGEB reales en vez de
-        depender de recuadros escritos a mano.
+        Sirve para que los recuadros de la fase 1 se deriven de las AGEB reales de cada
+        ciudad.
         """
         limites = getattr(poligonos, "total_bounds", poligonos)
         lon_min, lat_min, lon_max, lat_max = (float(v) for v in limites)

@@ -1201,7 +1201,7 @@
       </p>
 
       <p>
-        El orden de las etapas no es una preferencia: es el único posible. Las AGEB definen el recuadro,
+        El orden de las etapas es el único posible. Las AGEB definen el recuadro,
         el recuadro define qué escenas pedir al catálogo, las escenas definen el sistema de coordenadas
         de la retícula, la retícula permite componer, y solo sobre el compuesto se puede medir textura
         dentro de un polígono.
@@ -1285,7 +1285,7 @@
             </g>
             <g font-size="9.5" text-anchor="middle" fill="var(--ink-3)">
               <text x="96"  y="290">5 ciudades · 24 municipios</text>
-              <text x="290" y="290">reconstruida, no heredada</text>
+              <text x="290" y="290">se reconstruye aparte</text>
               <text x="484" y="290">escenas por ciudad</text>
               <text x="678" y="290">4 conjuntos separados</text>
               <text x="872" y="290">sin fuga geográfica</text>
@@ -1306,7 +1306,7 @@
           </svg>
         </div>
         <figcaption>
-          Las cifras son medidas, no estimadas. <b>La etapa que no estaba en el diseño original es la
+          Las cifras están medidas sobre los datos. <b>La etapa que no estaba en el diseño original es la
           segunda:</b> los compuestos no llevan georreferencia consigo, así que hay que reconstruir la
           retícula antes de poder decir qué píxel cae dentro de qué AGEB.
         </figcaption>
@@ -1401,10 +1401,11 @@
 
       <h3>Los cuatro escalones del baseline</h3>
       <p>
-        La puerta de la fase 1 no es ganarle al azar. El rezago correlaciona con lo poco construido, así
-        que un modelo puede acertar leyendo densidad de construcción sin haber aprendido nada sobre
-        privación. Por eso la evaluación separa cuatro conjuntos de rasgos que responden preguntas
-        distintas, y el escalón que decide no es el primero.
+        La puerta de la fase 1 se juega contra la densidad construida. El rezago correlaciona con lo
+        poco construido, así que un modelo puede acertar leyendo cuánto hay edificado y quedarse sin
+        haber aprendido nada sobre privación; ganarle al azar deja esa duda intacta. Por eso la
+        evaluación separa cuatro conjuntos de rasgos que responden preguntas distintas, y el escalón
+        que decide es el tercero.
       </p>
 
       <div class="tablewrap">
@@ -1510,19 +1511,18 @@
 
       <div class="thesis">
         <p>
-          La afirmación que sostiene el proyecto no es «el radar transfiere mejor». Es que
-          <strong>el radar transfiere mejor si se explota su calibración</strong>: gamma0 es una
-          magnitud física y usarla como tal duplica el kappa de textura frente al óptico, mientras
-          que usarla con una escala derivada de los datos la deja por debajo del azar. La escala
-          fija deja de ser una preferencia de implementación y pasa a ser la condición bajo la
-          cual el argumento del sensor se sostiene.
+          La afirmación que sostiene el proyecto es que <strong>el radar transfiere mejor si se
+          explota su calibración</strong>. Gamma0 es una magnitud física: usarla como tal duplica
+          el kappa de textura frente al óptico, y usarla con una escala derivada de los datos lo
+          hunde por debajo del azar. La escala fija es entonces la condición bajo la cual el
+          argumento del sensor se sostiene, con el peso de una decisión experimental.
         </p>
       </div>
 
       <h3>Seis cosas que aparecieron al tocar los datos</h3>
       <p>
-        Ninguna estaba en el diseño. Todas cambiaron el código, y cinco de las seis habrían producido
-        números plausibles y equivocados en vez de un error visible.
+        Ninguna estaba en el diseño. Todas cambiaron el código, y cinco de las seis habrían entregado
+        números plausibles y equivocados, sin un solo error a la vista.
       </p>
 
       <div class="tablewrap">
@@ -1571,7 +1571,7 @@
         una en un error temprano, y por eso dos diagnósticos deciden qué rasgos entran al modelo con un
         criterio fijado antes de mirar desempeño: la <b>fiabilidad por mitades</b>, que parte cada polígono
         en dos y exige que el rasgo se reproduzca consigo mismo, y la <b>correlación con el tamaño</b>, que
-        señala los rasgos sospechosos de apuntar al área en vez de a la morfología.
+        señala los rasgos sospechosos de apuntar al área del polígono y no a su morfología.
       </p>
     </div>
   </section>

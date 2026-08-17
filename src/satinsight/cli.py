@@ -254,7 +254,7 @@ def construir_parser() -> argparse.ArgumentParser:
     base.add_argument(
         "--estandarizar",
         action="store_true",
-        help="centra cada rasgo dentro de su ciudad; ablación, no el modo normal",
+        help="centra cada rasgo dentro de su ciudad; corre como ablación",
     )
     base.set_defaults(func=cmd_baseline)
 

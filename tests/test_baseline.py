@@ -44,7 +44,7 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
             "c_rango_intercuartil": rng.normal(0, 1, n_por_ciudad),
         }
         # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
-        # rompa la prueba en vez de dejarla midiendo un conjunto vacío en silencio.
+        # rompa la prueba, con lo que se evita que quede midiendo un conjunto vacío.
         for clase in CLASES.values():
             columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
         for sufijo in nombres_de_rasgos():
