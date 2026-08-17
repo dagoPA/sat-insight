@@ -22,10 +22,10 @@ from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
-from rasterio.features import geometry_mask
-from rasterio.transform import rowcol
 from shapely.ops import clip_by_rect
 from skimage.feature import graycomatrix, graycoprops
+
+from satinsight.malla import recorte_de_poligono
 
 log = logging.getLogger(__name__)
 
@@ -327,31 +327,18 @@ def rasgos_por_ageb(
 
     rango = rango or rango_robusto(banda)
     cuantizada = cuantizar(banda, rango, niveles)
-    alto, ancho = banda.shape
     renglones = []
 
     for clave, geometria in zip(claves, geometrias, strict=True):
-        x_min, y_min, x_max, y_max = geometria.bounds
-        fila_a, col_a = rowcol(transform, x_min, y_max)
-        fila_b, col_b = rowcol(transform, x_max, y_min)
-        fila_ini, fila_fin = max(0, min(fila_a, fila_b)), min(alto, max(fila_a, fila_b) + 1)
-        col_ini, col_fin = max(0, min(col_a, col_b)), min(ancho, max(col_a, col_b) + 1)
-
         base = {"cvegeo": clave, f"{prefijo}_n_px": 0}
-        if fila_fin <= fila_ini or col_fin <= col_ini:
+        ventana = recorte_de_poligono(transform, geometria, banda.shape)
+        if ventana is None:
             renglones.append(base)
             continue
 
-        recorte = cuantizada[fila_ini:fila_fin, col_ini:col_fin]
-        crudo = banda[fila_ini:fila_fin, col_ini:col_fin]
-        transform_ventana = transform * transform.translation(col_ini, fila_ini)
-
-        dentro = ~geometry_mask(
-            [geometria],
-            out_shape=recorte.shape,
-            transform=transform_ventana,
-            invert=False,
-        )
+        filas, columnas, dentro = ventana
+        recorte = cuantizada[filas, columnas]
+        crudo = banda[filas, columnas]
         valido = dentro & (recorte > 0)
         n_px = int(valido.sum())
         base[f"{prefijo}_n_px"] = n_px

@@ -2,17 +2,19 @@
 
 La puerta de decisión no es ganarle al azar. El rezago correlaciona con lo rural y con lo
 poco construido, así que un modelo puede acertar leyendo densidad de construcción y no
-haber aprendido nada sobre privación. La comparación que informa es contra un modelo que
-solo ve intensidad promedio dentro de cada AGEB, sin ninguna medida de arreglo espacial.
+haber aprendido nada sobre privación.
 
-De ahí los tres conjuntos de rasgos que se evalúan por separado:
+De ahí cuatro conjuntos de rasgos, en escalones que responden preguntas distintas:
 
-- `densidad`: estadísticos de primer orden. Cuánto hay y qué tan brillante, sin textura.
+- `cobertura`: fracciones de WorldCover. Cuánto hay construido según un producto ajeno a
+  estos compuestos. Es el escalón que de verdad pone a prueba el atajo por ruralidad.
+- `densidad`: estadísticos de primer orden de los compuestos. Cuánto y qué tan brillante.
 - `textura`: propiedades de Haralick. Cómo está arreglado, sin el nivel absoluto.
-- `completo`: los dos juntos.
+- `completo`: los tres juntos.
 
-Si `completo` no le gana a `densidad`, la textura no está aportando y conviene saberlo antes
-de montar el MIL encima.
+Si `completo` no le gana a `cobertura`, el modelo está leyendo densidad de construcción y
+nada más. Si no le gana a `densidad`, la textura no aporta sobre el brillo. Conviene saber
+ambas cosas antes de montar el MIL encima.
 
 La partición es por ciudad. Entrenar y evaluar sobre AGEB vecinas de la misma mancha urbana
 inflaría el resultado por autocorrelación espacial.
@@ -28,6 +30,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostin
 from sklearn.metrics import cohen_kappa_score, f1_score
 
 from satinsight.agebs import GRADOS
+from satinsight.cobertura import CLASES
 from satinsight.textura import nombres_de_rasgos
 
 log = logging.getLogger(__name__)
@@ -36,11 +39,22 @@ SUFIJOS_DENSIDAD = ("media", "desv", "p10", "p50", "p90", "rango_intercuartil")
 SUFIJOS_TEXTURA = tuple(nombres_de_rasgos())
 """Las columnas de textura llevan propiedad y distancia, por ejemplo `contrast_d2`."""
 
+SUFIJOS_COBERTURA = tuple(CLASES.values())
+"""Fracciones de cobertura de WorldCover, la única fuente ajena a los compuestos."""
+
 CONJUNTOS = {
+    "cobertura": SUFIJOS_COBERTURA,
     "densidad": SUFIJOS_DENSIDAD,
     "textura": SUFIJOS_TEXTURA,
-    "completo": SUFIJOS_DENSIDAD + SUFIJOS_TEXTURA,
+    "completo": SUFIJOS_COBERTURA + SUFIJOS_DENSIDAD + SUFIJOS_TEXTURA,
 }
+"""Los cuatro conjuntos, que responden preguntas distintas y en ese orden.
+
+`cobertura` pregunta si el rezago se explica por cuánto hay construido según un producto
+ajeno a estos compuestos. `densidad` pregunta si el brillo de la propia imagen agrega algo
+sobre eso. `textura` pregunta si el arreglo espacial agrega algo sobre el brillo. Ganarle
+al azar no dice nada; ganarle a `cobertura` es lo que descarta el atajo por ruralidad.
+"""
 
 SEMILLA = 0
 
