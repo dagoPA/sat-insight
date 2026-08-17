@@ -37,9 +37,15 @@ las ciudades más nubladas del país, por una razón que no tiene nada de anóma
 """
 
 
-def _revisar_fallos(sensor: str, fallidas: int, intentadas: int, fraccion: float) -> None:
-    """Levanta excepción cuando demasiadas lecturas fallaron para confiar en el resultado."""
-    if fraccion and intentadas and fallidas > fraccion * intentadas:
+def _revisar_fallos(sensor: str, fallidas: int, intentadas: int, fraccion: float | None) -> None:
+    """Levanta excepción cuando demasiadas lecturas fallaron para confiar en el resultado.
+
+    `None` desactiva la comprobación. Cero es su opuesto y significa lo que aparenta: no se
+    tolera ni una lectura fallida.
+    """
+    if fraccion is None or not intentadas:
+        return
+    if fallidas > fraccion * intentadas:
         raise RuntimeError(
             f"{fallidas} de {intentadas} escenas {sensor} fallaron al leerse. "
             "Un compuesto armado con las que quedan no es representativo; suele indicar "
@@ -53,15 +59,16 @@ def compuesto_s2(
     forma: tuple[int, int] | None = None,
     bandas: tuple[str, ...] = BANDAS_RGB,
     max_escenas: int = 36,
-    fraccion_fallos: float = FRACCION_FALLOS,
+    fraccion_fallos: float | None = FRACCION_FALLOS,
 ) -> tuple[dict[str, np.ndarray], int]:
     """Mediana por píxel de las escenas Sentinel-2 más despejadas, con máscara SCL.
 
     Devuelve las bandas compuestas y el número de escenas que aportaron píxeles.
     Las escenas se recorren de la más despejada a la más nublada.
 
-    Aborta si demasiadas lecturas fallan; `fraccion_fallos` en cero desactiva esa
-    comprobación para quien quiera un compuesto parcial a propósito.
+    Aborta si demasiadas lecturas fallan. `fraccion_fallos` en `None` desactiva esa
+    comprobación para quien quiera un compuesto parcial a propósito; en cero no tolera ni
+    una lectura fallida.
     """
     if not items:
         raise ValueError("no hay escenas Sentinel-2 para componer")
@@ -99,15 +106,16 @@ def compuesto_s1(
     bbox: Bbox,
     forma: tuple[int, int] | None = None,
     max_escenas: int = 24,
-    fraccion_fallos: float = FRACCION_FALLOS,
+    fraccion_fallos: float | None = FRACCION_FALLOS,
 ) -> tuple[dict[str, np.ndarray], dict[str, object]]:
     """Mediana por píxel de escenas Sentinel-1 RTC de una sola geometría de órbita.
 
     Devuelve las polarizaciones compuestas en potencia lineal junto con los metadatos
     de la adquisición elegida.
 
-    Aborta si demasiadas lecturas fallan; `fraccion_fallos` en cero desactiva esa
-    comprobación para quien quiera un compuesto parcial a propósito.
+    Aborta si demasiadas lecturas fallan. `fraccion_fallos` en `None` desactiva esa
+    comprobación para quien quiera un compuesto parcial a propósito; en cero no tolera ni
+    una lectura fallida.
     """
     if not items:
         raise ValueError("no hay escenas Sentinel-1 para componer")

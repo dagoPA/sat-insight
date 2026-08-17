@@ -43,8 +43,14 @@ def test_demasiados_fallos_abortan():
         _revisar_fallos("Sentinel-2", fallidas=15, intentadas=20, fraccion=0.3)
 
 
-def test_la_comprobacion_se_puede_desactivar():
-    _revisar_fallos("Sentinel-2", fallidas=20, intentadas=20, fraccion=0.0)
+def test_none_desactiva_la_comprobacion():
+    _revisar_fallos("Sentinel-2", fallidas=20, intentadas=20, fraccion=None)
+
+
+def test_cero_es_el_extremo_estricto_y_no_el_desactivado():
+    _revisar_fallos("Sentinel-2", fallidas=0, intentadas=20, fraccion=0.0)
+    with pytest.raises(RuntimeError, match="fallaron al leerse"):
+        _revisar_fallos("Sentinel-2", fallidas=1, intentadas=20, fraccion=0.0)
 
 
 def test_sin_escenas_intentadas_no_divide_entre_cero():
