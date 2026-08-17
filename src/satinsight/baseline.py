@@ -1,8 +1,8 @@
 """Baseline de la fase 1 y la comparación que decide si el proyecto sigue.
 
-La puerta de decisión no es ganarle al azar. El rezago correlaciona con lo rural y con lo
-poco construido, así que un modelo puede acertar leyendo densidad de construcción y no
-haber aprendido nada sobre privación.
+La puerta de decisión se juega contra la densidad construida. El rezago correlaciona con lo
+rural y con lo poco construido, así que un modelo puede acertar leyendo cuánto hay edificado
+y quedarse sin haber aprendido nada sobre privación. Ganarle al azar deja esa duda intacta.
 
 De ahí cuatro conjuntos de rasgos, en escalones que responden preguntas distintas:
 
@@ -52,8 +52,8 @@ CONJUNTOS = {
 
 `cobertura` pregunta si el rezago se explica por cuánto hay construido según un producto
 ajeno a estos compuestos. `densidad` pregunta si el brillo de la propia imagen agrega algo
-sobre eso. `textura` pregunta si el arreglo espacial agrega algo sobre el brillo. Ganarle
-al azar no dice nada; ganarle a `cobertura` es lo que descarta el atajo por ruralidad.
+sobre eso. `textura` pregunta si el arreglo espacial agrega algo sobre el brillo. Ganarle a
+`cobertura` es lo que descarta el atajo por ruralidad.
 """
 
 SEMILLA = 0
@@ -131,10 +131,10 @@ def estandarizar_por_grupo(
 
     El precio es real y hay que declararlo: también borra cualquier diferencia de nivel
     entre ciudades que sí fuera señal de rezago. Una ciudad entera más pobre que otra queda
-    centrada igual que la rica. Por eso se evalúa como ablación y no como preproceso fijo.
+    centrada igual que la rica. Por eso se evalúa como ablación declarada.
 
-    Un rasgo constante dentro de una ciudad queda centrado en cero y no en nulo. La
-    distinción importa: varias clases de cobertura valen cero en todas las AGEB —nieve,
+    Un rasgo constante dentro de una ciudad queda centrado en cero. La distinción importa: varias
+    clases de cobertura valen cero en todas las AGEB —nieve,
     musgo, manglar tierra adentro— y convertirlas en columnas enteramente nulas rompe el
     binning del modelo. Los nulos que sí son ausencia de dato, como la textura de una AGEB
     demasiado pequeña, se conservan para que el modelo los trate como faltantes.

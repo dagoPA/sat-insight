@@ -12,8 +12,9 @@ explotar mejor esa imagen, sin que eso descarte el atajo.
 ESA WorldCover 2020 sí: es una clasificación publicada, a 10 m, del mismo año del censo, y
 no está ajustada a las etiquetas de CONEVAL. Conviene decir con precisión qué tan
 independiente es: WorldCover se deriva de Sentinel-1 y Sentinel-2 de 2020, o sea de los
-mismos sensores que alimentan este trabajo. Es un producto independiente, no una
-observación independiente, y el paper debe decirlo así.
+mismos sensores que alimentan este trabajo. La independencia es de producto: otra cadena
+de clasificación sobre la misma familia de observaciones. El paper debe declararlo con esa
+precisión.
 
 Se eligió sobre GHSL, que es lo que menciona el plan, por dos razones. GHSL no está
 publicado en el STAC de Planetary Computer, y sus 100 m de resolución dejarían a la quinta
@@ -101,9 +102,9 @@ def fracciones_por_ageb(
 ) -> pd.DataFrame:
     """Fracción de cada clase de cobertura dentro de cada AGEB.
 
-    Las fracciones se calculan sobre los píxeles clasificados del polígono, no sobre todos
-    los que caen en él, de modo que un hueco sin dato no se cuente como ausencia de
-    construcción. El número de píxeles clasificados se reporta para poder auditarlo.
+    El denominador son los píxeles clasificados del polígono. Así un hueco sin dato queda
+    fuera del cálculo, con lo que se evita leerlo como ausencia de construcción. El número de
+    píxeles clasificados se reporta para poder auditarlo.
     """
     if len(geometrias) != len(claves):
         raise ValueError(f"{len(geometrias)} geometrías contra {len(claves)} claves")

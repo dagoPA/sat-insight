@@ -57,7 +57,7 @@ DISTANCIAS = (1, 2, 4)
 Las distancias se reportan por separado y no promediadas: son escalas distintas y llevan
 información distinta. En AGEB angostas casi todos los pares a 4 píxeles cruzan el borde y
 se descartan, así que promediar esa distancia con la de 1 diluye la señal buena con la
-ruidosa en vez de dejar que el modelo pese cada una.
+ruidosa. Separarlas deja que el modelo pese cada escala por su cuenta.
 """
 
 ANGULOS = (0.0, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
@@ -72,8 +72,8 @@ MINIMO_PIXELES = 640
 Con 64 celdas, 640 píxeles dan diez pares por celda, que es la regla de dedo habitual para
 que los estadísticos de Haralick sean estables. Deja fuera al 11% de las AGEB del piloto.
 
-Esas AGEB no se borran del conjunto: salen con sus rasgos de textura en nulo y conservan
-los de primer orden, y la exclusión se declara al evaluar. Descartarlas en silencio sesgaría
+Esas AGEB permanecen en el conjunto con la textura en nulo y los rasgos de primer orden
+intactos, y la exclusión se declara al evaluar. Descartarlas en silencio sesgaría
 la muestra justo hacia las AGEB grandes.
 """
 
@@ -89,8 +89,9 @@ Sentinel-1: gamma0 es una magnitud calibrada, comparable entre países sin recal
 cuantización se ajusta a cada ciudad, esa comparabilidad se pierde por una decisión de
 implementación, y con ella el argumento de transferencia a Brasil y Colombia.
 
-Los bordes son fijos y físicos, no estimados. El óptico sí admite normalizar por escena
-porque arrastra residuos atmosféricos y de BRDF que no son señal.
+Los bordes se fijan por física y quedan idénticos en todas las ciudades. El óptico sí
+admite normalizar por escena, porque arrastra residuos atmosféricos y de BRDF ajenos a la
+señal.
 """
 
 
@@ -105,7 +106,7 @@ def rango_robusto(banda: np.ndarray, p_bajo: float = 2.0, p_alto: float = 98.0) 
 def cuantizar(banda: np.ndarray, rango: tuple, niveles: int = NIVELES) -> np.ndarray:
     """Lleva la banda a enteros de 1 a `niveles`, reservando el 0 para lo inválido.
 
-    Los valores fuera del rango se recortan a los extremos en vez de descartarse: un techo
+    Los valores fuera del rango se recortan a los extremos y se conservan: un techo
     de lámina muy brillante sigue siendo información aunque caiga sobre el percentil 98.
 
     Los no finitos se llevan a cero antes de convertir a entero. `np.clip` no toca los NaN,
@@ -318,7 +319,7 @@ def rasgos_por_ageb(
     Las geometrías tienen que venir en el mismo sistema de referencia que `transform`,
     que para los compuestos es el huso UTM de las escenas y no coordenadas geográficas.
 
-    Con `rango` se fija la escala de cuantización en vez de estimarla de la banda. Es lo
+    Con `rango` la escala de cuantización se fija por adelantado. Es lo
     que el radar necesita: gamma0 está calibrado y derivar el rango de cada ciudad haría
     que la misma retrodispersión cayera en niveles distintos según dónde se midió.
     """

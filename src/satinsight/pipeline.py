@@ -56,8 +56,8 @@ FRACCION_MINIMA = 0.5
 Esta segunda comprobación mira otra cosa: cuántas escenas quedaron después de descartar las
 nubladas. Una ciudad compuesta con la mitad de escenas que otra tiene más ruido residual, y
 como la validación deja una ciudad fuera por pliegue, esa diferencia se leería como señal
-de esa ciudad. Es un requisito del diseño experimental, no una señal de avería, y por eso
-vive aquí y no en la librería.
+de esa ciudad. Responde al diseño experimental, y por eso vive aquí mientras la detección
+de averías vive en la librería.
 """
 
 

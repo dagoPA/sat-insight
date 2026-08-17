@@ -1,7 +1,7 @@
 """Persistencia de los compuestos anuales como GeoTIFF.
 
 Componer una ciudad cuesta cerca de una hora por sensor, y el costo lo domina el sobrecosto
-de abrir cada COG remoto en vez de los bytes transferidos. Guardar el resultado en disco
+de abrir cada COG remoto, muy por encima de los bytes transferidos. Guardar el resultado en disco
 convierte ese gasto en algo que se paga una sola vez.
 
 El compuesto de Sentinel-1 se guarda en potencia lineal, que es como lo entrega

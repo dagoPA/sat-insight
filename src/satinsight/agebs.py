@@ -194,9 +194,9 @@ def agebs_de_ciudad(
 ) -> gpd.GeoDataFrame:
     """Devuelve las AGEB de una ciudad piloto con geometría y etiqueta ordinal.
 
-    Con `conurbacion` la unidad de análisis deja de ser el municipio y pasa a ser la
-    mancha urbana continua: se admiten las AGEB de cualquier municipio de la entidad que
-    caiga a menos de `vecindad_m` del núcleo, y luego se recorta a la componente conectada.
+    Con `conurbacion` la unidad de análisis es la mancha urbana continua: se admiten las
+    AGEB de cualquier municipio de la entidad a menos de `vecindad_m` del núcleo, y el
+    resultado se recorta a la componente conectada.
     Una ciudad rara vez termina donde termina su municipio, y la periferia conurbada es
     justo donde el rezago varía.
 
