@@ -20,7 +20,13 @@ from satinsight.catalog import (
     resumen_nubes,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
-from satinsight.figuras import panel_agebs, panel_brazos, panel_contraste
+from satinsight.figuras import (
+    mapa_agebs_por_ciudad,
+    mapa_nacional,
+    panel_agebs,
+    panel_brazos,
+    panel_contraste,
+)
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.pipeline import SENSORES, rasgos_de_todas
 from satinsight.raster import a_db, estirar, leer_ventana, percentiles
@@ -208,6 +214,8 @@ def cmd_figuras(args: argparse.Namespace) -> int:
     panel_agebs(args.ciudad, destino / "f2_agebs.png")
     for sensor in SENSORES:
         panel_contraste(args.ciudad, sensor, destino / f"f3_contraste_{sensor}.png")
+    mapa_nacional(destino / "f4_nacional.png")
+    mapa_agebs_por_ciudad(destino / "f5_agebs_ciudades.png")
     print(f"figuras de {args.ciudad} → {destino}")
     return 0
 

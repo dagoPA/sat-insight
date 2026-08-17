@@ -248,3 +248,177 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     lienzo.save(destino, optimize=True)
     log.info("panel de contraste %s: %s", sensor, destino)
     return destino
+
+
+def _estilo_oscuro(ax) -> None:
+    """Deja los ejes sin marco ni marcas, sobre el mismo fondo que los demás paneles."""
+    ax.set_facecolor(_hex(FONDO))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for lado in ax.spines.values():
+        lado.set_visible(False)
+
+
+def _hex(rgb: tuple[int, int, int]) -> str:
+    return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+
+def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
+    """Sitúa las cinco ciudades piloto dentro del país.
+
+    El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
+    alto o muy alto. Puestas sobre el mapa se ve de un vistazo el sesgo de la muestra: las
+    dos ciudades que aportan rezago alto están en el sur y en la costa del Pacífico.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import geopandas as gpd
+    import matplotlib.pyplot as plt
+
+    from satinsight.agebs import CIUDADES
+    from satinsight.ingesta import RAIZ_DATOS, asegurar_naturalearth
+
+    raiz = raiz or RAIZ_DATOS
+    estados = gpd.read_file(asegurar_naturalearth(raiz))
+    mexico = estados[estados["admin"] == "Mexico"]
+
+    puntos = []
+    for clave in CIUDADES:
+        area, agebs = aoi_de_ciudad(clave, raiz)
+        lon = (area.bbox[0] + area.bbox[2]) / 2
+        lat = (area.bbox[1] + area.bbox[3]) / 2
+        altos = float(agebs.grado.isin(("Alto", "Muy alto")).mean())
+        puntos.append((clave, CIUDADES[clave].nombre, lon, lat, len(agebs), altos))
+
+    figura, ax = plt.subplots(figsize=(11, 7), dpi=150)
+    figura.patch.set_facecolor(_hex(FONDO))
+    _estilo_oscuro(ax)
+
+    mexico.plot(ax=ax, facecolor="#1d2530", edgecolor="#3b4653", linewidth=0.6)
+
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+        "rezago",
+        [_hex(COLOR_GRADO["Muy bajo"]), _hex(COLOR_GRADO["Medio"]), _hex(COLOR_GRADO["Muy alto"])],
+    )
+    # desplazamientos escogidos a mano: puestas todas a la derecha, las etiquetas de
+    # Acapulco y Tuxtla se encimaban y la de Mérida caía sobre la barra de color
+    desplazamiento = {
+        "tuxtla": (14, -16),
+        "merida": (-16, 12),
+        "iztapalapa": (14, 6),
+        "tapachula": (14, -14),
+        "acapulco": (-16, -18),
+    }
+    alineacion = {"merida": "right", "acapulco": "right"}
+
+    for clave, nombre, lon, lat, n, altos in puntos:
+        ax.scatter(
+            lon,
+            lat,
+            s=40 + n * 0.55,
+            c=[cmap(altos / 0.5)],
+            edgecolor="white",
+            linewidth=1.1,
+            zorder=3,
+        )
+        ax.annotate(
+            f"{nombre}\n{n} AGEB · {100 * altos:.0f}% alto",
+            (lon, lat),
+            textcoords="offset points",
+            xytext=desplazamiento[clave],
+            ha=alineacion.get(clave, "left"),
+            fontsize=8.5,
+            color="#e6ebf1",
+            family="monospace",
+            zorder=4,
+        )
+
+    ax.set_xlim(-118.5, -85.5)
+    ax.set_ylim(13.5, 33.5)
+    ax.set_title(
+        "Las cinco ciudades piloto de la fase 1",
+        color="#e6ebf1",
+        fontsize=13,
+        loc="left",
+        pad=14,
+    )
+    barra = figura.colorbar(
+        matplotlib.cm.ScalarMappable(matplotlib.colors.Normalize(0, 50), cmap),
+        ax=ax,
+        orientation="horizontal",
+        fraction=0.03,
+        pad=0.02,
+        aspect=45,
+    )
+    barra.set_label("% de AGEB en grado alto o muy alto", color="#a8b3c0", fontsize=9)
+    barra.ax.tick_params(colors="#a8b3c0", labelsize=8)
+    barra.outline.set_edgecolor("#3b4653")
+
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
+    plt.close(figura)
+    log.info("mapa nacional: %s", destino)
+    return destino
+
+
+def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
+    """El conjunto completo de AGEB de cada ciudad, teñido por grado y a escala común.
+
+    Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
+    baseline. Compartir la escala en kilómetros permite comparar el tamaño real de las cinco
+    manchas urbanas.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
+
+    from satinsight.agebs import CIUDADES, CRS_METRICO
+
+    raiz = raiz or Path("data")
+    ciudades = list(CIUDADES)
+    figura, ejes = plt.subplots(1, len(ciudades), figsize=(16, 3.7), dpi=150)
+    figura.patch.set_facecolor(_hex(FONDO))
+
+    for ax, clave in zip(ejes, ciudades, strict=True):
+        _, agebs = aoi_de_ciudad(clave, raiz)
+        metrico = agebs.to_crs(CRS_METRICO)
+        for grado, color in COLOR_GRADO.items():
+            parte = metrico[metrico.grado == grado]
+            if len(parte):
+                parte.plot(ax=ax, facecolor=_hex(color), edgecolor="none")
+        _estilo_oscuro(ax)
+        ax.set_aspect("equal")
+
+        x0, y0, x1, y1 = metrico.total_bounds
+        lado = max(x1 - x0, y1 - y0) * 1.05
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        ax.set_xlim(cx - lado / 2, cx + lado / 2)
+        ax.set_ylim(cy - lado / 2, cy + lado / 2)
+
+        altos = 100 * agebs.grado.isin(("Alto", "Muy alto")).mean()
+        ax.set_title(
+            f"{CIUDADES[clave].nombre}\n{len(agebs)} AGEB · {altos:.0f}% alto"
+            f" · {lado / 1000:.0f} km",
+            color="#e6ebf1",
+            fontsize=9.5,
+            family="monospace",
+            pad=8,
+        )
+
+    figura.legend(
+        handles=[Patch(facecolor=_hex(c), label=g) for g, c in COLOR_GRADO.items()],
+        loc="lower center",
+        ncol=5,
+        frameon=False,
+        fontsize=9,
+        labelcolor="#a8b3c0",
+        bbox_to_anchor=(0.5, 0.02),
+    )
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
+    plt.close(figura)
+    log.info("mapa de AGEB por ciudad: %s", destino)
+    return destino
