@@ -537,7 +537,7 @@
 <div class="page">
 
   <header class="masthead">
-    <p class="eyebrow">SatInsight · Propuesta de investigación</p>
+    <p class="eyebrow">SatInsight · Propuesta y estado de la fase 1</p>
     <h1>Desagregación del rezago social</h1>
     <p class="deck">
       Clasificación débilmente supervisada de imágenes Sentinel-1 con un esquema MIL tipo CLAM,
@@ -548,6 +548,7 @@
       <span><b>Sensor</b> Sentinel-1 GRD IW + Sentinel-2 (control)</span>
       <span><b>Ámbito</b> México → Brasil, Colombia</span>
       <span><b>Temporal</b> corte único, sin cambio</span>
+      <span><b>Estado</b> fase 1 en curso · 2,703 AGEB medidas</span>
     </div>
   </header>
 
@@ -1182,6 +1183,269 @@
     </div>
   </section>
 
+  <!-- ============ TUBERIA ============ -->
+  <section class="section">
+    <div class="rail">Fase 1</div>
+    <div class="body">
+      <h2>Cómo quedó construida la tubería</h2>
+      <p class="lead-in">
+        La fase 1 ya está implementada y corriendo. Lo que sigue describe el proceso como quedó, que
+        difiere del diseño propuesto en varios puntos —cada uno forzado por algo que apareció al tocar
+        los datos reales— y que conviene entender antes de leer cualquier número que salga de ahí.
+      </p>
+
+      <p>
+        El orden de las etapas no es una preferencia: es el único posible. Las AGEB definen el recuadro,
+        el recuadro define qué escenas pedir al catálogo, las escenas definen el sistema de coordenadas
+        de la retícula, la retícula permite componer, y solo sobre el compuesto se puede medir textura
+        dentro de un polígono.
+      </p>
+
+      <figure>
+        <div class="figframe" tabindex="0" role="img"
+             aria-label="Diagrama de flujo de cinco etapas. Los datos de INEGI y CONEVAL alimentan la construcción de AGEB conurbadas; de ahí sale la retícula UTM; las escenas de Sentinel-2 y Sentinel-1 alimentan el compuesto mediana anual; ESA WorldCover alimenta la extracción de rasgos por AGEB junto con el compuesto; y el último paso evalúa dejando una ciudad fuera en cada pliegue.">
+          <svg viewBox="0 0 980 372" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="tub-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+              </marker>
+            </defs>
+
+            <text x="14" y="20" font-size="11" letter-spacing="1.2" fill="var(--ink-3)">FUENTES</text>
+
+            <!-- fuentes: censo -->
+            <rect x="14" y="32" width="80" height="44" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"/>
+            <text x="54" y="52" font-size="10.5" fill="var(--ink)" text-anchor="middle">INEGI</text>
+            <text x="54" y="66" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">marco geo.</text>
+
+            <rect x="98" y="32" width="80" height="44" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"/>
+            <text x="138" y="52" font-size="10.5" fill="var(--ink)" text-anchor="middle">CONEVAL</text>
+            <text x="138" y="66" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">GRS 2020</text>
+
+            <!-- fuentes: sensores -->
+            <rect x="402" y="32" width="80" height="44" rx="3" fill="var(--s2-soft)" stroke="var(--s2)"/>
+            <text x="442" y="52" font-size="10.5" fill="var(--ink)" text-anchor="middle">Sentinel-2</text>
+            <text x="442" y="66" font-size="9.5" fill="var(--s2)" text-anchor="middle">L2A · óptico</text>
+
+            <rect x="486" y="32" width="80" height="44" rx="3" fill="var(--s1-soft)" stroke="var(--s1)"/>
+            <text x="526" y="52" font-size="10.5" fill="var(--ink)" text-anchor="middle">Sentinel-1</text>
+            <text x="526" y="66" font-size="9.5" fill="var(--s1)" text-anchor="middle">RTC · radar</text>
+
+            <!-- fuente: cobertura -->
+            <rect x="596" y="32" width="164" height="44" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"/>
+            <text x="678" y="52" font-size="10.5" fill="var(--ink)" text-anchor="middle">ESA WorldCover 2020</text>
+            <text x="678" y="66" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">densidad construida ajena</text>
+
+            <!-- bajadas de fuente a etapa -->
+            <g stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="3 3">
+              <path d="M 96 76 L 96 190" fill="none"/>
+              <path d="M 484 76 L 484 190" fill="none"/>
+              <path d="M 678 76 L 678 190" fill="none"/>
+            </g>
+
+            <text x="14" y="178" font-size="11" letter-spacing="1.2" fill="var(--ink-3)">ETAPAS</text>
+
+            <!-- etapas -->
+            <g fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-width="1">
+              <rect x="14"  y="190" width="164" height="62" rx="3"/>
+              <rect x="208" y="190" width="164" height="62" rx="3"/>
+              <rect x="402" y="190" width="164" height="62" rx="3"/>
+              <rect x="596" y="190" width="164" height="62" rx="3"/>
+              <rect x="790" y="190" width="164" height="62" rx="3"/>
+            </g>
+
+            <g font-size="11.5" fill="var(--ink)" text-anchor="middle">
+              <text x="96"  y="216">AGEB conurbadas</text>
+              <text x="290" y="216">Retícula UTM</text>
+              <text x="484" y="216">Compuesto mediana</text>
+              <text x="678" y="216">Rasgos por AGEB</text>
+              <text x="872" y="216">Una ciudad fuera</text>
+            </g>
+            <g font-size="9.5" fill="var(--ink-3)" text-anchor="middle">
+              <text x="96"  y="234">cruce + mancha</text>
+              <text x="290" y="234">huso mayoritario</text>
+              <text x="484" y="234">anual, sin nubes</text>
+              <text x="678" y="234">GLCM + nivel + cobertura</text>
+              <text x="872" y="234">kappa cuadrático</text>
+            </g>
+
+            <!-- cifras reales bajo cada etapa -->
+            <g font-size="10" text-anchor="middle" fill="var(--s1)">
+              <text x="96"  y="274">2,703 AGEB</text>
+              <text x="290" y="274">33 MP @10 m</text>
+              <text x="484" y="274">20 ópt · 16 rad</text>
+              <text x="678" y="274">103 columnas</text>
+              <text x="872" y="274">5 pliegues</text>
+            </g>
+            <g font-size="9.5" text-anchor="middle" fill="var(--ink-3)">
+              <text x="96"  y="290">5 ciudades · 24 municipios</text>
+              <text x="290" y="290">reconstruida, no heredada</text>
+              <text x="484" y="290">escenas por ciudad</text>
+              <text x="678" y="290">4 conjuntos separados</text>
+              <text x="872" y="290">sin fuga geográfica</text>
+            </g>
+
+            <!-- flechas entre etapas -->
+            <g stroke="var(--ink-3)" stroke-width="1.5">
+              <line x1="180" y1="221" x2="204" y2="221" marker-end="url(#tub-ah)"/>
+              <line x1="374" y1="221" x2="398" y2="221" marker-end="url(#tub-ah)"/>
+              <line x1="568" y1="221" x2="592" y2="221" marker-end="url(#tub-ah)"/>
+              <line x1="762" y1="221" x2="786" y2="221" marker-end="url(#tub-ah)"/>
+            </g>
+
+            <!-- puerta -->
+            <line x1="872" y1="308" x2="872" y2="330" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#tub-ah)"/>
+            <rect x="700" y="334" width="254" height="28" rx="3" fill="var(--s1-soft)" stroke="var(--s1)"/>
+            <text x="827" y="352" font-size="10.5" fill="var(--ink)" text-anchor="middle">¿le gana a la densidad construida?</text>
+          </svg>
+        </div>
+        <figcaption>
+          Las cifras son medidas, no estimadas. <b>La etapa que no estaba en el diseño original es la
+          segunda:</b> los compuestos no llevan georreferencia consigo, así que hay que reconstruir la
+          retícula antes de poder decir qué píxel cae dentro de qué AGEB.
+        </figcaption>
+      </figure>
+
+      <h3>Las cinco ciudades, medidas</h3>
+      <p>
+        La unidad de análisis dejó de ser el municipio y pasó a ser la mancha urbana conurbada: entran las
+        AGEB de cualquier municipio vecino a menos de 5 km del núcleo, y el resultado se recorta a la
+        componente urbana continua. Una ciudad rara vez termina donde termina su municipio, y la periferia
+        conurbada es justo donde el rezago varía.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Ciudad</th><th>AGEB</th><th>Municipios</th><th>Grado alto</th><th>Recuadro</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Tuxtla Gutiérrez</td><td class="num">259</td><td class="num">3</td><td class="num">16.2 %</td><td class="num">31 × 14 km</td></tr>
+            <tr><td>Mérida</td><td class="num">627</td><td class="num">6</td><td class="num">7.7 %</td><td class="num">26 × 37 km</td></tr>
+            <tr><td>Iztapalapa</td><td class="num">1,128</td><td class="num">12</td><td class="num">1.1 %</td><td class="num">25 × 24 km</td></tr>
+            <tr><td>Tapachula</td><td class="num">162</td><td class="num">1</td><td class="num">43.8 %</td><td class="num">9 × 11 km</td></tr>
+            <tr><td>Acapulco</td><td class="num">527</td><td class="num">2</td><td class="num">36.1 %</td><td class="num">33 × 33 km</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Tapachula y Acapulco entraron después de medir que las tres ciudades originales sumaban 1,199 AGEB
+        con apenas 5.8 % de grado alto, contra 23 % en el país. Con una muestra así, la puerta de decisión
+        de la fase 1 no mide lo que pretende medir: un modelo puede sacar buen número sin distinguir jamás
+        una AGEB rezagada, porque casi no hay ninguna que distinguir.
+      </p>
+
+      <div class="statbar">
+        <div class="stat"><div class="stat-n">2,703</div><div class="stat-l">AGEB con etiqueta<br>y geometría</div></div>
+        <div class="stat a"><div class="stat-n">13.4 %</div><div class="stat-l">de grado alto<br>contra 23 % nacional</div></div>
+        <div class="stat"><div class="stat-n">41</div><div class="stat-l">de grado muy alto<br>31 en dos ciudades</div></div>
+        <div class="stat b"><div class="stat-n">7.0 M</div><div class="stat-l">habitantes<br>censados en 2020</div></div>
+      </div>
+
+      <h3>Los cuatro escalones del baseline</h3>
+      <p>
+        La puerta de la fase 1 no es ganarle al azar. El rezago correlaciona con lo poco construido, así
+        que un modelo puede acertar leyendo densidad de construcción sin haber aprendido nada sobre
+        privación. Por eso la evaluación separa cuatro conjuntos de rasgos que responden preguntas
+        distintas, y el escalón que decide no es el primero.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Conjunto</th><th>Qué contiene</th><th>Qué pregunta responde</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>cobertura</td>
+              <td>Fracciones de ESA WorldCover</td>
+              <td>¿El rezago se explica por cuánto hay construido, según un producto ajeno a estos compuestos?</td>
+            </tr>
+            <tr>
+              <td>densidad</td>
+              <td>Media, dispersión y percentiles del compuesto</td>
+              <td>¿El brillo de la propia imagen agrega algo sobre esa densidad?</td>
+            </tr>
+            <tr>
+              <td>textura</td>
+              <td>Propiedades de Haralick por distancia</td>
+              <td>¿El arreglo espacial agrega algo sobre el brillo?</td>
+            </tr>
+            <tr>
+              <td>completo</td>
+              <td>Los tres juntos</td>
+              <td>El modelo. Si no le gana a <em class="term">cobertura</em>, está leyendo densidad y nada más.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="thesis">
+        <p>
+          Medido sobre Tuxtla, la fracción construida cae de 0.84 en grado Bajo a 0.30 en Muy alto, con una
+          correlación de −0.27 contra la escala ordinal. Ese es el tamaño exacto del atajo por ruralidad que
+          hay que descontar antes de atribuirle mérito a la textura.
+        </p>
+      </div>
+
+      <h3>Seis cosas que aparecieron al tocar los datos</h3>
+      <p>
+        Ninguna estaba en el diseño. Todas cambiaron el código, y cinco de las seis habrían producido
+        números plausibles y equivocados en vez de un error visible.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Qué apareció</th><th>Cómo se habría manifestado</th><th>Qué se hizo</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Capa equivocada</td>
+              <td>El paquete de una entidad trae quince capas y varias terminan en la misma letra. En Ciudad de México se tomaba la de servicios de infraestructura y el cruce salía vacío, sin error.</td>
+              <td>El nombre de la capa se compara completo.</td>
+            </tr>
+            <tr>
+              <td>Retícula sin registrar</td>
+              <td>Los compuestos no llevan transformación afín. Los polígonos se habrían rasterizado desfasados contra los píxeles, en silencio.</td>
+              <td>La retícula se reconstruye antes de componer.</td>
+            </tr>
+            <tr>
+              <td>Recuadro a caballo</td>
+              <td>Mérida está a 40 km del meridiano 90 y recibe sus teselas en dos husos UTM. Apilarlas remuestreadas a la misma forma las desalinea sin que nada falle.</td>
+              <td>Se compone solo con el huso mayoritario.</td>
+            </tr>
+            <tr>
+              <td>Firma caducada</td>
+              <td>Los enlaces se firmaban al consultar el catálogo y caducan en una hora; componer tarda más. El compositing descarta la escena que falla y seguía, así que un compuesto de Acapulco quedó armado con 4 escenas de 30.</td>
+              <td>La firma se renueva en cada lectura, y un exceso de lecturas fallidas aborta.</td>
+            </tr>
+            <tr>
+              <td>GLCM submuestreada</td>
+              <td>Con 32 niveles la matriz tiene 1024 celdas y la AGEB mediana aporta 2.3 pares por celda. El sesgo por submuestreo crece con el tamaño del polígono, que correlaciona con la densidad y por tanto con el blanco: rasgos que apuntan al objetivo sin contener información sobre él.</td>
+              <td>Ocho niveles y mínimo de 640 píxeles.</td>
+            </tr>
+            <tr>
+              <td>Radar normalizado</td>
+              <td>Cuantizar el radar con percentiles de cada ciudad tira la propiedad que justificó elegirlo: gamma0 es una magnitud calibrada y comparable entre países sin recalibrar.</td>
+              <td>Escala fija en decibeles para el radar, estimada para el óptico.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Las tres primeras y la quinta no producen ningún síntoma visible: el programa termina, escribe su
+        archivo y devuelve un número. Por eso el código incorpora ahora comprobaciones que convierten cada
+        una en un error temprano, y por eso dos diagnósticos deciden qué rasgos entran al modelo con un
+        criterio fijado antes de mirar desempeño: la <b>fiabilidad por mitades</b>, que parte cada polígono
+        en dos y exige que el rasgo se reproduzca consigo mismo, y la <b>correlación con el tamaño</b>, que
+        señala los rasgos sospechosos de apuntar al área en vez de a la morfología.
+      </p>
+    </div>
+  </section>
+
   <!-- ============ PLAN ============ -->
   <section class="section">
     <div class="rail">Plan</div>
@@ -1198,11 +1462,12 @@
           <div>
             <p class="phase-t">Baseline tonto</p>
             <p class="phase-d">
-              GLCM + gradient boosting a nivel AGEB sobre tres ciudades piloto —CDMX, Mérida, Tuxtla
-              Gutiérrez— corrido sobre S1 y sobre S2. Verificar cobertura Sentinel-1 y descargar GRS-AGEB
-              con polígonos INEGI.
+              GLCM + gradient boosting a nivel AGEB, corrido sobre S1 y sobre S2. Cinco ciudades y no tres:
+              a Tuxtla, Mérida e Iztapalapa se sumaron Tapachula y Acapulco, porque las tres primeras
+              cubrían mal el extremo alto del rezago. La unidad es la mancha urbana conurbada, no el
+              municipio. En curso.
             </p>
-            <p class="gate">→ Puerta: si no supera al azar, el MIL tampoco funcionará. Replantear antes de invertir en arquitectura.</p>
+            <p class="gate">→ Puerta: si no le gana a la densidad construida de WorldCover, el modelo lee cuánto hay edificado y nada más. Ganarle al azar no basta.</p>
           </div>
         </div>
         <div class="phase">
