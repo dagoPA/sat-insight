@@ -36,6 +36,7 @@ BASE_INEGI = (
 ENTIDADES: dict[str, str] = {
     "07": "07_chiapas",
     "09": "09_ciudaddemexico",
+    "12": "12_guerrero",
     "31": "31_yucatan",
 }
 """Entidades que cubren las tres ciudades piloto, con el nombre de su paquete en INEGI.
@@ -146,17 +147,21 @@ def asegurar_inegi(entidad: str, raiz: Path = RAIZ_DATOS, *, forzar: bool = Fals
     return _extraer(comprimido, raiz / "inegi" / entidad)
 
 
-def capa_ageb_urbana(carpeta_entidad: Path) -> Path:
+def capa_ageb_urbana(carpeta_entidad: Path, entidad: str | None = None) -> Path:
     """Localiza el shapefile de AGEB urbanas dentro del paquete de una entidad.
 
-    El Marco Geoestadístico nombra sus capas con el código de entidad y un sufijo de una
-    o dos letras: `a` para AGEB urbana, `ar` para AGEB rural, `m` para municipio. Buscar
-    por patrón evita depender de cómo quedó anidada la carpeta al descomprimir.
+    El Marco Geoestadístico nombra cada capa con el código de entidad seguido de un sufijo
+    que la identifica: `a` es AGEB urbana, `ar` AGEB rural, `m` municipio, `sia` servicios
+    de infraestructura. El paquete de una entidad trae quince capas y varias terminan en
+    la letra `a`, así que el nombre se compara completo. Buscar por sufijo suelto elige la
+    capa equivocada y el error no se nota hasta que el cruce sale vacío.
     """
-    candidatos = [p for p in carpeta_entidad.rglob("*a.shp") if not p.stem.endswith("ar")]
+    entidad = entidad or carpeta_entidad.name
+    esperado = f"{entidad}a"
+    candidatos = [p for p in carpeta_entidad.rglob("*.shp") if p.stem == esperado]
     if not candidatos:
         disponibles = sorted(p.name for p in carpeta_entidad.rglob("*.shp"))
         raise FileNotFoundError(
-            f"no hay capa de AGEB urbana en {carpeta_entidad}. Capas presentes: {disponibles}"
+            f"no está {esperado}.shp en {carpeta_entidad}. Capas presentes: {disponibles}"
         )
     return candidatos[0]

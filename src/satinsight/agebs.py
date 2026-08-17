@@ -81,8 +81,19 @@ CIUDADES: dict[str, Ciudad] = {
     "tuxtla": Ciudad("tuxtla", "Tuxtla Gutiérrez", "07", "07101"),
     "merida": Ciudad("merida", "Mérida", "31", "31050"),
     "iztapalapa": Ciudad("iztapalapa", "Iztapalapa", "09", "09007"),
+    "tapachula": Ciudad("tapachula", "Tapachula", "07", "07089"),
+    "acapulco": Ciudad("acapulco", "Acapulco de Juárez", "12", "12001"),
 }
-"""Las tres ciudades de la fase 1, escogidas por contraste de rezago y de nubosidad."""
+"""Las cinco ciudades de la fase 1.
+
+Las tres primeras vienen de la fase 0, escogidas por contraste de forma urbana y de
+nubosidad. Entre ellas cubren mal el extremo alto del rezago: suman 1,199 AGEB de las que
+69 son de grado alto, un 5.8% contra el 23% nacional, y en Iztapalapa apenas 3 de 454.
+
+Tapachula y Acapulco entran para corregir ese sesgo. Tienen 48.6% y 36.5% de AGEB en grado
+alto, y con ellas la muestra piloto se acerca a la composición del país. Sin AGEB rezagadas
+en el conjunto, la puerta de decisión de la fase 1 no mide lo que pretende medir.
+"""
 
 
 def cargar_grs(raiz: Path = RAIZ_DATOS, *, usar_cache: bool = True) -> pd.DataFrame:
