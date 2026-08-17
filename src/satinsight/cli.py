@@ -20,6 +20,7 @@ from satinsight.catalog import (
     resumen_nubes,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.figuras import panel_agebs, panel_brazos, panel_contraste
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.pipeline import SENSORES, rasgos_de_todas
 from satinsight.raster import a_db, estirar, leer_ventana, percentiles
@@ -200,6 +201,17 @@ def cmd_diagnostico(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_figuras(args: argparse.Namespace) -> int:
+    """Regenera las figuras de la fase 1 desde el caché de compuestos."""
+    destino = Path(args.salida)
+    panel_brazos(args.ciudad, destino / "f1_brazos.png")
+    panel_agebs(args.ciudad, destino / "f2_agebs.png")
+    for sensor in SENSORES:
+        panel_contraste(args.ciudad, sensor, destino / f"f3_contraste_{sensor}.png")
+    print(f"figuras de {args.ciudad} → {destino}")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -250,6 +262,11 @@ def construir_parser() -> argparse.ArgumentParser:
     diag.add_argument("sensor", choices=SENSORES)
     diag.add_argument("--rasgos", help="parquet de rasgos ya extraído")
     diag.set_defaults(func=cmd_diagnostico)
+
+    figs = sub.add_parser("figuras", help="regenera las figuras de la fase 1")
+    figs.add_argument("ciudad", help="clave de ciudad, por ejemplo tapachula")
+    figs.add_argument("--salida", default="docs/figs", help="carpeta de destino")
+    figs.set_defaults(func=cmd_figuras)
 
     return parser
 
