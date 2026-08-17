@@ -24,7 +24,7 @@ from satinsight.composite import compuesto_s1, compuesto_s2
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.malla import Malla, malla_de_escenas
 from satinsight.raster import a_db
-from satinsight.textura import rasgos_por_ageb
+from satinsight.textura import RANGOS_FIJOS_S1, rasgos_por_ageb
 
 log = logging.getLogger(__name__)
 
@@ -230,7 +230,14 @@ def rasgos_de_ciudad(
 
     tabla = pd.DataFrame({"cvegeo": claves})
     for nombre, canal in CANALES[sensor](bandas).items():
-        parcial = rasgos_por_ageb(canal, malla.transform, geometrias, claves, prefijo=nombre)
+        parcial = rasgos_por_ageb(
+            canal,
+            malla.transform,
+            geometrias,
+            claves,
+            prefijo=nombre,
+            rango=RANGOS_FIJOS_S1.get(nombre),
+        )
         tabla = tabla.merge(parcial, on="cvegeo", how="left")
 
     etiquetas = agebs[["cvegeo", "ciudad", "grado", "ordinal", "poblacion", "viviendas"]]

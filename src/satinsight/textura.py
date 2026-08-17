@@ -6,10 +6,15 @@ del polígono y descartar del conteo cualquier par donde participe un píxel inv
 consigue reservando el nivel cero para lo inválido y eliminando después su renglón y su
 columna de la matriz.
 
-La cuantización usa percentiles calculados sobre la ciudad completa, no sobre cada AGEB.
-Cuantizar por AGEB normalizaría el brillo de cada polígono por separado y borraría
-justamente la señal de nivel que distingue un asentamiento precario de una colonia
-consolidada.
+La cuantización nunca es por AGEB: normalizar el brillo de cada polígono por separado
+borraría la señal de nivel que distingue un asentamiento precario de una colonia
+consolidada. Para el óptico la escala se estima de la ciudad completa, porque ahí hay
+residuos atmosféricos y de BRDF que no son señal. Para el radar se usa un rango fijo en
+decibeles, porque gamma0 está calibrado y estimarlo por ciudad tiraría la comparabilidad
+entre países que justificó elegir ese sensor.
+
+El nivel absoluto no se pierde en ningún caso: los rasgos de primer orden se calculan sobre
+la banda cruda, en unidades físicas, y la GLCM describe únicamente el arreglo espacial.
 """
 
 import logging
@@ -19,23 +24,74 @@ import numpy as np
 import pandas as pd
 from rasterio.features import geometry_mask
 from rasterio.transform import rowcol
+from shapely.ops import clip_by_rect
 from skimage.feature import graycomatrix, graycoprops
 
 log = logging.getLogger(__name__)
 
-NIVELES = 32
-"""Niveles de gris de la cuantización. Treinta y dos equilibra detalle y matrices ralas."""
+NIVELES = 8
+"""Niveles de gris de la cuantización, y la decisión más delicada del módulo.
+
+La matriz tiene `niveles²` celdas y una AGEB aporta del orden de sus píxeles en pares. Las
+2,703 AGEB del piloto tienen una mediana de 2,396 píxeles a 10 m, así que:
+
+    32 niveles = 1024 celdas ->  2.3 pares por celda
+    16 niveles =  256 celdas ->  9.4 pares por celda
+     8 niveles =   64 celdas -> 37.4 pares por celda
+
+Con dos pares por celda, la entropía y la energía miden ruido de muestreo. Lo grave es que
+ese sesgo es monótono en el número de píxeles: la entropía se subestima y la energía se
+sobreestima cuanto más vacía queda la matriz. El tamaño de una AGEB correlaciona con la
+densidad urbana, y la densidad con el rezago, de modo que un rasgo submuestreado apunta en
+la dirección del blanco sin contener información sobre él. Y como el tamaño típico cambia
+entre ciudades, cada pliegue de la validación vería una estructura de ruido distinta.
+
+Ocho niveles pierden detalle de textura y compran estadísticos que significan algo. La
+elección se comprueba con `fiabilidad_por_mitades`, que mide si un rasgo se reproduce al
+partir el mismo polígono en dos.
+"""
 
 DISTANCIAS = (1, 2, 4)
-"""Separaciones en píxeles. A 10 m cubren de la escala de un techo a la de una manzana."""
+"""Separaciones en píxeles. A 10 m cubren de la escala de un techo a la de una manzana.
+
+Las distancias se reportan por separado y no promediadas: son escalas distintas y llevan
+información distinta. En AGEB angostas casi todos los pares a 4 píxeles cruzan el borde y
+se descartan, así que promediar esa distancia con la de 1 diluye la señal buena con la
+ruidosa en vez de dejar que el modelo pese cada una.
+"""
 
 ANGULOS = (0.0, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
-"""Las cuatro orientaciones canónicas. Se promedian para dar invarianza a la rotación."""
+"""Las cuatro orientaciones canónicas. Estas sí se promedian: la invarianza a la rotación
+es deseable, porque la traza urbana no tiene una orientación privilegiada que interese."""
 
 PROPIEDADES = ("contrast", "dissimilarity", "homogeneity", "energy", "correlation")
 
-MINIMO_PIXELES = 50
-"""Debajo de esto la matriz queda demasiado vacía para que sus estadísticos signifiquen algo."""
+MINIMO_PIXELES = 640
+"""Píxeles mínimos para calcular textura, elegidos junto con `NIVELES`.
+
+Con 64 celdas, 640 píxeles dan diez pares por celda, que es la regla de dedo habitual para
+que los estadísticos de Haralick sean estables. Deja fuera al 11% de las AGEB del piloto.
+
+Esas AGEB no se borran del conjunto: salen con sus rasgos de textura en nulo y conservan
+los de primer orden, y la exclusión se declara al evaluar. Descartarlas en silencio sesgaría
+la muestra justo hacia las AGEB grandes.
+"""
+
+RANGOS_FIJOS_S1 = {
+    "s1vv": (-25.0, 5.0),
+    "s1vh": (-30.0, 0.0),
+    "s1razon": (0.0, 15.0),
+}
+"""Rangos de cuantización fijos para el radar, en decibeles.
+
+Derivar el rango de los datos de cada ciudad tira la propiedad que justificó elegir
+Sentinel-1: gamma0 es una magnitud calibrada, comparable entre países sin recalibrar. Si la
+cuantización se ajusta a cada ciudad, esa comparabilidad se pierde por una decisión de
+implementación, y con ella el argumento de transferencia a Brasil y Colombia.
+
+Los bordes son fijos y físicos, no estimados. El óptico sí admite normalizar por escena
+porque arrastra residuos atmosféricos y de BRDF que no son señal.
+"""
 
 
 def rango_robusto(banda: np.ndarray, p_bajo: float = 2.0, p_alto: float = 98.0) -> tuple:
@@ -69,21 +125,23 @@ def cuantizar(banda: np.ndarray, rango: tuple, niveles: int = NIVELES) -> np.nda
     return np.where(finitos, niveles_validos, 0).astype(np.uint8)
 
 
-def entropia(glcm: np.ndarray) -> float:
-    """Entropía de Shannon de la matriz normalizada, promediada sobre distancias y ángulos."""
+def entropia(glcm: np.ndarray) -> np.ndarray:
+    """Entropía de Shannon por distancia, promediando los ángulos de cada una."""
     p = glcm.astype(np.float64)
     total = p.sum(axis=(0, 1), keepdims=True)
     p = np.divide(p, total, out=np.zeros_like(p), where=total > 0)
     logaritmo = np.zeros_like(p)
     np.log2(p, out=logaritmo, where=p > 0)
-    return float((-(p * logaritmo)).sum(axis=(0, 1)).mean())
+    return (-(p * logaritmo)).sum(axis=(0, 1)).mean(axis=1)
 
 
-def _matriz(recorte: np.ndarray, niveles: int) -> np.ndarray:
+def _matriz(
+    recorte: np.ndarray, niveles: int, distancias: Sequence[int] = DISTANCIAS
+) -> np.ndarray:
     """Calcula la GLCM del recorte y elimina el nivel reservado a los píxeles inválidos."""
     glcm = graycomatrix(
         recorte,
-        distances=list(DISTANCIAS),
+        distances=list(distancias),
         angles=list(ANGULOS),
         levels=niveles + 1,
         symmetric=True,
@@ -92,22 +150,40 @@ def _matriz(recorte: np.ndarray, niveles: int) -> np.ndarray:
     return glcm[1:, 1:, :, :]
 
 
-def rasgos_de_recorte(recorte: np.ndarray, niveles: int = NIVELES) -> dict[str, float]:
-    """Propiedades de Haralick de un recorte ya cuantizado, promediadas sobre los ángulos.
+def nombres_de_rasgos(distancias: Sequence[int] = DISTANCIAS) -> list[str]:
+    """Nombres de las columnas de textura, una por propiedad y distancia."""
+    familias = [*PROPIEDADES, "entropia", "anisotropia"]
+    return [f"{familia}_d{d}" for familia in familias for d in distancias]
 
-    Se conserva la desviación entre ángulos de una sola propiedad, el contraste, porque
-    distingue una traza urbana orientada de uno sin dirección dominante.
+
+def rasgos_de_recorte(
+    recorte: np.ndarray, niveles: int = NIVELES, distancias: Sequence[int] = DISTANCIAS
+) -> dict[str, float]:
+    """Propiedades de Haralick de un recorte ya cuantizado, una por distancia.
+
+    Los ángulos se promedian, porque la traza urbana no tiene una orientación privilegiada
+    que interese. Las distancias se conservan separadas, porque son escalas distintas.
+
+    De cada propiedad se guarda además la dispersión entre ángulos bajo el nombre
+    `anisotropia`, que distingue una traza orientada de una sin dirección dominante.
     """
-    glcm = _matriz(recorte, niveles)
+    vacio = dict.fromkeys(nombres_de_rasgos(distancias), np.nan)
+    glcm = _matriz(recorte, niveles, distancias)
     if glcm.sum() == 0:
-        return dict.fromkeys([*PROPIEDADES, "entropia", "contrast_anisotropia"], np.nan)
+        return vacio
 
     rasgos: dict[str, float] = {}
     for propiedad in PROPIEDADES:
-        valores = graycoprops(glcm, propiedad)
-        rasgos[propiedad] = float(np.nanmean(valores))
-    rasgos["contrast_anisotropia"] = float(np.nanmean(np.nanstd(graycoprops(glcm, "contrast"), 1)))
-    rasgos["entropia"] = entropia(glcm)
+        valores = graycoprops(glcm, propiedad)  # (distancias, ángulos)
+        for indice, distancia in enumerate(distancias):
+            rasgos[f"{propiedad}_d{distancia}"] = float(np.nanmean(valores[indice]))
+
+    contraste = graycoprops(glcm, "contrast")
+    for indice, distancia in enumerate(distancias):
+        rasgos[f"anisotropia_d{distancia}"] = float(np.nanstd(contraste[indice]))
+
+    for indice, distancia in enumerate(distancias):
+        rasgos[f"entropia_d{distancia}"] = float(entropia(glcm)[indice])
     return rasgos
 
 
@@ -130,6 +206,98 @@ def rasgos_primer_orden(valores: np.ndarray) -> dict[str, float]:
     }
 
 
+def fiabilidad_por_mitades(
+    banda: np.ndarray,
+    transform,
+    geometrias: Sequence,
+    claves: Sequence[str],
+    *,
+    prefijo: str = "c",
+    niveles: int = NIVELES,
+    minimo_pixeles: int = MINIMO_PIXELES,
+    rango: tuple[float, float] | None = None,
+) -> pd.DataFrame:
+    """Correlación de cada rasgo entre las dos mitades espaciales del mismo polígono.
+
+    Un rasgo que no coincide consigo mismo al partir la AGEB en dos no está midiendo la
+    AGEB: está midiendo ruido de muestreo. Como el corte es por la mediana de la coordenada
+    horizontal, las dos mitades comparten morfología urbana y difieren solo en qué píxeles
+    tocaron, de modo que la correlación entre ellas acota cuánta señal reproducible tiene
+    el rasgo.
+
+    Sirve para escoger qué rasgos entran al modelo con un criterio objetivo, decidido antes
+    de mirar desempeño y por tanto inmune a elegir lo que conviene.
+    """
+    izquierdas, derechas, claves_partidas = [], [], []
+    for clave, geometria in zip(claves, geometrias, strict=True):
+        x_min, y_min, x_max, y_max = geometria.bounds
+        medio = (x_min + x_max) / 2
+        izquierda = clip_by_rect(geometria, x_min, y_min, medio, y_max)
+        derecha = clip_by_rect(geometria, medio, y_min, x_max, y_max)
+        if izquierda.is_empty or derecha.is_empty:
+            continue
+        izquierdas.append(izquierda)
+        derechas.append(derecha)
+        claves_partidas.append(clave)
+
+    comunes = {
+        "prefijo": prefijo,
+        "niveles": niveles,
+        "minimo_pixeles": minimo_pixeles,
+        "rango": rango,
+    }
+    una = rasgos_por_ageb(banda, transform, izquierdas, claves_partidas, **comunes)
+    otra = rasgos_por_ageb(banda, transform, derechas, claves_partidas, **comunes)
+
+    filas = []
+    for columna in una.columns:
+        if columna == "cvegeo" or columna.endswith("_n_px"):
+            continue
+        a, b = una[columna], otra[columna]
+        validos = a.notna() & b.notna()
+        if validos.sum() < 3 or a[validos].nunique() < 2 or b[validos].nunique() < 2:
+            filas.append({"rasgo": columna, "n": int(validos.sum()), "r": np.nan})
+            continue
+        filas.append(
+            {
+                "rasgo": columna,
+                "n": int(validos.sum()),
+                "r": float(np.corrcoef(a[validos], b[validos])[0, 1]),
+            }
+        )
+    return pd.DataFrame(filas).sort_values("r", ascending=False).reset_index(drop=True)
+
+
+def correlacion_con_tamano(tabla: pd.DataFrame, prefijo: str) -> pd.DataFrame:
+    """Correlación de cada rasgo con el número de píxeles de la AGEB.
+
+    El sesgo por submuestreo de la GLCM es monótono en el tamaño del polígono, y el tamaño
+    correlaciona con la densidad urbana, que a su vez correlaciona con el rezago. Un rasgo
+    muy correlacionado con el área es sospechoso: puede estar apuntando al blanco por
+    construcción y no por medir morfología.
+    """
+    columna_px = f"{prefijo}_n_px"
+    if columna_px not in tabla:
+        raise KeyError(f"la tabla no trae {columna_px}")
+
+    filas = []
+    for columna in tabla.columns:
+        if not columna.startswith(f"{prefijo}_") or columna == columna_px:
+            continue
+        validos = tabla[columna].notna() & tabla[columna_px].notna()
+        if validos.sum() < 3 or tabla.loc[validos, columna].nunique() < 2:
+            continue
+        r = np.corrcoef(tabla.loc[validos, columna], tabla.loc[validos, columna_px])[0, 1]
+        filas.append({"rasgo": columna, "n": int(validos.sum()), "r_con_n_px": float(r)})
+
+    salida = pd.DataFrame(filas)
+    if salida.empty:
+        return salida
+    return salida.reindex(
+        salida["r_con_n_px"].abs().sort_values(ascending=False).index
+    ).reset_index(drop=True)
+
+
 def rasgos_por_ageb(
     banda: np.ndarray,
     transform,
@@ -139,6 +307,7 @@ def rasgos_por_ageb(
     prefijo: str,
     niveles: int = NIVELES,
     minimo_pixeles: int = MINIMO_PIXELES,
+    rango: tuple[float, float] | None = None,
 ) -> pd.DataFrame:
     """Extrae rasgos de textura y de primer orden para cada polígono sobre una banda.
 
@@ -148,11 +317,15 @@ def rasgos_por_ageb(
 
     Las geometrías tienen que venir en el mismo sistema de referencia que `transform`,
     que para los compuestos es el huso UTM de las escenas y no coordenadas geográficas.
+
+    Con `rango` se fija la escala de cuantización en vez de estimarla de la banda. Es lo
+    que el radar necesita: gamma0 está calibrado y derivar el rango de cada ciudad haría
+    que la misma retrodispersión cayera en niveles distintos según dónde se midió.
     """
     if len(geometrias) != len(claves):
         raise ValueError(f"{len(geometrias)} geometrías contra {len(claves)} claves")
 
-    rango = rango_robusto(banda)
+    rango = rango or rango_robusto(banda)
     cuantizada = cuantizar(banda, rango, niveles)
     alto, ancho = banda.shape
     renglones = []
