@@ -271,3 +271,76 @@ def resumen(detalle: pd.DataFrame) -> pd.DataFrame:
         .sort_values("kappa", ascending=False)
     )
     return agregado.reset_index()
+
+
+UMBRAL_FIABILIDAD = 0.60
+"""Correlación mínima entre las dos mitades de un polígono para conservar un rasgo.
+
+Un rasgo que no se reproduce consigo mismo al partir la AGEB en dos mide ruido de muestreo.
+La prueba usa la mitad de los píxeles de cada lado, así que subestima la fiabilidad del
+polígono entero: el umbral es una cota conservadora.
+"""
+
+UMBRAL_TAMANO = 0.30
+"""Correlación máxima admitida entre un rasgo y el tamaño del polígono que lo produjo.
+
+El sesgo por submuestreo de la GLCM crece con el número de píxeles, y el tamaño de una AGEB
+correlaciona con la densidad urbana, que a su vez correlaciona con el rezago. Un rasgo muy
+atado al área apunta al objetivo por construcción.
+"""
+
+
+def seleccionar_rasgos(
+    tabla: pd.DataFrame,
+    fiabilidad: pd.DataFrame,
+    *,
+    umbral_fiabilidad: float = UMBRAL_FIABILIDAD,
+    umbral_tamano: float = UMBRAL_TAMANO,
+) -> pd.DataFrame:
+    """Decide qué rasgos de textura entran al modelo, con dos criterios independientes.
+
+    Los dos se aplican juntos porque cada uno solo es interpretable con el otro. Un rasgo
+    que es puro ruido pasa el criterio de tamaño con holgura, porque el ruido no correlaciona
+    con nada; y un rasgo muy reproducible puede estar midiendo el área del polígono. Exigir
+    ambos deja los que se reproducen y además no apuntan al tamaño.
+
+    Los umbrales se fijan antes de mirar desempeño, que es lo que evita elegir el corte que
+    conviene al resultado.
+
+    `fiabilidad` viene de `textura.fiabilidad_por_mitades` agregada sobre las ciudades, con
+    columnas `rasgo` y `r_mediana`.
+    """
+    reproduce = dict(zip(fiabilidad["rasgo"], fiabilidad["r_mediana"], strict=True))
+    filas = []
+    for columna in columnas_de_conjunto(tabla, "textura"):
+        canal = columna.rsplit("_", 2)[0]
+        columna_px = f"{canal}_n_px"
+        r_tamano = np.nan
+        if columna_px in tabla:
+            validos = tabla[columna].notna() & tabla[columna_px].notna()
+            if validos.sum() > 2 and tabla.loc[validos, columna].nunique() > 1:
+                r_tamano = float(
+                    np.corrcoef(
+                        tabla.loc[validos, columna],
+                        np.log10(tabla.loc[validos, columna_px].clip(lower=1)),
+                    )[0, 1]
+                )
+
+        r_mitades = reproduce.get(columna, np.nan)
+        pasa_fiabilidad = bool(r_mitades >= umbral_fiabilidad) if r_mitades == r_mitades else False
+        pasa_tamano = bool(abs(r_tamano) <= umbral_tamano) if r_tamano == r_tamano else False
+        motivo = "conservado"
+        if not pasa_fiabilidad:
+            motivo = "no se reproduce"
+        elif not pasa_tamano:
+            motivo = "atado al tamaño"
+        filas.append(
+            {
+                "rasgo": columna,
+                "r_mitades": r_mitades,
+                "r_n_px": r_tamano,
+                "conservado": pasa_fiabilidad and pasa_tamano,
+                "motivo": motivo,
+            }
+        )
+    return pd.DataFrame(filas)
