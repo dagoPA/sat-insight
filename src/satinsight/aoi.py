@@ -5,8 +5,12 @@ el mismo tamaño para que las comparaciones entre ciudades sean directas.
 """
 
 from dataclasses import dataclass
+from math import cos, radians
 
 Bbox = tuple[float, float, float, float]
+
+METROS_POR_GRADO = 111_320
+"""Longitud de un grado de latitud. Para longitud se corrige por el coseno de la latitud."""
 
 
 @dataclass(frozen=True)
@@ -37,13 +41,45 @@ class AOI:
 
     def forma_aproximada(self, resolucion_m: int = 10) -> tuple[int, int]:
         """Alto y ancho en píxeles que ocuparía el recuadro a la resolución dada."""
-        grados_por_metro = 1 / 111_320
         centro_lat = (self.bbox[1] + self.bbox[3]) / 2
-        from math import cos, radians
-
-        ancho_m = self.ancho_grados / grados_por_metro * cos(radians(centro_lat))
-        alto_m = self.alto_grados / grados_por_metro
+        ancho_m = self.ancho_grados * METROS_POR_GRADO * cos(radians(centro_lat))
+        alto_m = self.alto_grados * METROS_POR_GRADO
         return int(alto_m / resolucion_m), int(ancho_m / resolucion_m)
+
+    @classmethod
+    def desde_poligonos(
+        cls,
+        clave: str,
+        nombre: str,
+        entidad: str,
+        poligonos: object,
+        margen_m: float = 0.0,
+    ) -> "AOI":
+        """Deriva un recuadro que envuelve un conjunto de polígonos.
+
+        Acepta un GeoDataFrame —del que toma `total_bounds`— o directamente una tupla de
+        límites en WGS84. El margen se da en metros y se convierte a grados corrigiendo la
+        longitud por la latitud del centro, para que el borde sea parejo en ambos ejes.
+
+        Sirve para que las ciudades de la fase 1 salgan de sus AGEB reales en vez de
+        depender de recuadros escritos a mano.
+        """
+        limites = getattr(poligonos, "total_bounds", poligonos)
+        lon_min, lat_min, lon_max, lat_max = (float(v) for v in limites)
+
+        if margen_m:
+            grados_lat = margen_m / METROS_POR_GRADO
+            centro_lat = (lat_min + lat_max) / 2
+            grados_lon = grados_lat / max(cos(radians(centro_lat)), 1e-6)
+            lon_min, lon_max = lon_min - grados_lon, lon_max + grados_lon
+            lat_min, lat_max = lat_min - grados_lat, lat_max + grados_lat
+
+        return cls(
+            clave=clave,
+            nombre=nombre,
+            entidad=entidad,
+            bbox=(lon_min, lat_min, lon_max, lat_max),
+        )
 
 
 PILOTO: dict[str, AOI] = {

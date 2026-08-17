@@ -6,7 +6,11 @@ import logging
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 from satinsight import aoi as modulo_aoi
+from satinsight.agebs import CIUDADES, agebs_de_ciudad, resumen_grados
+from satinsight.baseline import comparar, resumen
 from satinsight.catalog import (
     COLECCION_S1,
     COLECCION_S2,
@@ -16,6 +20,8 @@ from satinsight.catalog import (
     resumen_nubes,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.ingesta import RAIZ_DATOS
+from satinsight.pipeline import SENSORES, rasgos_de_todas
 from satinsight.raster import a_db, estirar, leer_ventana, percentiles
 from satinsight.render import guardar_rgb
 
@@ -115,6 +121,50 @@ def cmd_panels(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agebs(args: argparse.Namespace) -> int:
+    """Resume las AGEB de cada ciudad piloto y su distribución de grados."""
+    total = 0
+    for clave in args.ciudades or sorted(CIUDADES):
+        agebs = agebs_de_ciudad(clave)
+        total += len(agebs)
+        habitantes = int(agebs["poblacion"].sum())
+        print(f"\n{CIUDADES[clave].nombre} · {len(agebs)} AGEB · {habitantes:,} hab")
+        print(resumen_grados(agebs).to_string())
+    print(f"\ntotal: {total} AGEB")
+    return 0
+
+
+def cmd_rasgos(args: argparse.Namespace) -> int:
+    """Extrae los rasgos por AGEB de un sensor y los deja en disco."""
+    tabla = rasgos_de_todas(args.sensor, tuple(args.ciudades or sorted(CIUDADES)))
+    destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    tabla.to_parquet(destino, index=False)
+    print(f"{len(tabla)} AGEB × {tabla.shape[1]} columnas → {destino}")
+    return 0
+
+
+def cmd_baseline(args: argparse.Namespace) -> int:
+    """Corre la comparación de la fase 1 sobre una tabla de rasgos ya extraída."""
+    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    if not origen.exists():
+        print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
+        return 1
+
+    tabla = pd.read_parquet(origen)
+    detalle = comparar(tabla)
+    print(f"\n{len(tabla)} AGEB · partición dejando una ciudad fuera\n")
+    print(resumen(detalle).to_string(index=False))
+    print("\npor pliegue:\n")
+    columnas = ["conjunto", "modelo", "ciudad_prueba", "n_prueba", "kappa", "spearman"]
+    print(detalle[columnas].round(3).to_string(index=False))
+
+    if args.salida:
+        detalle.to_csv(args.salida, index=False)
+        print(f"\ndetalle → {args.salida}")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -134,6 +184,22 @@ def construir_parser() -> argparse.ArgumentParser:
     panels.add_argument("--max-s2", type=int, default=36, help="escenas máximas del compuesto S2")
     panels.add_argument("--max-s1", type=int, default=24, help="escenas máximas del compuesto S1")
     panels.set_defaults(func=cmd_panels)
+
+    agebs = sub.add_parser("agebs", help="resume las AGEB y sus grados por ciudad")
+    agebs.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
+    agebs.set_defaults(func=cmd_agebs)
+
+    rasgos = sub.add_parser("rasgos", help="extrae los rasgos por AGEB de un sensor")
+    rasgos.add_argument("sensor", choices=SENSORES)
+    rasgos.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
+    rasgos.add_argument("--salida", help="ruta del parquet de salida")
+    rasgos.set_defaults(func=cmd_rasgos)
+
+    base = sub.add_parser("baseline", help="corre la comparación de la fase 1")
+    base.add_argument("sensor", choices=SENSORES)
+    base.add_argument("--rasgos", help="parquet de rasgos ya extraído")
+    base.add_argument("--salida", help="csv donde dejar el detalle por pliegue")
+    base.set_defaults(func=cmd_baseline)
 
     return parser
 
