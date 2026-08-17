@@ -4,7 +4,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from satinsight.baseline import columnas_de_conjunto, comparar, evaluar, resumen
+from satinsight.agebs import GRADOS
+from satinsight.baseline import (
+    columnas_de_conjunto,
+    comparar,
+    diagnostico_transferencia,
+    estandarizar_por_grupo,
+    evaluar,
+    resumen,
+    varianza_explicada,
+)
 from satinsight.cobertura import CLASES
 from satinsight.textura import nombres_de_rasgos
 
@@ -26,6 +35,7 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
             "cvegeo": [f"{ciudad}{i:04d}" for i in range(n_por_ciudad)],
             "ciudad": ciudad,
             "ordinal": ordinal,
+            "grado": [GRADOS[i] for i in ordinal],
             "c_media": fuerza * ordinal + ruido,
             "c_desv": fuerza * ordinal * 0.5 + ruido,
             "c_p10": rng.normal(0, 1, n_por_ciudad),
@@ -125,6 +135,61 @@ def test_el_resumen_ordena_por_kappa():
     agregado = resumen(comparar(tabla_sintetica(80, fuerza=1.5)))
     assert list(agregado["kappa"]) == sorted(agregado["kappa"], reverse=True)
     assert {"conjunto", "modelo", "kappa"} <= set(agregado.columns)
+
+
+def test_la_varianza_explicada_reconoce_un_factor_perfecto():
+    tabla = pd.DataFrame({"v": [1.0, 1.0, 5.0, 5.0], "g": ["a", "a", "b", "b"]})
+    assert varianza_explicada(tabla, "v", "g") == pytest.approx(1.0)
+
+
+def test_un_factor_sin_relacion_explica_poco():
+    tabla = pd.DataFrame({"v": [1.0, 5.0, 1.0, 5.0], "g": ["a", "a", "b", "b"]})
+    assert varianza_explicada(tabla, "v", "g") == pytest.approx(0.0, abs=1e-9)
+
+
+def test_el_diagnostico_delata_el_rasgo_que_solo_conoce_la_ciudad():
+    """Un rasgo que separa ciudades sin separar grados debe salir con razón alta."""
+    tabla = tabla_sintetica(80, fuerza=1.5)
+    tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CIUDADES)})
+    d = diagnostico_transferencia(tabla, "densidad").set_index("rasgo")
+    assert d.loc["c_media", "razon"] > 10
+    assert d.loc["c_desv", "razon"] < d.loc["c_media", "razon"]
+
+
+def test_estandarizar_centra_dentro_de_cada_ciudad():
+    tabla = tabla_sintetica(60, fuerza=1.0)
+    columnas = columnas_de_conjunto(tabla, "densidad")
+    e = estandarizar_por_grupo(tabla, columnas)
+    for _, grupo in e.groupby("ciudad"):
+        assert grupo["c_media"].mean() == pytest.approx(0.0, abs=1e-9)
+        assert grupo["c_media"].std() == pytest.approx(1.0, abs=1e-9)
+
+
+def test_un_rasgo_constante_queda_en_cero_y_no_en_nulo():
+    """Varias clases de cobertura valen cero en todas las AGEB.
+
+    Convertirlas en columnas enteramente nulas rompe el binning del modelo, así que el
+    caso degenerado tiene que quedar centrado en cero.
+    """
+    tabla = tabla_sintetica(40)
+    tabla["wc_nieve"] = 0.0
+    e = estandarizar_por_grupo(tabla, ["wc_nieve"])
+    assert e["wc_nieve"].notna().all()
+    assert (e["wc_nieve"] == 0.0).all()
+
+
+def test_estandarizar_conserva_los_nulos_que_son_ausencia_de_dato():
+    tabla = tabla_sintetica(40)
+    tabla.loc[:5, "c_media"] = np.nan
+    e = estandarizar_por_grupo(tabla, ["c_media"])
+    assert e["c_media"].isna().sum() == 6
+
+
+def test_la_ablacion_estandarizada_corre_completa():
+    tabla = tabla_sintetica(60, fuerza=1.5)
+    detalle = comparar(tabla, estandarizar=True)
+    assert not detalle.empty
+    assert detalle["kappa"].notna().all()
 
 
 def test_una_tabla_sin_rasgos_del_conjunto_falla():
