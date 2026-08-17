@@ -126,6 +126,40 @@ def malla_de_bbox(bbox: Bbox, crs: str, resolucion_m: int = RESOLUCION_M) -> Mal
     return Malla(transform=transform, forma=(alto, ancho), crs=crs, limites=limites)
 
 
+def recorte_de_poligono(transform, geometria, forma: tuple[int, int]):
+    """Rebanadas y máscara de un polígono sobre la retícula, o `None` si cae fuera.
+
+    Es el paso común a cualquier estadístico zonal: acotar el polígono a su ventana
+    envolvente y saber qué píxeles de esa ventana quedan dentro. Vive aquí para que la
+    textura y las fracciones de cobertura recorten exactamente igual; si cada una lo
+    resolviera por su lado, un desfase entre ambas pasaría inadvertido y las compararíamos
+    creyendo que miran los mismos píxeles.
+
+    La geometría tiene que venir en el sistema de referencia de `transform`.
+    """
+    from rasterio.features import geometry_mask
+    from rasterio.transform import rowcol
+
+    alto, ancho = forma
+    x_min, y_min, x_max, y_max = geometria.bounds
+    fila_a, col_a = rowcol(transform, x_min, y_max)
+    fila_b, col_b = rowcol(transform, x_max, y_min)
+    fila_ini, fila_fin = max(0, min(fila_a, fila_b)), min(alto, max(fila_a, fila_b) + 1)
+    col_ini, col_fin = max(0, min(col_a, col_b)), min(ancho, max(col_a, col_b) + 1)
+    if fila_fin <= fila_ini or col_fin <= col_ini:
+        return None
+
+    filas = slice(fila_ini, fila_fin)
+    columnas = slice(col_ini, col_fin)
+    dentro = ~geometry_mask(
+        [geometria],
+        out_shape=(fila_fin - fila_ini, col_fin - col_ini),
+        transform=transform * transform.translation(col_ini, fila_ini),
+        invert=False,
+    )
+    return filas, columnas, dentro
+
+
 def malla_de_escenas(
     bbox: Bbox, items: list["Item"], resolucion_m: int = RESOLUCION_M
 ) -> tuple[Malla, list["Item"]]:

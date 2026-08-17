@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from satinsight.baseline import columnas_de_conjunto, comparar, evaluar, resumen
+from satinsight.cobertura import CLASES
 from satinsight.textura import nombres_de_rasgos
 
 CIUDADES = ("tuxtla", "merida", "iztapalapa")
@@ -34,6 +35,8 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
         }
         # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
         # rompa la prueba en vez de dejarla midiendo un conjunto vacío en silencio.
+        for clase in CLASES.values():
+            columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
         for sufijo in nombres_de_rasgos():
             lleva_senal = sufijo.startswith(("contrast_", "homogeneity_"))
             signo = -1 if sufijo.startswith("homogeneity_") else 1
@@ -55,13 +58,21 @@ def test_los_conjuntos_separan_densidad_de_textura():
     assert not set(densidad) & set(textura)
 
 
-def test_el_conjunto_completo_es_la_union():
+def test_el_conjunto_completo_es_la_union_de_los_tres_escalones():
     tabla = tabla_sintetica(10)
     completo = set(columnas_de_conjunto(tabla, "completo"))
-    esperado = set(columnas_de_conjunto(tabla, "densidad")) | set(
-        columnas_de_conjunto(tabla, "textura")
-    )
+    esperado = set()
+    for escalon in ("cobertura", "densidad", "textura"):
+        esperado |= set(columnas_de_conjunto(tabla, escalon))
     assert completo == esperado
+
+
+def test_la_cobertura_no_se_mezcla_con_los_otros_escalones():
+    tabla = tabla_sintetica(10)
+    cobertura = set(columnas_de_conjunto(tabla, "cobertura"))
+    assert "wc_construido" in cobertura
+    assert not cobertura & set(columnas_de_conjunto(tabla, "densidad"))
+    assert not cobertura & set(columnas_de_conjunto(tabla, "textura"))
 
 
 def test_conjunto_desconocido_falla():
