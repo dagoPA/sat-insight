@@ -38,6 +38,35 @@ MARGEN_M = 200.0
 
 SENSORES = ("s2", "s1")
 
+TOPE_S2 = 20
+TOPE_S1 = 16
+"""Escenas que entran a cada compuesto.
+
+El mismo tope para las cinco ciudades: la validación deja una ciudad fuera por pliegue, así
+que un compuesto armado con menos escenas en una de ellas se confundiría con señal de esa
+ciudad. Sentinel-2 se recorre de la escena más despejada a la más nublada, de modo que las
+veinte primeras son las mejores disponibles.
+"""
+
+FRACCION_MINIMA = 0.7
+"""Proporción del tope que debe aportar píxeles para dar el compuesto por bueno."""
+
+
+def _exigir_escenas(clave: str, sensor: str, usadas: int, pedidas: int) -> None:
+    """Aborta si el compuesto se armó con muchas menos escenas de las pedidas.
+
+    El compositing descarta la escena que falla al leerse y sigue adelante, que es lo
+    correcto frente a una escena rota. Frente a una firma vencida deja de serlo: fallan
+    casi todas y el compuesto se guarda con una fracción de las escenas, sin error. Así se
+    guardó una vez Acapulco con cuatro escenas de las veinte pedidas.
+    """
+    if pedidas and usadas < FRACCION_MINIMA * pedidas:
+        raise RuntimeError(
+            f"{clave}/{sensor}: solo {usadas} de {pedidas} escenas aportaron píxeles. "
+            "Un compuesto así no quita nubes ni promedia el speckle, y comparar ciudades "
+            "armadas con distinto número de escenas mezcla señal con ruido de muestreo."
+        )
+
 
 def aoi_de_ciudad(
     clave: str, raiz: Path = RAIZ_DATOS, *, margen_m: float = MARGEN_M
@@ -74,12 +103,16 @@ def construir_compuesto(
     log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixeles)
 
     if sensor == "s2":
-        bandas, usadas = compuesto_s2(escenas, area.bbox, malla.forma, BANDAS_S2, max_escenas or 36)
+        tope = max_escenas or TOPE_S2
+        bandas, usadas = compuesto_s2(escenas, area.bbox, malla.forma, BANDAS_S2, tope)
         etiquetas = {"escenas_disponibles": len(escenas), "escenas_usadas": usadas}
     else:
-        bandas, meta = compuesto_s1(escenas, area.bbox, malla.forma, max_escenas or 24)
+        tope = max_escenas or TOPE_S1
+        bandas, meta = compuesto_s1(escenas, area.bbox, malla.forma, tope)
         etiquetas = dict(meta)
+        usadas = int(meta["escenas_usadas"])
 
+    _exigir_escenas(clave, sensor, usadas, min(tope, len(escenas)))
     etiquetas |= {"ciudad": clave, "sensor": sensor, "periodo": periodo, "bbox": list(area.bbox)}
     return bandas, malla, etiquetas
 

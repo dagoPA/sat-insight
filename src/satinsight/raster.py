@@ -10,6 +10,7 @@ from rasterio.warp import transform_bounds
 from rasterio.windows import from_bounds
 
 from satinsight.aoi import Bbox
+from satinsight.catalog import firmar
 
 CRS_GEOGRAFICO = "EPSG:4326"
 
@@ -24,8 +25,11 @@ def leer_ventana(
     El recuadro llega en coordenadas geográficas y se reproyecta al sistema nativo de
     la escena. Cuando se pasa `forma`, la ventana se remuestrea a esas dimensiones,
     lo cual sirve para alinear bandas de distinta resolución.
+
+    La firma se renueva aquí y no al consultar el catálogo, porque un compuesto tarda más
+    que la vida del token.
     """
-    with rasterio.open(href) as origen:
+    with rasterio.open(firmar(href)) as origen:
         limites = transform_bounds(CRS_GEOGRAFICO, origen.crs, *bbox)
         ventana = from_bounds(*limites, origen.transform)
         destino = forma or (int(ventana.height), int(ventana.width))
