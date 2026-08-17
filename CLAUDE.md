@@ -65,14 +65,40 @@ Sobre el AOI piloto en Tuxtla Gutiérrez (recuadro de 426×309 px a 10 m):
 - **MAUP y falacia ecológica.** Inherente a etiquetas censales agregadas; se discute
   explícitamente en el paper.
 
+## Estructura del código
+
+Librería instalable con layout `src/`, entorno fijado con `uv.lock`.
+
+```
+src/satinsight/
+├── aoi.py         recuadros de análisis, validados en __post_init__
+├── catalog.py     consultas STAC, resumen de nubosidad, agrupación por órbita
+├── raster.py      lectura por ventana de COG remotos, estiramiento, dB
+├── composite.py   compuestos mediana anuales de Sentinel-1 y Sentinel-2
+├── render.py      paneles PNG y codificación a data URI
+└── cli.py         ejecutable satinsight (aoi | probe | panels)
+```
+
+Lógica nueva reutilizable va en la librería. Los cuadernos y análisis puntuales la
+importan; nunca al revés.
+
 ## Convenciones
 
-- **Todo con `uv`.** `uv run python ...`, `uv add ...`. Nunca `pip` ni el Python del sistema.
+- **Todo con `uv`.** `uv run ...`, `uv add ...`. Nunca `pip` ni el Python del sistema.
+- **Ruff antes de cerrar cualquier cambio:** `uv run ruff format . && uv run ruff check .`
+  Línea de 100 caracteres, configuración en `pyproject.toml`.
+- **Pruebas sin red.** `tests/` cubre lógica pura con dobles de prueba. Lo que necesita
+  red se verifica a mano con `satinsight probe`. Correr con `uv run pytest`.
 - Datos satelitales desde el STAC de Microsoft Planetary Computer, colecciones
   `sentinel-1-rtc` y `sentinel-2-l2a`. Lectura por ventana directa del COG con rasterio,
   sin descargar escenas completas.
-- Los datos crudos van en `data/`, ignorado por git. Los scripts deben poder regenerarlos.
-- Código y comentarios en español, como el resto del proyecto.
+- Los datos crudos van en `data/`, ignorado por git. El código debe poder regenerarlos.
+- Código, comentarios, docstrings y nombres de identificadores en español.
+
+## Git
+
+Los commits van **únicamente a nombre del usuario**. Nunca agregar `Co-Authored-By`,
+nunca mencionar asistentes ni modelos en mensajes de commit, PRs o issues.
 
 ## Redacción
 

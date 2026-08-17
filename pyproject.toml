@@ -1,12 +1,89 @@
 [project]
 name = "satinsight"
 version = "0.1.0"
+description = "Desagregación del rezago social a partir de imágenes satelitales con MIL débilmente supervisado"
+readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Dagoberto Pulido Arias" }]
+keywords = ["teledeteccion", "sentinel-1", "sentinel-2", "multiple-instance-learning", "rezago-social"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
 dependencies = [
-    "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pillow>=12.3.0",
     "planetary-computer>=1.0.0",
     "pystac-client>=0.9.0",
     "rasterio>=1.5.1",
 ]
+
+[project.optional-dependencies]
+plots = ["matplotlib>=3.11.1"]
+
+[project.scripts]
+satinsight = "satinsight.cli:main"
+
+[project.urls]
+Repository = "https://github.com/dagoPA/sat-insight"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/satinsight"]
+
+# ----------------------------------------------------------------------- ruff
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",    # advertencias de estilo
+    "F",    # pyflakes
+    "I",    # orden de imports
+    "N",    # convenciones de nombres
+    "UP",   # modismos de python moderno
+    "B",    # bugbear
+    "C4",   # comprensiones
+    "SIM",  # simplificaciones
+    "RET",  # returns
+    "PTH",  # pathlib sobre os.path
+    "RUF",  # reglas propias de ruff
+]
+ignore = [
+    "N999",    # el nombre del paquete es intencional
+    "RUF001",  # los textos en español usan acentos y signos propios
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["satinsight"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# --------------------------------------------------------------------- pytest
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = ["red: pruebas que requieren acceso a la red"]

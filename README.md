@@ -1,4 +1,4 @@
-# sat-insight
+# satinsight
 
 Desagregación del rezago social a partir de imágenes satelitales, con aprendizaje
 débilmente supervisado.
@@ -12,29 +12,70 @@ modelo nunca vio durante el entrenamiento.
 **[Propuesta completa](docs/propuesta.html)** — indicador, diseño experimental, diagrama
 de secuencia del proceso, paneles de datos reales, riesgos y plan por fases.
 
-## Entorno
+## Instalación
 
 ```bash
-uv sync
+uv sync --all-groups
 ```
 
-Requiere Python 3.12, fijado en `.python-version`. El Python del sistema queda intacto.
+Python 3.12, fijado en `.python-version`. El entorno se reproduce exacto desde `uv.lock`.
 
-## Scripts
+## Uso
 
-| Script | Qué hace |
+La librería se instala con un ejecutable propio:
+
+```bash
+uv run satinsight aoi
+uv run satinsight probe tuxtla
+uv run satinsight panels tuxtla --salida docs/figs -v
+```
+
+| Comando | Qué hace |
 |---|---|
-| `scripts/probe_stac.py` | Sondea disponibilidad de Sentinel-1 y Sentinel-2 sobre el AOI piloto |
-| `scripts/build_figure_data.py` | Descarga una muestra mínima y renderiza los cuatro paneles de datos |
-| `scripts/embed_figs.py` | Incrusta esos paneles en la propuesta como data URIs |
+| `aoi` | Lista los recuadros piloto con su tamaño en píxeles |
+| `probe` | Cuenta escenas disponibles y resume la nubosidad sobre un AOI |
+| `panels` | Descarga una muestra y renderiza los cuatro paneles de inspección |
+
+Como API:
+
+```python
+from satinsight import PILOTO, abrir_catalogo, buscar, compuesto_s1, COLECCION_S1
+
+area = PILOTO["tuxtla"]
+escenas = buscar(COLECCION_S1, area.bbox, "2020-01-01/2020-12-31")
+sar, meta = compuesto_s1(escenas, area.bbox)
+```
+
+## Estructura
+
+```
+src/satinsight/
+├── aoi.py         recuadros de análisis y sus validaciones
+├── catalog.py     consultas al STAC de Planetary Computer
+├── raster.py      lectura por ventana de COG remotos y transformaciones
+├── composite.py   compuestos mediana anuales de Sentinel-1 y Sentinel-2
+├── render.py      paneles PNG y codificación a data URI
+└── cli.py         ejecutable satinsight
+tests/             pruebas sin red de la lógica pura
+docs/              propuesta y paneles generados
+```
+
+## Desarrollo
 
 ```bash
-uv run python scripts/probe_stac.py
+uv run ruff check .
+uv run ruff format .
+uv run pytest
 ```
+
+Las pruebas no tocan la red: cubren validación de recuadros, transformaciones de
+intensidad y agrupación de escenas con dobles de prueba. Lo que sí requiere red se
+verifica con `satinsight probe`.
 
 ## Estado
 
-Fase 0. Propuesta cerrada, entorno montado, datos de ilustración descargados.
-Lo siguiente es el baseline de la fase 1 — GLCM + gradient boosting a nivel AGEB sobre
+Fase 0 cerrada. Propuesta lista, librería reproducible, datos de ilustración descargados.
+
+Lo siguiente es el baseline de la fase 1 — GLCM y gradient boosting a nivel AGEB sobre
 tres ciudades piloto, corrido en ambos brazos, que funciona como puerta de decisión del
 proyecto.
