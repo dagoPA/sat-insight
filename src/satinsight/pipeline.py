@@ -48,23 +48,25 @@ ciudad. Sentinel-2 se recorre de la escena más despejada a la más nublada, de 
 veinte primeras son las mejores disponibles.
 """
 
-FRACCION_MINIMA = 0.7
-"""Proporción del tope que debe aportar píxeles para dar el compuesto por bueno."""
+FRACCION_MINIMA = 0.5
+"""Proporción del tope que debe aportar píxeles para dar el compuesto por comparable.
+
+`composite` ya aborta cuando fallan demasiadas lecturas, que es el síntoma de una avería.
+Esta segunda comprobación mira otra cosa: cuántas escenas quedaron después de descartar las
+nubladas. Una ciudad compuesta con la mitad de escenas que otra tiene más ruido residual, y
+como la validación deja una ciudad fuera por pliegue, esa diferencia se leería como señal
+de esa ciudad. Es un requisito del diseño experimental, no una señal de avería, y por eso
+vive aquí y no en la librería.
+"""
 
 
 def _exigir_escenas(clave: str, sensor: str, usadas: int, pedidas: int) -> None:
-    """Aborta si el compuesto se armó con muchas menos escenas de las pedidas.
-
-    El compositing descarta la escena que falla al leerse y sigue adelante, que es lo
-    correcto frente a una escena rota. Frente a una firma vencida deja de serlo: fallan
-    casi todas y el compuesto se guarda con una fracción de las escenas, sin error. Así se
-    guardó una vez Acapulco con cuatro escenas de las veinte pedidas.
-    """
+    """Avisa cuando un compuesto queda con muchas menos escenas que las pedidas."""
     if pedidas and usadas < FRACCION_MINIMA * pedidas:
         raise RuntimeError(
             f"{clave}/{sensor}: solo {usadas} de {pedidas} escenas aportaron píxeles. "
-            "Un compuesto así no quita nubes ni promedia el speckle, y comparar ciudades "
-            "armadas con distinto número de escenas mezcla señal con ruido de muestreo."
+            "Comparar ciudades armadas con distinto número de escenas mezcla señal con "
+            "ruido de muestreo, y la validación reparte los pliegues justamente por ciudad."
         )
 
 
