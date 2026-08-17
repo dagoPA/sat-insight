@@ -10,13 +10,13 @@ forma calculada aquí, la retícula que producen coincide con la que este módul
 los polígonos se pueden reproyectar al mismo sistema para rasterizarlos sin desfase.
 
 La reconstrucción es válida mientras todas las escenas compartan sistema de referencia.
-Sentinel-2 se entrega en teselas MGRS y una ciudad a caballo entre dos husos UTM recibiría
-escenas en sistemas distintos, que al remuestrearse a la misma forma quedarían apiladas sin
-estar alineadas. `crs_comun` verifica esa condición y falla temprano cuando no se cumple.
+Sentinel-2 se entrega en teselas MGRS, y las teselas cercanas al borde de un huso UTM se
+publican en los dos husos vecinos; remuestrear ambos grupos a la misma forma y apilarlos
+los desalinea sin que nada falle. `seleccionar_crs` se queda con el grupo más numeroso y
+devuelve solo esas escenas, que es lo que hace la retícula reconstruible.
 """
 
 import logging
-from collections import Counter
 from math import ceil
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -57,31 +57,58 @@ class Malla(NamedTuple):
         return self.alto * self.ancho / 1e6
 
 
-def crs_comun(items: list["Item"]) -> str:
-    """Sistema de referencia compartido por las escenas, o error si hay más de uno.
+def _codigo_crs(item: "Item") -> str | None:
+    """Lee el sistema de referencia declarado por una escena en el STAC."""
+    codigo = item.properties.get("proj:epsg") or item.properties.get("proj:code")
+    if codigo is None:
+        return None
+    codigo = str(codigo)
+    return codigo if codigo.upper().startswith("EPSG:") else f"EPSG:{codigo}"
+
+
+def seleccionar_crs(items: list["Item"]) -> tuple[str, list["Item"]]:
+    """Elige un sistema de referencia y devuelve solo las escenas que lo declaran.
+
+    Las teselas MGRS de Sentinel-2 cercanas al borde de un huso UTM se publican en los dos
+    husos vecinos. Mérida está a unos cuarenta kilómetros del meridiano 90 y recibe 148
+    escenas en la zona 15 contra 145 en la zona 16, cubriendo cada grupo el recuadro
+    completo por su cuenta. Remuestrear ambos grupos a la misma forma y apilarlos los
+    desalinea sin que nada falle.
+
+    Quedarse con el grupo más numeroso resuelve el caso sin perder cobertura, y de paso
+    mantiene los dos brazos de la ciudad sobre la misma retícula: en Mérida el radar trae
+    32 escenas en la zona 15 contra una sola en la 16, así que la mayoría coincide.
 
     Se lee de la extensión de proyección del STAC en vez de abrir los rásteres, que
     costaría una petición de red por escena.
     """
-    codigos = Counter()
+    grupos: dict[str, list[Item]] = {}
     for item in items:
-        codigo = item.properties.get("proj:epsg") or item.properties.get("proj:code")
+        codigo = _codigo_crs(item)
         if codigo is not None:
-            codigos[str(codigo)] += 1
+            grupos.setdefault(codigo, []).append(item)
 
-    if not codigos:
+    if not grupos:
         raise ValueError("ninguna escena declara sistema de referencia en el STAC")
 
-    if len(codigos) > 1:
-        detalle = ", ".join(f"{c}: {n} escenas" for c, n in codigos.most_common())
-        raise ValueError(
-            "las escenas llegan en sistemas de referencia distintos y no se pueden apilar "
-            f"sobre una sola retícula ({detalle}). El recuadro cruza un huso UTM; hay que "
-            "partirlo o reproyectar a una retícula común antes de componer."
+    elegido = max(grupos, key=lambda c: len(grupos[c]))
+    if len(grupos) > 1:
+        descartados = ", ".join(
+            f"{c}: {len(v)}" for c, v in sorted(grupos.items(), key=lambda kv: -len(kv[1]))
         )
+        log.warning(
+            "el recuadro cruza un huso UTM y las escenas llegan en %d sistemas (%s); "
+            "se compone solo con %s para no apilar retículas desalineadas",
+            len(grupos),
+            descartados,
+            elegido,
+        )
+    return elegido, grupos[elegido]
 
-    codigo = next(iter(codigos))
-    return codigo if codigo.upper().startswith("EPSG:") else f"EPSG:{codigo}"
+
+def crs_comun(items: list["Item"]) -> str:
+    """Sistema de referencia dominante entre las escenas."""
+    return seleccionar_crs(items)[0]
 
 
 def malla_de_bbox(bbox: Bbox, crs: str, resolucion_m: int = RESOLUCION_M) -> Malla:
@@ -99,6 +126,13 @@ def malla_de_bbox(bbox: Bbox, crs: str, resolucion_m: int = RESOLUCION_M) -> Mal
     return Malla(transform=transform, forma=(alto, ancho), crs=crs, limites=limites)
 
 
-def malla_de_escenas(bbox: Bbox, items: list["Item"], resolucion_m: int = RESOLUCION_M) -> Malla:
-    """Retícula derivada del sistema de referencia que declaran las escenas disponibles."""
-    return malla_de_bbox(bbox, crs_comun(items), resolucion_m)
+def malla_de_escenas(
+    bbox: Bbox, items: list["Item"], resolucion_m: int = RESOLUCION_M
+) -> tuple[Malla, list["Item"]]:
+    """Retícula de trabajo junto con las escenas que viven sobre ella.
+
+    Devuelve las escenas filtradas además de la retícula: componer con las que quedaron
+    fuera del sistema elegido produciría un apilado desalineado.
+    """
+    crs, seleccionadas = seleccionar_crs(items)
+    return malla_de_bbox(bbox, crs, resolucion_m), seleccionadas
