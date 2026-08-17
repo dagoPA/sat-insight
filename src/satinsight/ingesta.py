@@ -147,6 +147,34 @@ def asegurar_inegi(entidad: str, raiz: Path = RAIZ_DATOS, *, forzar: bool = Fals
     return _extraer(comprimido, raiz / "inegi" / entidad)
 
 
+URL_NATURALEARTH = (
+    "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip"
+)
+"""Límites estatales del mundo, en dominio público y a escala 1:10 millones.
+
+La edición de 1:50 millones pesa quince veces menos y solo cubre nueve países grandes;
+México aparece hasta la de 1:10 millones.
+
+Sirve solo para situar las ciudades piloto dentro del país. El Marco Geoestadístico de
+INEGI daría el mismo contorno con más precisión, y descargarlo completo para dibujar 32
+polígonos costaría varios gigabytes.
+"""
+
+
+def asegurar_naturalearth(raiz: Path = RAIZ_DATOS, *, forzar: bool = False) -> Path:
+    """Deja en disco los límites estatales de contexto y devuelve su shapefile."""
+    comprimido = descargar(
+        URL_NATURALEARTH,
+        raiz / "crudo" / "ne_10m_admin_1_states_provinces.zip",
+        forzar=forzar,
+    )
+    carpeta = _extraer(comprimido, raiz / "naturalearth")
+    capas = sorted(carpeta.rglob("*.shp"))
+    if not capas:
+        raise FileNotFoundError(f"no hay shapefile dentro de {comprimido}")
+    return capas[0]
+
+
 def capa_ageb_urbana(carpeta_entidad: Path, entidad: str | None = None) -> Path:
     """Localiza el shapefile de AGEB urbanas dentro del paquete de una entidad.
 
