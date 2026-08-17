@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from satinsight.baseline import columnas_de_conjunto, comparar, evaluar, resumen
+from satinsight.textura import nombres_de_rasgos
 
 CIUDADES = ("tuxtla", "merida", "iztapalapa")
 
@@ -20,28 +21,25 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
     for ciudad in CIUDADES:
         ordinal = rng.integers(0, 5, n_por_ciudad)
         ruido = rng.normal(0, 1, n_por_ciudad)
-        partes.append(
-            pd.DataFrame(
-                {
-                    "cvegeo": [f"{ciudad}{i:04d}" for i in range(n_por_ciudad)],
-                    "ciudad": ciudad,
-                    "ordinal": ordinal,
-                    "c_media": fuerza * ordinal + ruido,
-                    "c_desv": fuerza * ordinal * 0.5 + ruido,
-                    "c_p10": rng.normal(0, 1, n_por_ciudad),
-                    "c_p50": rng.normal(0, 1, n_por_ciudad),
-                    "c_p90": rng.normal(0, 1, n_por_ciudad),
-                    "c_rango_intercuartil": rng.normal(0, 1, n_por_ciudad),
-                    "c_contrast": fuerza * ordinal + rng.normal(0, 1, n_por_ciudad),
-                    "c_homogeneity": -fuerza * ordinal + rng.normal(0, 1, n_por_ciudad),
-                    "c_energy": rng.normal(0, 1, n_por_ciudad),
-                    "c_correlation": rng.normal(0, 1, n_por_ciudad),
-                    "c_dissimilarity": rng.normal(0, 1, n_por_ciudad),
-                    "c_entropia": rng.normal(0, 1, n_por_ciudad),
-                    "c_contrast_anisotropia": rng.normal(0, 1, n_por_ciudad),
-                }
-            )
-        )
+        columnas = {
+            "cvegeo": [f"{ciudad}{i:04d}" for i in range(n_por_ciudad)],
+            "ciudad": ciudad,
+            "ordinal": ordinal,
+            "c_media": fuerza * ordinal + ruido,
+            "c_desv": fuerza * ordinal * 0.5 + ruido,
+            "c_p10": rng.normal(0, 1, n_por_ciudad),
+            "c_p50": rng.normal(0, 1, n_por_ciudad),
+            "c_p90": rng.normal(0, 1, n_por_ciudad),
+            "c_rango_intercuartil": rng.normal(0, 1, n_por_ciudad),
+        }
+        # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
+        # rompa la prueba en vez de dejarla midiendo un conjunto vacío en silencio.
+        for sufijo in nombres_de_rasgos():
+            lleva_senal = sufijo.startswith(("contrast_", "homogeneity_"))
+            signo = -1 if sufijo.startswith("homogeneity_") else 1
+            señal = signo * fuerza * ordinal if lleva_senal else 0.0
+            columnas[f"c_{sufijo}"] = señal + rng.normal(0, 1, n_por_ciudad)
+        partes.append(pd.DataFrame(columnas))
     return pd.concat(partes, ignore_index=True)
 
 
@@ -51,8 +49,8 @@ def test_los_conjuntos_separan_densidad_de_textura():
     textura = columnas_de_conjunto(tabla, "textura")
 
     assert "c_media" in densidad
-    assert "c_contrast" not in densidad
-    assert "c_contrast" in textura
+    assert "c_contrast_d1" not in densidad
+    assert "c_contrast_d1" in textura
     assert "c_media" not in textura
     assert not set(densidad) & set(textura)
 

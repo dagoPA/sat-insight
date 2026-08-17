@@ -6,6 +6,7 @@ from affine import Affine
 from shapely.geometry import box
 
 from satinsight.textura import (
+    DISTANCIAS,
     NIVELES,
     cuantizar,
     rango_robusto,
@@ -74,14 +75,43 @@ def test_banda_sin_pixeles_finitos_falla():
 
 def test_una_region_texturada_contrasta_mas_que_una_lisa():
     banda = imagen_con_parche()
-    lisa = caja_de_pixeles(10, 30, 10, 30)
-    aspera = caja_de_pixeles(80, 100, 100, 120)
+    lisa = caja_de_pixeles(5, 45, 5, 45)  # 1600 px, fuera del parche
+    aspera = caja_de_pixeles(60, 100, 60, 100)  # 1600 px, dentro del parche
     tabla = rasgos_por_ageb(banda, TRANSFORM, [lisa, aspera], ["lisa", "aspera"], prefijo="c")
     fila = tabla.set_index("cvegeo")
 
-    assert fila.loc["aspera", "c_contrast"] > 5 * fila.loc["lisa", "c_contrast"]
-    assert fila.loc["aspera", "c_homogeneity"] < fila.loc["lisa", "c_homogeneity"]
-    assert fila.loc["aspera", "c_entropia"] > fila.loc["lisa", "c_entropia"]
+    assert fila.loc["aspera", "c_contrast_d1"] > 5 * fila.loc["lisa", "c_contrast_d1"]
+    assert fila.loc["aspera", "c_homogeneity_d1"] < fila.loc["lisa", "c_homogeneity_d1"]
+    assert fila.loc["aspera", "c_entropia_d1"] > fila.loc["lisa", "c_entropia_d1"]
+
+
+def test_cada_distancia_sale_como_columna_propia():
+    banda = imagen_con_parche()
+    aspera = caja_de_pixeles(60, 100, 60, 100)
+    tabla = rasgos_por_ageb(banda, TRANSFORM, [aspera], ["x"], prefijo="c")
+    for distancia in DISTANCIAS:
+        assert f"c_contrast_d{distancia}" in tabla.columns
+    # a mayor separación, mayor contraste en una superficie sin estructura periódica
+    assert tabla.loc[0, "c_contrast_d4"] > tabla.loc[0, "c_contrast_d1"]
+
+
+def test_un_rango_fijo_no_depende_de_la_banda():
+    """Dos bandas con distinto nivel deben cuantizarse igual si el rango se fija.
+
+    Es lo que sostiene la comparabilidad del radar entre ciudades y entre países.
+    """
+    rng = np.random.default_rng(1)
+    patron = rng.normal(0, 1, (60, 60))
+    caja = caja_de_pixeles(0, 60, 0, 60)
+    fijo = (-10.0, 10.0)
+
+    a = rasgos_por_ageb(patron, TRANSFORM, [caja], ["x"], prefijo="c", rango=fijo)
+    b = rasgos_por_ageb(patron + 3.0, TRANSFORM, [caja], ["x"], prefijo="c", rango=fijo)
+    libre_a = rasgos_por_ageb(patron, TRANSFORM, [caja], ["x"], prefijo="c")
+    libre_b = rasgos_por_ageb(patron + 3.0, TRANSFORM, [caja], ["x"], prefijo="c")
+
+    assert a.loc[0, "c_contrast_d1"] != pytest.approx(b.loc[0, "c_contrast_d1"])
+    assert libre_a.loc[0, "c_contrast_d1"] == pytest.approx(libre_b.loc[0, "c_contrast_d1"])
 
 
 def test_un_poligono_diminuto_se_reporta_sin_rasgos():
@@ -89,7 +119,7 @@ def test_un_poligono_diminuto_se_reporta_sin_rasgos():
     minusculo = caja_de_pixeles(10, 12, 10, 12)
     tabla = rasgos_por_ageb(banda, TRANSFORM, [minusculo], ["x"], prefijo="c", minimo_pixeles=50)
     assert tabla.loc[0, "c_n_px"] < 50
-    assert "c_contrast" not in tabla.columns
+    assert "c_contrast_d1" not in tabla.columns
 
 
 def test_un_poligono_fuera_del_raster_no_rompe():
@@ -108,13 +138,13 @@ def test_geometrias_y_claves_desparejas_fallan():
 def test_un_recorte_constante_no_tiene_entropia():
     constante = np.full((30, 30), 5, dtype=np.uint8)
     rasgos = rasgos_de_recorte(constante)
-    assert rasgos["entropia"] == pytest.approx(0.0, abs=1e-9)
-    assert rasgos["contrast"] == pytest.approx(0.0, abs=1e-9)
+    assert rasgos["entropia_d1"] == pytest.approx(0.0, abs=1e-9)
+    assert rasgos["contrast_d1"] == pytest.approx(0.0, abs=1e-9)
 
 
 def test_un_recorte_vacio_devuelve_nan():
     rasgos = rasgos_de_recorte(np.zeros((20, 20), dtype=np.uint8))
-    assert np.isnan(rasgos["contrast"])
+    assert np.isnan(rasgos["contrast_d1"])
 
 
 def test_primer_orden_reproduce_la_media_y_la_dispersion():
