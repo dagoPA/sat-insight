@@ -1445,6 +1445,80 @@
         </p>
       </div>
 
+      <h3>La ablación que convierte una decisión de código en un resultado</h3>
+      <p>
+        El radar transfiere mejor entre ciudades que el óptico. Antes de atribuirlo al sensor
+        hay que descartar la explicación alternativa, porque los dos brazos se cuantizan
+        distinto: el radar sobre una escala fija en decibeles y el óptico sobre percentiles de
+        cada ciudad. La diferencia podía ser del preproceso y no de la física.
+      </p>
+      <p>
+        La comparación controlada es correr el radar de las dos maneras. Se mide con la razón
+        entre la varianza que explica la ciudad y la que explica el grado: por encima de uno,
+        el rasgo describe mejor dónde se midió que qué se midió.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Variante</th><th>q25</th><th>Mediana</th><th>q75</th><th>Kappa de textura</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Radar · escala fija en dB</td>
+              <td class="num">0.88</td><td class="num">1.36</td><td class="num">2.26</td>
+              <td class="num">0.285</td>
+            </tr>
+            <tr>
+              <td>Óptico · percentiles</td>
+              <td class="num">1.52</td><td class="num">2.33</td><td class="num">5.95</td>
+              <td class="num">0.141</td>
+            </tr>
+            <tr>
+              <td>Radar · percentiles</td>
+              <td class="num">7.17</td><td class="num">10.55</td><td class="num">15.16</td>
+              <td class="num">−0.015</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Cuantizar el radar por percentiles de cada ciudad lo vuelve <strong>ocho veces peor</strong>
+        que con escala fija, y peor que el óptico. Su textura pierde todo poder predictivo: kappa
+        de −0.015, por debajo del azar.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Varianza explicada, mediana de 63 rasgos</th><th>Escala fija</th><th>Percentiles</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Por el grado de rezago</td><td class="num">0.220</td><td class="num">0.033</td></tr>
+            <tr><td>Por la ciudad</td><td class="num">0.259</td><td class="num">0.412</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        El mecanismo se lee ahí: la cuantización por ciudad hace las dos cosas malas a la vez.
+        Destruye la señal de grado, que cae de 0.220 a 0.033, y encima aumenta la dependencia de
+        la ciudad. Con percentiles, la misma retrodispersión física cae en niveles distintos según
+        dónde se midió, y los estadísticos de textura dejan de ser comparables entre ciudades.
+      </p>
+
+      <div class="thesis">
+        <p>
+          La afirmación que sostiene el proyecto no es «el radar transfiere mejor». Es que
+          <strong>el radar transfiere mejor si se explota su calibración</strong>: gamma0 es una
+          magnitud física y usarla como tal duplica el kappa de textura frente al óptico, mientras
+          que usarla con una escala derivada de los datos la deja por debajo del azar. La escala
+          fija deja de ser una preferencia de implementación y pasa a ser la condición bajo la
+          cual el argumento del sensor se sostiene.
+        </p>
+      </div>
+
       <h3>Seis cosas que aparecieron al tocar los datos</h3>
       <p>
         Ninguna estaba en el diseño. Todas cambiaron el código, y cinco de las seis habrían producido
