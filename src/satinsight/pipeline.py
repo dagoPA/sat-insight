@@ -84,6 +84,21 @@ def construir_compuesto(
     return bandas, malla, etiquetas
 
 
+def _mismo_recuadro(guardado, actual, tolerancia: float = 1e-6) -> bool:
+    """Compara el recuadro con el que se construyó un compuesto contra el vigente.
+
+    El compuesto se guarda con el nombre de la ciudad, así que un cambio en la regla que
+    define el recuadro dejaría en disco un archivo que cubre otra zona y se seguiría
+    reutilizando sin avisar. Comparar el recuadro almacenado convierte esa corrupción
+    silenciosa en una reconstrucción.
+    """
+    if guardado is None:
+        return False
+    return len(guardado) == len(actual) and all(
+        abs(float(a) - float(b)) <= tolerancia for a, b in zip(guardado, actual, strict=True)
+    )
+
+
 def asegurar_compuesto(
     clave: str,
     sensor: str,
@@ -101,8 +116,13 @@ def asegurar_compuesto(
     """
     destino = cache.ruta_compuesto(clave, sensor, raiz / "compuestos")
     if destino.exists() and not forzar:
-        log.info("compuesto en caché: %s", destino.name)
-        return cache.cargar(destino)
+        guardado = cache.cargar(destino)
+        if area is None or _mismo_recuadro(guardado[2].get("bbox"), area.bbox):
+            log.info("compuesto en caché: %s", destino.name)
+            return guardado
+        log.warning(
+            "%s/%s en caché cubre otro recuadro que el actual; se reconstruye", clave, sensor
+        )
 
     if area is None:
         area, _ = aoi_de_ciudad(clave, raiz)

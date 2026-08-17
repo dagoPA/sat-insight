@@ -1,9 +1,31 @@
 """Pruebas de la capa de AGEB que no tocan disco ni red."""
 
+import geopandas as gpd
 import pandas as pd
 import pytest
+from shapely.geometry import box
 
-from satinsight.agebs import CIUDADES, GRADOS, INDICADORES, ORDINAL, resumen_grados
+from satinsight.agebs import (
+    CIUDADES,
+    CRS_METRICO,
+    GRADOS,
+    INDICADORES,
+    ORDINAL,
+    _mancha_conectada,
+    resumen_grados,
+)
+
+
+def cuadros(especificaciones):
+    """GeoDataFrame métrico de AGEB cuadradas de 1 km, dadas como (clave, x_km, y_km)."""
+    return gpd.GeoDataFrame(
+        {"cvegeo": [c for c, _, _ in especificaciones]},
+        geometry=[
+            box(x * 1000, y * 1000, x * 1000 + 1000, y * 1000 + 1000)
+            for _, x, y in especificaciones
+        ],
+        crs=CRS_METRICO,
+    )
 
 
 def tabla(grados, poblaciones=None):
@@ -59,3 +81,51 @@ def test_una_tabla_vacia_no_divide_entre_cero():
     resumen = resumen_grados(tabla([]))
     assert resumen["agebs"].sum() == 0
     assert resumen["pct_agebs"].sum() == 0
+
+
+def test_la_mancha_descarta_el_satelite_lejano():
+    agebs = cuadros(
+        [
+            ("0710100010001", 0, 0),
+            ("0710100010002", 1, 0),
+            ("0799900010001", 40, 0),  # localidad desprendida a cuarenta kilómetros
+        ]
+    )
+    mancha = _mancha_conectada(agebs, "07101", pegado_m=2500)
+    assert set(mancha["cvegeo"]) == {"0710100010001", "0710100010002"}
+
+
+def test_la_mancha_conserva_al_vecino_pegado():
+    agebs = cuadros(
+        [
+            ("0710100010001", 0, 0),
+            ("0710200010001", 2, 0),  # otro municipio, pero conurbado
+        ]
+    )
+    mancha = _mancha_conectada(agebs, "07101", pegado_m=2500)
+    assert len(mancha) == 2
+
+
+def test_una_mancha_unica_pasa_intacta():
+    agebs = cuadros([("0710100010001", 0, 0), ("0710100010002", 1, 0)])
+    assert len(_mancha_conectada(agebs, "07101", pegado_m=2500)) == 2
+
+
+def test_se_elige_la_mancha_con_mas_agebs_del_nucleo():
+    agebs = cuadros(
+        [
+            ("0799900010001", 0, 0),
+            ("0799900010002", 1, 0),
+            ("0799900010003", 2, 0),
+            ("0710100010001", 40, 0),
+            ("0710100010002", 41, 0),
+        ]
+    )
+    mancha = _mancha_conectada(agebs, "07101", pegado_m=2500)
+    assert set(mancha["cvegeo"]) == {"0710100010001", "0710100010002"}
+
+
+def test_un_pegado_generoso_une_lo_que_uno_estricto_separa():
+    agebs = cuadros([("0710100010001", 0, 0), ("0710100010002", 10, 0)])
+    assert len(_mancha_conectada(agebs, "07101", pegado_m=1000)) == 1
+    assert len(_mancha_conectada(agebs, "07101", pegado_m=6000)) == 2
