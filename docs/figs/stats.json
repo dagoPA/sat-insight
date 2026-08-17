@@ -1,0 +1,33 @@
+{
+  "aoi_bbox": [
+    -93.135,
+    16.74,
+    -93.095,
+    16.768
+  ],
+  "aoi_nombre": "Tuxtla Gutiérrez, Chiapas",
+  "s2_escenas_2020": 72,
+  "s2_pct_mayor_50_nubes": 51,
+  "s2_pct_mayor_80_nubes": 18,
+  "s2_fecha_despejada": "2020-03-03",
+  "s2_nubes_despejada": 0.1,
+  "s2_fecha_nublada": "2020-01-03",
+  "s2_nubes_nublada": 99.8,
+  "s2_escenas_en_compuesto": 36,
+  "s1_escenas_2020": 118,
+  "s1_orbita": "descending · relativa 99",
+  "s1_escenas_en_compuesto": 24,
+  "s1_vv_db_p5_p95": [
+    -7.8,
+    5.3
+  ],
+  "s1_vh_db_p5_p95": [
+    -16.6,
+    -10.7
+  ],
+  "resolucion_px_m": 10,
+  "aoi_px": [
+    426,
+    309
+  ]
+}
