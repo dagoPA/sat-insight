@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from satinsight.malla import malla_de_bbox, malla_de_escenas
+from satinsight.malla import malla_de_bbox, malla_de_escenas, seleccionar_crs
 
 
 @dataclass
@@ -48,24 +48,41 @@ def test_la_esquina_superior_izquierda_coincide_con_los_limites():
 
 
 def test_crs_unico_se_acepta():
-    malla = malla_de_escenas(BBOX_TUXTLA, [item(), item(), item()])
+    malla, escenas = malla_de_escenas(BBOX_TUXTLA, [item(), item(), item()])
     assert malla.crs == "EPSG:32615"
+    assert len(escenas) == 3
 
 
 def test_crs_ya_prefijado_no_se_duplica():
-    malla = malla_de_escenas(BBOX_TUXTLA, [item(epsg="EPSG:32615")])
+    malla, _ = malla_de_escenas(BBOX_TUXTLA, [item(epsg="EPSG:32615")])
     assert malla.crs == "EPSG:32615"
 
 
 def test_se_lee_tambien_la_clave_moderna():
-    malla = malla_de_escenas(BBOX_TUXTLA, [item(epsg="EPSG:32616", clave="proj:code")])
+    malla, _ = malla_de_escenas(BBOX_TUXTLA, [item(epsg="EPSG:32616", clave="proj:code")])
     assert malla.crs == "EPSG:32616"
 
 
-def test_husos_mezclados_fallan_con_mensaje_util():
+def test_con_husos_mezclados_gana_la_mayoria():
     escenas = [item(32615), item(32615), item(32616)]
-    with pytest.raises(ValueError, match="huso UTM"):
-        malla_de_escenas(BBOX_TUXTLA, escenas)
+    crs, seleccionadas = seleccionar_crs(escenas)
+    assert crs == "EPSG:32615"
+    assert len(seleccionadas) == 2
+
+
+def test_las_escenas_del_huso_descartado_no_se_devuelven():
+    escenas = [item(32616), item(32615), item(32615), item(32615)]
+    malla, seleccionadas = malla_de_escenas(BBOX_TUXTLA, escenas)
+    assert malla.crs == "EPSG:32615"
+    assert len(seleccionadas) == 3
+    assert all(s.properties["proj:epsg"] == 32615 for s in seleccionadas)
+
+
+def test_las_escenas_sin_proyeccion_se_ignoran_si_hay_otras():
+    escenas = [ItemFalso(properties={}), item(32615)]
+    crs, seleccionadas = seleccionar_crs(escenas)
+    assert crs == "EPSG:32615"
+    assert len(seleccionadas) == 1
 
 
 def test_sin_proyeccion_declarada_falla():

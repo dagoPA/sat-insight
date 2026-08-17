@@ -70,7 +70,7 @@ def construir_compuesto(
     if not escenas:
         raise RuntimeError(f"el catálogo no devolvió escenas de {sensor} para {clave}")
 
-    malla = malla_de_escenas(area.bbox, escenas)
+    malla, escenas = malla_de_escenas(area.bbox, escenas)
     log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixeles)
 
     if sensor == "s2":
