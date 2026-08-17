@@ -12,6 +12,7 @@ from satinsight.baseline import (
     estandarizar_por_grupo,
     evaluar,
     resumen,
+    seleccionar_rasgos,
     varianza_explicada,
 )
 from satinsight.cobertura import CLASES
@@ -196,3 +197,70 @@ def test_una_tabla_sin_rasgos_del_conjunto_falla():
     tabla = pd.DataFrame({"ciudad": ["a"], "ordinal": [1], "otra_cosa": [3.0]})
     with pytest.raises(ValueError, match="conjunto"):
         evaluar(tabla, "textura", "clasificador")
+
+
+def fiabilidad_de(tabla, valor=0.9):
+    """Tabla de fiabilidad sintética con el mismo valor para todos los rasgos."""
+    rasgos = columnas_de_conjunto(tabla, "textura")
+    return pd.DataFrame({"rasgo": rasgos, "r_mediana": [valor] * len(rasgos)})
+
+
+def test_un_rasgo_que_no_se_reproduce_queda_fuera():
+    tabla = tabla_sintetica(40)
+    tabla["c_n_px"] = 1000
+    fiab = fiabilidad_de(tabla)
+    fiab.loc[fiab.rasgo == "c_contrast_d1", "r_mediana"] = 0.2
+
+    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
+    assert not sel.loc["c_contrast_d1", "conservado"]
+    assert sel.loc["c_contrast_d1", "motivo"] == "no se reproduce"
+
+
+def test_un_rasgo_atado_al_tamano_queda_fuera():
+    """Un rasgo que es una función del área del polígono apunta al blanco por construcción."""
+    tabla = tabla_sintetica(60)
+    rng = np.random.default_rng(3)
+    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
+    tabla["c_contrast_d1"] = np.log10(tabla["c_n_px"]) * 5
+
+    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
+    assert not sel.loc["c_contrast_d1", "conservado"]
+    assert sel.loc["c_contrast_d1", "motivo"] == "atado al tamaño"
+
+
+def test_un_rasgo_fiable_e_independiente_se_conserva():
+    tabla = tabla_sintetica(60)
+    rng = np.random.default_rng(4)
+    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
+    tabla["c_homogeneity_d1"] = rng.normal(0, 1, len(tabla))
+
+    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
+    assert sel.loc["c_homogeneity_d1", "conservado"]
+    assert sel.loc["c_homogeneity_d1", "motivo"] == "conservado"
+
+
+def test_el_ruido_puro_lo_atrapa_la_fiabilidad_y_no_el_tamano():
+    """Los dos criterios se necesitan mutuamente.
+
+    Un rasgo que es ruido pasa el criterio de tamaño con holgura, porque el ruido no
+    correlaciona con nada. Solo la fiabilidad lo detecta.
+    """
+    tabla = tabla_sintetica(60)
+    rng = np.random.default_rng(5)
+    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
+    tabla["c_energy_d4"] = rng.normal(0, 1, len(tabla))
+
+    fiab = fiabilidad_de(tabla)
+    fiab.loc[fiab.rasgo == "c_energy_d4", "r_mediana"] = 0.05
+    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
+
+    assert abs(sel.loc["c_energy_d4", "r_n_px"]) < 0.30
+    assert not sel.loc["c_energy_d4", "conservado"]
+
+
+def test_un_rasgo_sin_medicion_de_fiabilidad_queda_fuera():
+    tabla = tabla_sintetica(40)
+    tabla["c_n_px"] = 1000
+    fiab = fiabilidad_de(tabla)
+    sel = seleccionar_rasgos(tabla, fiab[fiab.rasgo != "c_contrast_d2"]).set_index("rasgo")
+    assert not sel.loc["c_contrast_d2", "conservado"]
