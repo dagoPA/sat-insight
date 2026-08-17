@@ -51,14 +51,22 @@ def cuantizar(banda: np.ndarray, rango: tuple, niveles: int = NIVELES) -> np.nda
 
     Los valores fuera del rango se recortan a los extremos en vez de descartarse: un techo
     de lámina muy brillante sigue siendo información aunque caiga sobre el percentil 98.
+
+    Los no finitos se llevan a cero antes de convertir a entero. `np.clip` no toca los NaN,
+    y convertir un NaN a entero sin signo da un resultado que la especificación no define y
+    que depende de la plataforma. El `np.where` final pisa esas posiciones de todos modos,
+    pero el valor intermedio no debe quedar al azar: `a_db` produce NaN en cada píxel sin
+    retorno medible, así que el brazo de radar pasa por aquí constantemente.
     """
     bajo, alto = rango
     if not alto > bajo:
         raise ValueError(f"rango degenerado: {rango}")
-    escalada = (banda - bajo) / (alto - bajo)
+    finitos = np.isfinite(banda)
+    escalada = np.zeros(banda.shape, dtype="float64")
+    np.divide(banda - bajo, alto - bajo, out=escalada, where=finitos)
     escalada = np.clip(escalada, 0.0, 1.0)
     niveles_validos = 1 + np.round(escalada * (niveles - 1)).astype(np.uint8)
-    return np.where(np.isfinite(banda), niveles_validos, 0).astype(np.uint8)
+    return np.where(finitos, niveles_validos, 0).astype(np.uint8)
 
 
 def entropia(glcm: np.ndarray) -> float:
