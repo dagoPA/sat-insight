@@ -88,18 +88,24 @@ def asegurar_compuesto(
     clave: str,
     sensor: str,
     *,
+    area: AOI | None = None,
     raiz: Path = RAIZ_DATOS,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     **kwargs,
 ) -> tuple[dict[str, np.ndarray], Malla, dict]:
-    """Devuelve el compuesto desde disco, construyéndolo la primera vez."""
+    """Devuelve el compuesto desde disco, construyéndolo la primera vez.
+
+    Quien ya haya resuelto el recuadro puede pasarlo en `area` para ahorrarse una segunda
+    lectura del shapefile de la entidad, que en Ciudad de México ronda los ochenta megas.
+    """
     destino = cache.ruta_compuesto(clave, sensor, raiz / "compuestos")
     if destino.exists() and not forzar:
         log.info("compuesto en caché: %s", destino.name)
         return cache.cargar(destino)
 
-    area, _ = aoi_de_ciudad(clave, raiz)
+    if area is None:
+        area, _ = aoi_de_ciudad(clave, raiz)
     bandas, malla, etiquetas = construir_compuesto(clave, sensor, area, periodo=periodo, **kwargs)
     cache.guardar(bandas, malla, destino, **etiquetas)
     return bandas, malla, etiquetas
@@ -149,10 +155,19 @@ def rasgos_de_ciudad(
     raiz: Path = RAIZ_DATOS,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
+    max_escenas: int | None = None,
 ) -> pd.DataFrame:
     """Tabla de rasgos por AGEB para una ciudad y un sensor, con su etiqueta ordinal."""
-    _, agebs = aoi_de_ciudad(clave, raiz)
-    bandas, malla, _ = asegurar_compuesto(clave, sensor, raiz=raiz, periodo=periodo, forzar=forzar)
+    area, agebs = aoi_de_ciudad(clave, raiz)
+    bandas, malla, _ = asegurar_compuesto(
+        clave,
+        sensor,
+        area=area,
+        raiz=raiz,
+        periodo=periodo,
+        forzar=forzar,
+        max_escenas=max_escenas,
+    )
 
     proyectadas = agebs.to_crs(malla.crs)
     geometrias = list(proyectadas.geometry)
@@ -170,8 +185,12 @@ def rasgos_de_ciudad(
 
 
 def rasgos_de_todas(
-    sensor: str, ciudades: tuple[str, ...] = tuple(CIUDADES), *, raiz: Path = RAIZ_DATOS
+    sensor: str,
+    ciudades: tuple[str, ...] = tuple(CIUDADES),
+    *,
+    raiz: Path = RAIZ_DATOS,
+    max_escenas: int | None = None,
 ) -> pd.DataFrame:
     """Apila las tablas de rasgos de varias ciudades para un mismo sensor."""
-    partes = [rasgos_de_ciudad(c, sensor, raiz=raiz) for c in ciudades]
+    partes = [rasgos_de_ciudad(c, sensor, raiz=raiz, max_escenas=max_escenas) for c in ciudades]
     return pd.concat(partes, ignore_index=True)

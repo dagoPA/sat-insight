@@ -136,7 +136,11 @@ def cmd_agebs(args: argparse.Namespace) -> int:
 
 def cmd_rasgos(args: argparse.Namespace) -> int:
     """Extrae los rasgos por AGEB de un sensor y los deja en disco."""
-    tabla = rasgos_de_todas(args.sensor, tuple(args.ciudades or sorted(CIUDADES)))
+    tabla = rasgos_de_todas(
+        args.sensor,
+        tuple(args.ciudades or sorted(CIUDADES)),
+        max_escenas=args.max_escenas,
+    )
     destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
     destino.parent.mkdir(parents=True, exist_ok=True)
     tabla.to_parquet(destino, index=False)
@@ -193,6 +197,11 @@ def construir_parser() -> argparse.ArgumentParser:
     rasgos.add_argument("sensor", choices=SENSORES)
     rasgos.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
     rasgos.add_argument("--salida", help="ruta del parquet de salida")
+    rasgos.add_argument(
+        "--max-escenas",
+        type=int,
+        help="escenas máximas del compuesto; bajarlo acorta la descarga",
+    )
     rasgos.set_defaults(func=cmd_rasgos)
 
     base = sub.add_parser("baseline", help="corre la comparación de la fase 1")
