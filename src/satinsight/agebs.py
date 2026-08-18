@@ -9,6 +9,7 @@ ordinal y diecisiete indicadores de privación.
 """
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -191,6 +192,7 @@ def agebs_de_ciudad(
     conurbacion: bool = True,
     vecindad_m: float = VECINDAD_M,
     pegado_m: float = PEGADO_M,
+    catalogo: dict[str, "Ciudad"] | None = None,
 ) -> gpd.GeoDataFrame:
     """Devuelve las AGEB de una ciudad piloto con geometría y etiqueta ordinal.
 
@@ -203,9 +205,11 @@ def agebs_de_ciudad(
     El cruce con las etiquetas es interno a propósito: una AGEB sin polígono o sin etiqueta
     queda fuera del conjunto, y la cuenta de descartes se registra para poder auditarla.
     """
-    ciudad = CIUDADES.get(clave)
+    catalogo = catalogo or CIUDADES
+    ciudad = catalogo.get(clave)
     if ciudad is None:
-        raise KeyError(f"ciudad desconocida: {clave!r}. Disponibles: {', '.join(sorted(CIUDADES))}")
+        conocidas = ", ".join(sorted(catalogo)[:8])
+        raise KeyError(f"ciudad desconocida: {clave!r}. Entre las conocidas: {conocidas}…")
 
     geometria = cargar_geometria(ciudad.entidad, raiz)
     nucleo = geometria[geometria["cvegeo"].str[:5] == ciudad.municipio]
@@ -259,3 +263,57 @@ def resumen_grados(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     )
     conteo["pct_agebs"] = (100 * conteo["agebs"] / max(conteo["agebs"].sum(), 1)).round(1)
     return conteo
+
+
+MINIMO_AGEBS_CIUDAD = 150
+"""Tamaño mínimo de bolsa para que una ciudad entre al conjunto nacional.
+
+Ciento cincuenta AGEB dejan 81 ciudades y 24,080 AGEB, dieciséis veces la muestra piloto.
+Bajar el umbral suma ciudades cada vez más chicas: con 100 son 132 ciudades y con 50 son
+256, y una bolsa de cincuenta instancias aporta poco al MIL frente a lo que cuesta componer
+su ciudad entera.
+"""
+
+
+def _clave_de_municipio(nombre: str) -> str:
+    """Identificador corto y estable a partir del nombre del municipio."""
+    plano = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
+    return "".join(c for c in plano if c.isalnum())
+
+
+def ciudades_por_tamano(
+    minimo_agebs: int = MINIMO_AGEBS_CIUDAD, raiz: Path = RAIZ_DATOS
+) -> dict[str, Ciudad]:
+    """Deriva del censo la lista de ciudades que superan un tamaño mínimo.
+
+    Escribir a mano cinco ciudades era razonable; escribir ochenta y una invita a erratas en
+    claves de municipio que nadie detectaría hasta que un cruce saliera vacío. La lista se
+    calcula de la misma tabla que aporta las etiquetas.
+
+    Las cinco ciudades piloto conservan la clave con la que ya se nombraron sus compuestos en
+    disco. Cambiársela obligaría a recomponerlas, que son varias horas de descarga.
+
+    Los homónimos entre entidades se desambiguan con la clave del municipio, porque el nombre
+    solo no identifica: hay más de un Guadalupe y más de un Zaragoza en el país.
+    """
+    tabla = cargar_grs(raiz)
+    conteo = (
+        tabla.groupby(["cve_ent", "cve_mun", "municipio"], observed=True)
+        .size()
+        .reset_index(name="agebs")
+    )
+    conteo = conteo[conteo["agebs"] >= minimo_agebs].sort_values("agebs", ascending=False)
+
+    heredadas = {c.municipio: clave for clave, c in CIUDADES.items()}
+    propuestas = [_clave_de_municipio(n) for n in conteo["municipio"]]
+    repetidas = {c for c in propuestas if propuestas.count(c) > 1}
+
+    ciudades: dict[str, Ciudad] = {}
+    for (_, fila), propuesta in zip(conteo.iterrows(), propuestas, strict=True):
+        clave = heredadas.get(fila.cve_mun)
+        if clave is None:
+            clave = f"{propuesta}{fila.cve_mun}" if propuesta in repetidas else propuesta
+        ciudades[clave] = Ciudad(clave, fila.municipio, fila.cve_ent, fila.cve_mun)
+
+    log.info("%d ciudades con al menos %d AGEB", len(ciudades), minimo_agebs)
+    return ciudades
