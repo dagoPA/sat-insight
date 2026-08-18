@@ -15,6 +15,7 @@ agente de usuario de navegador, así que todas las peticiones lo llevan.
 """
 
 import logging
+import os
 import zipfile
 from pathlib import Path
 
@@ -105,7 +106,11 @@ def descargar(url: str, destino: Path, *, forzar: bool = False, intentos: int = 
         return destino
 
     destino.parent.mkdir(parents=True, exist_ok=True)
-    parcial = destino.with_suffix(destino.suffix + ".parcial")
+    # El sufijo lleva el identificador del proceso porque varias descargas en paralelo
+    # pueden pedir la misma entidad: el pipeline la baja bajo demanda mientras un trabajo
+    # de descarga masiva va por ella. Con una ruta temporal común, los dos procesos
+    # escriben sobre el mismo archivo y el zip llega corrupto sin que ninguno falle.
+    parcial = destino.with_suffix(f"{destino.suffix}.{os.getpid()}.parcial")
 
     ultimo_error: Exception | None = None
     for intento in range(1, intentos + 1):
