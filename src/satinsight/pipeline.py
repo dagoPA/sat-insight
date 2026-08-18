@@ -31,8 +31,17 @@ log = logging.getLogger(__name__)
 
 PERIODO_CENSO = "2020-01-01/2020-12-31"
 
-BANDAS_S2 = ("B04", "B03", "B02", "B08")
-"""Rojo, verde, azul e infrarrojo cercano. Las cuatro nativas a 10 m."""
+BANDAS_S2 = ("B04", "B03", "B02", "B08", "B11")
+"""Rojo, verde, azul, infrarrojo cercano e infrarrojo de onda corta.
+
+Las cuatro primeras son nativas a 10 m. B11 llega a 20 m y se remuestrea, y entra porque
+habilita el NDBI, el índice estándar de superficie construida. El riesgo central del
+proyecto es que el modelo lea densidad construida en vez de morfología de la privación, así
+que conviene tener el canal que mejor describe lo primero.
+
+Azul y verde no alimentan ningún rasgo: existen para poder renderizar color natural de
+cualquier ciudad.
+"""
 
 MARGEN_M = 200.0
 """Holgura alrededor de las AGEB, para que ninguna quede cortada por el borde del recuadro."""
@@ -170,6 +179,19 @@ def _mismo_recuadro(guardado, actual, tolerancia: float = 1e-6) -> bool:
     )
 
 
+def _mismas_bandas(guardadas, sensor: str) -> bool:
+    """Confirma que un compuesto en disco traiga las bandas que el pipeline espera hoy.
+
+    Agregar una banda deja obsoletos los compuestos anteriores, y el archivo sigue
+    cargándose sin queja hasta que un canal derivado busca la que falta. Peor todavía si el
+    canal nuevo existe en unas ciudades y no en otras: esa diferencia quedaría correlacionada
+    con qué ciudades se compusieron primero, que es exactamente el confundido que la
+    validación por ciudad tiene que evitar.
+    """
+    esperadas = set(BANDAS_S2) if sensor == "s2" else {"vv", "vh"}
+    return set(guardadas) == esperadas
+
+
 def asegurar_compuesto(
     clave: str,
     sensor: str,
@@ -188,12 +210,13 @@ def asegurar_compuesto(
     destino = cache.ruta_compuesto(clave, sensor, raiz / "compuestos")
     if destino.exists() and not forzar:
         guardado = cache.cargar(destino)
-        if area is None or _mismo_recuadro(guardado[2].get("bbox"), area.bbox):
+        recuadro_ok = area is None or _mismo_recuadro(guardado[2].get("bbox"), area.bbox)
+        bandas_ok = _mismas_bandas(guardado[0], sensor)
+        if recuadro_ok and bandas_ok:
             log.info("compuesto en caché: %s", destino.name)
             return guardado
-        log.warning(
-            "%s/%s en caché cubre otro recuadro que el actual; se reconstruye", clave, sensor
-        )
+        motivo = "cubre otro recuadro" if not recuadro_ok else "le faltan bandas"
+        log.warning("%s/%s en caché %s; se reconstruye", clave, sensor, motivo)
 
     if area is None:
         area, _ = aoi_de_ciudad(clave, raiz)
@@ -214,14 +237,17 @@ def canales_s2(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
 
     El rojo lleva la señal de material construido, el infrarrojo cercano separa vegetación
     de suelo desnudo, y el NDVI resume ambos en un índice acotado que no depende de la
-    calibración absoluta.
+    calibración absoluta. El NDBI agrega la respuesta del infrarrojo de onda corta, que es
+    donde el material construido se distingue mejor del suelo desnudo.
     """
     rojo = bandas["B04"].astype("float32")
     nir = bandas["B08"].astype("float32")
+    swir = bandas["B11"].astype("float32")
     return {
         "s2rojo": rojo,
         "s2nir": nir,
         "s2ndvi": _division_segura(nir - rojo, nir + rojo),
+        "s2ndbi": _division_segura(swir - nir, swir + nir),
     }
 
 

@@ -97,6 +97,7 @@ RANGOS_FIJOS_S2 = {
     "s2rojo": (0.0, 4000.0),
     "s2nir": (0.0, 5000.0),
     "s2ndvi": (-0.5, 1.0),
+    "s2ndbi": (-0.6, 0.6),
 }
 """Rangos fijos del óptico, en reflectancia escalada por diez mil y en índice.
 

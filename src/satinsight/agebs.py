@@ -281,8 +281,27 @@ def _clave_de_municipio(nombre: str) -> str:
     return "".join(c for c in plano if c.isalnum())
 
 
+MINIMO_AGEBS_REZAGADA = 50
+PROPORCION_REZAGADA = 0.25
+"""Umbrales de la rama estratificada de la selección.
+
+Escoger ciudades solo por tamaño produce una muestra sistemáticamente acomodada: las 81
+mayores tienen 9.8% de AGEB en grado alto contra 23.1% del país, porque las ciudades grandes
+son menos rezagadas y la conurbación añade periferia acomodada. Ampliar así empeoraría lo
+mismo que Tapachula y Acapulco vinieron a corregir en la etapa 1.
+
+La rama estratificada admite ciudades chicas con rezago alto concentrado. Son 62 y suman
+5,302 AGEB, entre ellas Ocosingo con 96.6% de su territorio en grado alto.
+"""
+
+
 def ciudades_por_tamano(
-    minimo_agebs: int = MINIMO_AGEBS_CIUDAD, raiz: Path = RAIZ_DATOS
+    minimo_agebs: int = MINIMO_AGEBS_CIUDAD,
+    raiz: Path = RAIZ_DATOS,
+    *,
+    estratificar: bool = False,
+    minimo_rezagada: int = MINIMO_AGEBS_REZAGADA,
+    proporcion_rezagada: float = PROPORCION_REZAGADA,
 ) -> dict[str, Ciudad]:
     """Deriva del censo la lista de ciudades que superan un tamaño mínimo.
 
@@ -298,11 +317,20 @@ def ciudades_por_tamano(
     """
     tabla = cargar_grs(raiz)
     conteo = (
-        tabla.groupby(["cve_ent", "cve_mun", "municipio"], observed=True)
-        .size()
-        .reset_index(name="agebs")
+        tabla.assign(alto=tabla["grado"].isin(GRADOS[3:]))
+        .groupby(["cve_ent", "cve_mun", "municipio"], observed=True)
+        .agg(agebs=("cvegeo", "size"), altos=("alto", "sum"))
+        .reset_index()
     )
-    conteo = conteo[conteo["agebs"] >= minimo_agebs].sort_values("agebs", ascending=False)
+    grandes = conteo["agebs"] >= minimo_agebs
+    if estratificar:
+        rezagadas = (conteo["agebs"] >= minimo_rezagada) & (
+            conteo["altos"] / conteo["agebs"] >= proporcion_rezagada
+        )
+        conteo = conteo[grandes | rezagadas]
+    else:
+        conteo = conteo[grandes]
+    conteo = conteo.sort_values("agebs", ascending=False)
 
     heredadas = {c.municipio: clave for clave, c in CIUDADES.items()}
     propuestas = [_clave_de_municipio(n) for n in conteo["municipio"]]
