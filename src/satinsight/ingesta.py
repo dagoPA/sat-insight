@@ -34,14 +34,45 @@ BASE_INEGI = (
 )
 
 ENTIDADES: dict[str, str] = {
+    "01": "01_aguascalientes",
+    "02": "02_bajacalifornia",
+    "03": "03_bajacaliforniasur",
+    "04": "04_campeche",
+    "05": "05_coahuiladezaragoza",
+    "06": "06_colima",
     "07": "07_chiapas",
+    "08": "08_chihuahua",
     "09": "09_ciudaddemexico",
+    "10": "10_durango",
+    "11": "11_guanajuato",
     "12": "12_guerrero",
+    "13": "13_hidalgo",
+    "14": "14_jalisco",
+    "15": "15_mexico",
+    "16": "16_michoacandeocampo",
+    "17": "17_morelos",
+    "18": "18_nayarit",
+    "19": "19_nuevoleon",
+    "20": "20_oaxaca",
+    "21": "21_puebla",
+    "22": "22_queretaro",
+    "23": "23_quintanaroo",
+    "24": "24_sanluispotosi",
+    "25": "25_sinaloa",
+    "26": "26_sonora",
+    "27": "27_tabasco",
+    "28": "28_tamaulipas",
+    "29": "29_tlaxcala",
+    "30": "30_veracruzignaciodelallave",
     "31": "31_yucatan",
+    "32": "32_zacatecas",
 }
-"""Entidades que cubren las tres ciudades piloto, con el nombre de su paquete en INEGI.
+"""Las 32 entidades con el nombre de su paquete en el Marco Geoestadístico.
 
-Agregar una entidad nueva es escribir su renglón: el patrón de URL es el mismo para las 32.
+Los nombres siguen la clave seguida del nombre en minúsculas sin acentos ni espacios, con
+una excepción verificada contra el servidor: Veracruz omite la preposición y va como
+`30_veracruzignaciodelallave`. Cada URL se comprobó con una petición de cabecera antes de
+fijarla aquí.
 """
 
 AGENTE = (
@@ -108,15 +139,28 @@ def descargar(url: str, destino: Path, *, forzar: bool = False, intentos: int = 
     raise RuntimeError(f"no se pudo descargar {url} tras {intentos} intentos") from ultimo_error
 
 
-def _extraer(archivo_zip: Path, destino: Path) -> Path:
-    """Descomprime un zip una sola vez, marcando el resultado con un sello."""
-    sello = destino / ".extraido"
+def _extraer(archivo_zip: Path, destino: Path, patron: str | None = None) -> Path:
+    """Descomprime un zip una sola vez, marcando el resultado con un sello.
+
+    Con `patron` se extraen solo los miembros cuyo nombre lo contenga. El paquete de una
+    entidad del Marco Geoestadístico pesa unos 430 MB al descomprimirse y trae quince capas
+    —manzanas, AGEB rurales, servicios—, de las que este trabajo usa una sola que ocupa 3 MB.
+    Sacar el paquete entero para 27 entidades costaría once gigabytes de capas que nadie abre.
+    """
+    sello = destino / (".extraido" if patron is None else f".extraido_{patron}")
     if sello.exists():
         return destino
     destino.mkdir(parents=True, exist_ok=True)
-    log.info("extrayendo %s", archivo_zip.name)
     with zipfile.ZipFile(archivo_zip) as z:
-        z.extractall(destino)
+        miembros = z.namelist() if patron is None else [n for n in z.namelist() if patron in n]
+        if patron is not None and not miembros:
+            disponibles = sorted({Path(n).name for n in z.namelist() if n.endswith(".shp")})
+            raise FileNotFoundError(
+                f"{archivo_zip.name} no contiene nada que coincida con {patron!r}. "
+                f"Capas presentes: {disponibles}"
+            )
+        log.info("extrayendo %d miembros de %s", len(miembros), archivo_zip.name)
+        z.extractall(destino, members=miembros)
     sello.touch()
     return destino
 
@@ -144,7 +188,7 @@ def asegurar_inegi(entidad: str, raiz: Path = RAIZ_DATOS, *, forzar: bool = Fals
     comprimido = descargar(
         f"{BASE_INEGI}/{nombre}.zip", raiz / "crudo" / f"{nombre}.zip", forzar=forzar
     )
-    return _extraer(comprimido, raiz / "inegi" / entidad)
+    return _extraer(comprimido, raiz / "inegi" / entidad, patron=f"{entidad}a.")
 
 
 URL_NATURALEARTH = (
