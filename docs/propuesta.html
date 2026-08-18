@@ -604,7 +604,7 @@
       <span><b>Sensor</b> Sentinel-1 GRD IW + Sentinel-2 (control)</span>
       <span><b>Ámbito</b> México → Brasil, Colombia</span>
       <span><b>Temporal</b> corte único, sin cambio</span>
-      <span><b>Estado</b> etapa 1 concluida · criterio satisfecho en radar</span>
+      <span><b>Estado</b> etapa 1 concluida · criterio satisfecho</span>
     </div>
   </header>
 
@@ -635,12 +635,14 @@
         <p>
           Se reporta el estudio de viabilidad previo, ejecutado sobre 2,703 áreas geoestadísticas de
           cinco ciudades mexicanas con rasgos de textura de segundo orden y potenciación de gradiente,
-          validado dejando una ciudad fuera. En Sentinel-1 la textura alcanza un kappa cuadrático
-          ponderado de 0.276 frente a 0.253 de los estadísticos de intensidad y 0.182 de un producto
-          independiente de densidad construida. En Sentinel-2 el orden se invierte: 0.145 para la
-          textura contra 0.319 para la intensidad. El arreglo espacial de la señal aporta información
-          únicamente en el sensor que mide geometría, resultado compatible con la naturaleza
-          morfológica del fenómeno y con la estabilidad radiométrica que motivó incluir el radar.
+          validado dejando una ciudad fuera. El criterio se satisface: la textura alcanza un kappa
+          cuadrático ponderado de 0.319 en Sentinel-2 y 0.270 en Sentinel-1, por encima de 0.182 que
+          obtiene un producto independiente de densidad construida, lo cual descarta que el desempeño
+          provenga de leer cuánto hay edificado. La condición que lo habilita es la escala de
+          cuantización: fijarla en unidades físicas, en lugar de estimarla de cada ciudad, aporta
+          +0.253 al radar y +0.209 al óptico, con intervalos por ciudades que excluyen el cero en
+          ambos casos. Cuál de las dos modalidades recupera mejor la señal queda sin resolver, porque
+          con cinco ciudades la diferencia entre ellas no alcanza a distinguirse.
         </p>
         <p class="keywords">
           <b>Palabras clave</b> aprendizaje de instancias múltiples · supervisión débil · radar de
@@ -1619,11 +1621,12 @@
 
       <div class="thesis">
         <p>
-          La afirmación que sostiene el proyecto es que <strong>el radar transfiere mejor si se
-          explota su calibración</strong>. Gamma0 es una magnitud física: usarla como tal duplica
-          el kappa de textura frente al óptico, y usarla con una escala derivada de los datos lo
-          hunde por debajo del azar. La escala fija es entonces la condición bajo la cual el
-          argumento del sensor se sostiene, con el peso de una decisión experimental.
+          La ablación espejo corrige una lectura anterior de estos mismos datos. Al medir también
+          el óptico con escala fija, resulta que <strong>la escala fija gana en las dos
+          modalidades</strong>: la textura de radar sube de 0.017 a 0.270 y la óptica de 0.109 a
+          0.319. La ventaja del radar que se había reportado provenía de compararlo en su mejor
+          tratamiento contra el óptico en el suyo peor. Con tratamiento igualado, la diferencia
+          entre modalidades deja de ser distinguible con cinco ciudades.
         </p>
       </div>
 
@@ -1743,20 +1746,53 @@ uv run satinsight baseline s1  # validación dejando una ciudad fuera</pre>
         </table>
       </div>
 
+      <p>
+        Las dos tablas anteriores miden cada modalidad con la escala de cuantización que se le
+        asignó al diseñar: fija en decibeles para el radar, por estar calibrado, y estimada por
+        ciudad para el óptico. Comparar modalidades bajo tratamientos distintos confunde el sensor
+        con el preproceso, así que la comparación se repite con las dos bajo escala fija y sobre
+        las 2,232 AGEB que tienen textura en ambas.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Escala fija · 2,232 AGEB comunes</th><th>Textura</th><th>Completo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Modalidad óptica</td><td class="num">0.319</td><td class="num">0.364</td></tr>
+            <tr><td>Modalidad de radar</td><td class="num">0.270</td><td class="num">0.258</td></tr>
+            <tr><td>Fusión de ambas</td><td class="num">0.244</td><td class="num">0.256</td></tr>
+            <tr><td>Óptica con percentiles</td><td class="num">0.109</td><td class="num">0.233</td></tr>
+            <tr><td>Radar con percentiles</td><td class="num">0.017</td><td class="num">0.234</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="thesis">
         <p>
-          <strong>El criterio se satisface en la modalidad de radar y falla en la textura óptica.</strong> El
-          radar le gana a la densidad construida independiente por un factor de 1.7 y queda
-          positivo en los cinco pliegues. La textura óptica, con el filtro aplicado, cae por
-          debajo de <em class="term">cobertura</em> y sale negativa en Acapulco: ahí resta.
+          <strong>La escala fija gana en las dos modalidades y la diferencia entre modalidades no se
+          distingue.</strong> Fijar la escala aporta +0.253 al radar, con los cinco pliegues a favor
+          e intervalo por ciudades de [+0.189, +0.359], y +0.209 al óptico, con cuatro de cinco e
+          intervalo [+0.050, +0.401]. Entre modalidades, en cambio, la ventaja óptica de +0.106 solo
+          alcanza tres pliegues de cinco y su intervalo cruza el cero. La fusión de ambas no aporta
+          nada sobre la mejor por separado.
         </p>
       </div>
+
+      <p>
+        Las pruebas usan la ciudad como unidad independiente, porque las AGEB vecinas están
+        correlacionadas espacialmente. Con cinco ciudades, el valor p a dos colas de una prueba de
+        signos no puede bajar de 0.0625 aunque los cinco pliegues coincidan, de modo que el tamaño
+        del efecto y su intervalo informan más que el valor p. Es una propiedad del tamaño de
+        muestra, y se resuelve sumando ciudades.
+      </p>
 
 
       <figure>
         <div class="figframe" tabindex="0">
 <svg viewBox="0 0 860 322" xmlns="http://www.w3.org/2000/svg" role="img"
- aria-label="Gráfica de barras del kappa por conjunto de rasgos en las dos modalidades. En radar la textura supera a la densidad; en óptico la densidad supera a la textura, y esa inversión es el resultado de la etapa 1.">
+ aria-label="Gráfica de barras del kappa por conjunto de rasgos en las dos modalidades, con la escala de cuantización asignada a cada una al diseñar. En radar la textura supera a la densidad; en óptico ocurre lo contrario.">
 <line x1="150" y1="52" x2="150" y2="276" stroke="var(--rule)" stroke-width="1"/>
 <text x="150" y="296" text-anchor="middle" font-size="11" fill="var(--ink-3)">0.0</text>
 <line x1="333" y1="52" x2="333" y2="276" stroke="var(--rule)" stroke-width="1"/>
@@ -1797,10 +1833,11 @@ uv run satinsight baseline s1  # validación dejando una ciudad fuera</pre>
 </svg>
         </div>
         <figcaption>
-          <b>La inversión entre modalidades es el resultado de la etapa 1.</b> En radar, medir cómo se
-          arregla la señal en el espacio supera a medir cuánto brilla. En óptico ocurre lo contrario:
-          la densidad sola rinde más que la textura, que además queda por debajo del baseline
-          independiente. El sensor que mide geometría es el que responde a la morfología.
+          Cada modalidad con la escala que se le asignó al diseñar: fija para el radar, estimada por
+          ciudad para el óptico. En radar, medir cómo se arregla la señal en el espacio supera a
+          medir cuánto brilla; en óptico ocurre lo contrario. <b>La inversión se debe a la escala de
+          cuantización y no al sensor:</b> al medir también el óptico con escala fija, su textura
+          sube de 0.145 a 0.319 y el orden se restablece en las dos modalidades.
         </figcaption>
       </figure>
 
@@ -2044,10 +2081,12 @@ uv run satinsight baseline s1  # validación dejando una ciudad fuera</pre>
     <div class="body">
       <h2>Resultados establecidos</h2>
       <p class="lead-in">
-        El criterio de viabilidad se satisface en la modalidad de radar. Existe señal morfológica en Sentinel-1 que
-        supera a un producto independiente de densidad construida, lo cual descarta que el desempeño
-        provenga del atajo por ruralidad. La textura óptica falló la misma prueba y queda documentada
-        como control negativo.
+        El criterio de viabilidad se satisface. Existe señal morfológica que supera a un producto
+        independiente de densidad construida, lo cual descarta que el desempeño provenga del atajo
+        por ruralidad, y sobrevive a la partición por ciudad. Qué modalidad la recupera mejor queda
+        sin resolver: con las dos cuantizadas en escala fija, la óptica alcanza 0.364 y el radar
+        0.258 en el conjunto completo, con tres de cinco pliegues a favor y un intervalo por
+        ciudades que cruza el cero. Distinguirlas pide más ciudades antes que más análisis.
       </p>
       <p>
         Tres correcciones de la etapa 1 conviene retenerlas porque ninguna producía síntoma visible: las
