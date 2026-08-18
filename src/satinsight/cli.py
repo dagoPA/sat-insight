@@ -220,6 +220,33 @@ def cmd_figuras(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_avance(args: argparse.Namespace) -> int:
+    """Reporta cuántas ciudades del conjunto tienen ya sus dos compuestos.
+
+    La composición nacional tarda días y sobrevive a la sesión que la lanzó, así que hace
+    falta poder consultarla desde cualquier otra.
+    """
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.cache import ruta_compuesto
+
+    catalogo = ciudades_por_tamano(estratificar=not args.sin_estratificar)
+    raiz = RAIZ_DATOS / "compuestos"
+    completas, a_medias, faltan = [], [], []
+    for clave in catalogo:
+        hechos = [s for s in SENSORES if ruta_compuesto(clave, s, raiz).exists()]
+        destino = completas if len(hechos) == len(SENSORES) else a_medias if hechos else faltan
+        destino.append(clave)
+
+    tamano = sum(p.stat().st_size for p in raiz.glob("*.tif")) / 1e9 if raiz.exists() else 0
+    print(f"\n{len(completas)} de {len(catalogo)} ciudades completas")
+    print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {tamano:.1f} GB en disco")
+    if a_medias:
+        print(f"\nen curso: {', '.join(a_medias[:8])}")
+    if args.detalle and faltan:
+        print(f"\npendientes: {', '.join(faltan)}")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -270,6 +297,11 @@ def construir_parser() -> argparse.ArgumentParser:
     diag.add_argument("sensor", choices=SENSORES)
     diag.add_argument("--rasgos", help="parquet de rasgos ya extraído")
     diag.set_defaults(func=cmd_diagnostico)
+
+    avance = sub.add_parser("avance", help="cuántas ciudades llevan sus dos compuestos")
+    avance.add_argument("--detalle", action="store_true", help="lista las pendientes")
+    avance.add_argument("--sin-estratificar", action="store_true", help="solo las 81 mayores")
+    avance.set_defaults(func=cmd_avance)
 
     figs = sub.add_parser("figuras", help="regenera las figuras de la fase 1")
     figs.add_argument("ciudad", help="clave de ciudad, por ejemplo tapachula")
