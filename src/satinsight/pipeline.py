@@ -98,11 +98,20 @@ def _exigir_escenas(clave: str, sensor: str, usadas: int, pedidas: int) -> None:
 
 
 def aoi_de_ciudad(
-    clave: str, raiz: Path = RAIZ_DATOS, *, margen_m: float = MARGEN_M
+    clave: str,
+    raiz: Path = RAIZ_DATOS,
+    *,
+    margen_m: float = MARGEN_M,
+    catalogo: dict | None = None,
 ) -> tuple[AOI, gpd.GeoDataFrame]:
-    """Recuadro que envuelve a las AGEB de una ciudad, junto con esas AGEB."""
-    agebs = agebs_de_ciudad(clave, raiz)
-    ciudad = CIUDADES[clave]
+    """Recuadro que envuelve a las AGEB de una ciudad, junto con esas AGEB.
+
+    `catalogo` permite trabajar sobre el conjunto nacional que devuelve
+    `agebs.ciudades_por_tamano` en vez de las cinco piloto escritas a mano.
+    """
+    catalogo = catalogo or CIUDADES
+    agebs = agebs_de_ciudad(clave, raiz, catalogo=catalogo)
+    ciudad = catalogo[clave]
     area = AOI.desde_poligonos(clave, ciudad.nombre, ciudad.entidad, agebs, margen_m=margen_m)
     alto, ancho = area.forma_aproximada()
     log.info("%s: %d AGEB, recuadro ~%dx%d px @10 m", ciudad.nombre, len(agebs), ancho, alto)
