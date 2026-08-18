@@ -89,10 +89,28 @@ Sentinel-1: gamma0 es una magnitud calibrada, comparable entre países sin recal
 cuantización se ajusta a cada ciudad, esa comparabilidad se pierde por una decisión de
 implementación, y con ella el argumento de transferencia a Brasil y Colombia.
 
-Los bordes se fijan por física y quedan idénticos en todas las ciudades. El óptico sí
-admite normalizar por escena, porque arrastra residuos atmosféricos y de BRDF ajenos a la
-señal.
+Los bordes se fijan por física y quedan idénticos en todas las ciudades. El óptico admite
+normalizar por escena, porque arrastra residuos atmosféricos y de BRDF ajenos a la señal.
 """
+
+RANGOS_FIJOS_S2 = {
+    "s2rojo": (0.0, 4000.0),
+    "s2nir": (0.0, 5000.0),
+    "s2ndvi": (-0.5, 1.0),
+}
+"""Rangos fijos del óptico, en reflectancia escalada por diez mil y en índice.
+
+Existen para la ablación espejo de la del radar. La reflectancia de Sentinel-2 L2A también
+está calibrada, así que la pregunta de si conviene fijar la escala se puede hacer en las dos
+modalidades, y compararlas con tratamientos distintos confunde el sensor con el preproceso.
+
+Los bordes cubren la envolvente medida sobre las cinco ciudades: el percentil 98 del rojo va
+de 2,036 en Acapulco a 3,719 en Mérida, y el del infrarrojo llega a 4,596. El NDVI usa sus
+límites naturales.
+"""
+
+RANGOS_FIJOS = RANGOS_FIJOS_S1 | RANGOS_FIJOS_S2
+"""Todos los rangos fijos, para cuantizar cualquier canal sin mirar los datos."""
 
 
 def rango_robusto(banda: np.ndarray, p_bajo: float = 2.0, p_alto: float = 98.0) -> tuple:

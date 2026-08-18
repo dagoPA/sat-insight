@@ -344,3 +344,55 @@ def seleccionar_rasgos(
             }
         )
     return pd.DataFrame(filas)
+
+
+def prueba_de_signos(diferencias: np.ndarray) -> dict[str, float]:
+    """Prueba exacta de signos sobre las diferencias por pliegue.
+
+    Con cinco ciudades hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
+    están correlacionadas espacialmente entre sí. Tratar cada AGEB como independiente
+    inflaría la significancia; la unidad independiente es la ciudad.
+
+    Cinco pliegues dan 32 asignaciones de signo posibles. Con los cinco a favor, el valor p a
+    dos colas es 2/32 = 0.0625, que es el mínimo alcanzable con este tamaño de muestra: la
+    prueba **nunca** puede bajar de 0.05 con cinco ciudades. Eso es una propiedad del diseño
+    y conviene reportarla junto al resultado, porque invita a leer el tamaño del efecto y su
+    intervalo antes que el valor p, y a sumar ciudades si se quiere evidencia concluyente.
+    """
+    diferencias = np.asarray(diferencias, dtype="float64")
+    diferencias = diferencias[diferencias != 0]
+    n = len(diferencias)
+    if n == 0:
+        return {"n": 0, "a_favor": 0, "p": np.nan}
+
+    from math import comb
+
+    favor = int((diferencias > 0).sum())
+    extremo = max(favor, n - favor)
+    cola = sum(comb(n, k) for k in range(extremo, n + 1))
+    return {"n": n, "a_favor": favor, "p": min(1.0, 2 * cola / 2**n)}
+
+
+def intervalo_por_ciudades(
+    por_ciudad: pd.DataFrame,
+    columna: str,
+    *,
+    repeticiones: int = 10000,
+    semilla: int = SEMILLA,
+) -> dict[str, float]:
+    """Intervalo de confianza de una diferencia, remuestreando ciudades enteras.
+
+    El bootstrap por conglomerados respeta que la unidad independiente es la ciudad. Con
+    cinco conglomerados el intervalo sale ancho, que es la respuesta honesta al tamaño de
+    muestra y no un defecto del método.
+    """
+    valores = por_ciudad[columna].to_numpy(dtype="float64")
+    rng = np.random.default_rng(semilla)
+    muestras = valores[rng.integers(0, len(valores), size=(repeticiones, len(valores)))]
+    medias = muestras.mean(axis=1)
+    return {
+        "media": float(valores.mean()),
+        "ic_bajo": float(np.percentile(medias, 2.5)),
+        "ic_alto": float(np.percentile(medias, 97.5)),
+        "fraccion_positiva": float((medias > 0).mean()),
+    }

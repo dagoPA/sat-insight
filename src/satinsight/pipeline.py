@@ -25,7 +25,7 @@ from satinsight.composite import compuesto_s1, compuesto_s2
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.malla import Malla, malla_de_escenas
 from satinsight.raster import a_db
-from satinsight.textura import RANGOS_FIJOS_S1, rasgos_por_ageb
+from satinsight.textura import RANGOS_FIJOS, RANGOS_FIJOS_S1, rasgos_por_ageb
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +38,32 @@ MARGEN_M = 200.0
 """Holgura alrededor de las AGEB, para que ninguna quede cortada por el borde del recuadro."""
 
 SENSORES = ("s2", "s1")
+
+ESCALAS = ("nativa", "fija", "percentiles")
+"""Cómo se fija la escala de cuantización de la textura, y por qué hay tres opciones.
+
+- `nativa` es el criterio de la fase 1: rango fijo en decibeles para el radar, porque gamma0
+  está calibrado, y percentiles por ciudad para el óptico, porque arrastra residuos
+  atmosféricos.
+- `fija` cuantiza ambas modalidades con bordes fijos.
+- `percentiles` estima el rango de cada ciudad en ambas.
+
+Las dos últimas existen para poder comparar las modalidades bajo el mismo tratamiento.
+Medirlas con criterios distintos confunde el sensor con el preproceso, y esa confusión es
+justo lo que la comparación tiene que descartar.
+"""
+
+
+def _rango_de_canal(nombre: str, escala: str) -> tuple[float, float] | None:
+    """Rango de cuantización de un canal bajo la escala pedida, o `None` para estimarlo."""
+    if escala == "nativa":
+        return RANGOS_FIJOS_S1.get(nombre)
+    if escala == "fija":
+        return RANGOS_FIJOS.get(nombre)
+    if escala == "percentiles":
+        return None
+    raise ValueError(f"escala desconocida: {escala!r}. Válidas: {', '.join(ESCALAS)}")
+
 
 TOPE_S2 = 20
 TOPE_S1 = 16
@@ -212,14 +238,11 @@ def rasgos_de_ciudad(
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     max_escenas: int | None = None,
-    rangos_fijos: bool = True,
+    escala: str = "nativa",
 ) -> pd.DataFrame:
     """Tabla de rasgos por AGEB para una ciudad y un sensor, con su etiqueta ordinal.
 
-    `rangos_fijos` en falso hace que el radar se cuantice con percentiles de cada ciudad,
-    igual que el óptico. Existe para separar dos explicaciones de por qué el radar
-    transfiere mejor: si es la calibración de gamma0 o si es la escala fija con la que se
-    cuantiza. Sin esa ablación, la comparación entre brazos confunde sensor con preproceso.
+    `escala` elige cómo se cuantiza la textura; ver `ESCALAS`.
     """
     area, agebs = aoi_de_ciudad(clave, raiz)
     bandas, malla, _ = asegurar_compuesto(
@@ -244,7 +267,7 @@ def rasgos_de_ciudad(
             geometrias,
             claves,
             prefijo=nombre,
-            rango=RANGOS_FIJOS_S1.get(nombre) if rangos_fijos else None,
+            rango=_rango_de_canal(nombre, escala),
         )
         tabla = tabla.merge(parcial, on="cvegeo", how="left")
 
@@ -269,11 +292,11 @@ def rasgos_de_todas(
     *,
     raiz: Path = RAIZ_DATOS,
     max_escenas: int | None = None,
-    rangos_fijos: bool = True,
+    escala: str = "nativa",
 ) -> pd.DataFrame:
     """Apila las tablas de rasgos de varias ciudades para un mismo sensor."""
     partes = [
-        rasgos_de_ciudad(c, sensor, raiz=raiz, max_escenas=max_escenas, rangos_fijos=rangos_fijos)
+        rasgos_de_ciudad(c, sensor, raiz=raiz, max_escenas=max_escenas, escala=escala)
         for c in ciudades
     ]
     return pd.concat(partes, ignore_index=True)
