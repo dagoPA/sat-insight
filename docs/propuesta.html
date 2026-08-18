@@ -664,7 +664,8 @@
         pequeñas</strong>, y en México su insumo es un censo decenal.
       </p>
       <p>
-        Este trabajo desagrega esa etiqueta gruesa con imágenes satelitales y supervisión débil. Un
+        Este trabajo desagrega esa anotación de nivel municipal con imágenes satelitales y
+        supervisión débil. Un
         modelo de aprendizaje de instancias múltiples recibe un municipio troceado en parches y una
         sola etiqueta ordinal para todo el conjunto, y produce un mapa de atención que indica qué
         parches sostienen esa clasificación. El entrenamiento no incorpora supervisión espacial.
@@ -680,7 +681,8 @@
 
       <h2>Planteamiento</h2>
       <p class="lead-in">
-        Entrenar un modelo MIL con atención que reciba <strong>una sola etiqueta gruesa por municipio</strong>
+        Entrenar un modelo MIL con atención que reciba <strong>una sola anotación a nivel de
+        municipio</strong>
         (el grado de rezago social que publica CONEVAL) y aprenda a clasificarla a partir de parches de
         imagen satelital. Lo interesante es el mapa de atención resultante: señala <em>dónde</em>, dentro
         del municipio, se concentran las carencias. Y como el censo mexicano publica el mismo indicador en
@@ -837,7 +839,7 @@
 
       <h3>Alternativas descartadas</h3>
       <ul>
-        <li><strong>PIB o actividad económica municipal.</strong> La señal en imagen es indirecta y la etiqueta demasiado gruesa: pocos miles de municipios y una relación causal difusa.</li>
+        <li><strong>PIB o actividad económica municipal.</strong> La señal en imagen es indirecta y la anotación queda a un nivel demasiado agregado: pocos miles de municipios y una relación causal difusa.</li>
         <li><strong>Volumen construido GHSL.</strong> La etiqueta ya es producto de un modelo sobre imágenes satelitales. Predecir un modelo con otro modelo es circular.</li>
         <li><strong>Asentamientos informales.</strong> Binario, y las definiciones oficiales son inconsistentes entre países, lo cual mata la comparabilidad internacional que se busca.</li>
         <li><strong>Electrificación o acceso a servicios.</strong> Se resuelve mejor con luces nocturnas; el radar no aporta nada que VIIRS no dé más barato.</li>
