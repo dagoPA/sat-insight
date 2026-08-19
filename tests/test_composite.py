@@ -131,3 +131,31 @@ def test_una_orbita_ilegible_cuenta_como_sin_cobertura(monkeypatch):
 
     monkeypatch.setattr(composite, "leer_ventana", leer)
     assert composite.cobertura_util([escena_sar("x")], BBOX) == 0.0
+
+
+def test_un_compuesto_de_radar_con_ceros_se_rechaza():
+    """Gamma0 lineal es positiva: un cero delata al sin-dato colado en la mediana."""
+    arreglo = np.full((8, 8), 0.2, dtype="float32")
+    arreglo[0, 0] = 0.0
+    with pytest.raises(RuntimeError, match="cero o negativo"):
+        composite._revisar_compuesto_s1({"vv": arreglo})
+
+
+def test_un_compuesto_de_radar_con_valor_intermedio_se_rechaza():
+    """El caso que no se ve: la mediana promedia -32768 con un valor bueno."""
+    arreglo = np.full((8, 8), -16384.0, dtype="float32")
+    with pytest.raises(RuntimeError, match="cero o negativo"):
+        composite._revisar_compuesto_s1({"vv": arreglo})
+
+
+def test_un_compuesto_de_radar_mayormente_sin_observar_se_rechaza():
+    arreglo = np.full((10, 10), np.nan, dtype="float32")
+    arreglo[:5] = 0.2
+    with pytest.raises(RuntimeError, match="ninguna órbita cubre"):
+        composite._revisar_compuesto_s1({"vv": arreglo})
+
+
+def test_un_compuesto_de_radar_sano_pasa():
+    arreglo = np.full((10, 10), 0.2, dtype="float32")
+    arreglo[0] = np.nan
+    assert composite._revisar_compuesto_s1({"vv": arreglo, "vh": arreglo}) == pytest.approx(0.9)
