@@ -422,3 +422,186 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
     plt.close(figura)
     log.info("mapa de AGEB por ciudad: %s", destino)
     return destino
+
+
+ESTADOS_COMPOSICION = {
+    "completa": ("#4ade80", "compuesta en las dos modalidades"),
+    "a medias": ("#fbbf24", "una modalidad lista"),
+    "fallida": ("#f87171", "abortada por lecturas fallidas"),
+    "pendiente": ("#475569", "sin empezar"),
+}
+"""Color y glosa de cada estado en que puede estar la composición de una ciudad."""
+
+
+def estado_de_composicion(
+    claves: list[str], raiz: Path | None = None, logs: Path | None = None
+) -> dict[str, str]:
+    """Clasifica cada ciudad según lo que hay en disco y lo que dicen los registros.
+
+    Una ciudad que abortó deja su nombre en una línea `FALLO` del registro y ningún archivo,
+    lo cual la vuelve indistinguible de una que todavía no empieza. La distinción importa
+    porque una ciudad abortada no se reintenta sola: el barrido la salta y termina sin
+    señalarla. Solo se leen las líneas posteriores al último relanzamiento.
+    """
+    from satinsight.ingesta import RAIZ_DATOS
+
+    raiz = raiz or RAIZ_DATOS
+    compuestos = raiz / "compuestos"
+    fallidas: set[str] = set()
+    for registro in sorted((logs or raiz / "logs").glob("proceso_*.log")):
+        texto = registro.read_text(errors="ignore")
+        reciente = texto.rsplit("RELANZADO", 1)[-1]
+        for linea in reciente.splitlines():
+            if linea.startswith("FALLO "):
+                fallidas.add(linea.split()[1])
+
+    estados = {}
+    for clave in claves:
+        hechos = sum((compuestos / f"{clave}_{s}.tif").exists() for s in ("s1", "s2"))
+        if hechos == 2:
+            estados[clave] = "completa"
+        elif clave in fallidas:
+            # el fallo manda sobre el archivo suelto: una ciudad que abortó en la segunda
+            # modalidad deja la primera en disco y se vería como si solo fuera lenta
+            estados[clave] = "fallida"
+        elif hechos == 1:
+            estados[clave] = "a medias"
+        else:
+            estados[clave] = "pendiente"
+    return estados
+
+
+def mapa_ciudades_nacionales(
+    destino: Path, raiz: Path | None = None, catalogo: dict | None = None
+) -> Path:
+    """Sitúa las ciudades del conjunto nacional y colorea cada una según su composición.
+
+    El tamaño de la marca es el número de AGEB urbanas de la ciudad. Puestas sobre el país
+    se ve qué tanto cubre la muestra el territorio y dónde se concentra el trabajo hecho.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import geopandas as gpd
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.ingesta import RAIZ_DATOS, asegurar_naturalearth
+
+    raiz = raiz or RAIZ_DATOS
+    catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
+    estados = estado_de_composicion(list(catalogo), raiz)
+
+    puntos = []
+    for clave, ciudad in catalogo.items():
+        try:
+            area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
+        except Exception:
+            log.warning("sin geometría para %s", clave, exc_info=True)
+            continue
+        puntos.append(
+            {
+                "clave": clave,
+                "nombre": ciudad.nombre,
+                "lon": (area.bbox[0] + area.bbox[2]) / 2,
+                "lat": (area.bbox[1] + area.bbox[3]) / 2,
+                "agebs": len(agebs),
+                "estado": estados[clave],
+            }
+        )
+
+    estados_lista = gpd.read_file(asegurar_naturalearth(raiz))
+    mexico = estados_lista[estados_lista["admin"] == "Mexico"]
+
+    figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
+    figura.patch.set_facecolor(_hex(FONDO))
+    _estilo_oscuro(ax)
+    mexico.plot(ax=ax, facecolor="#1d2530", edgecolor="#3b4653", linewidth=0.6)
+
+    orden = ["pendiente", "a medias", "fallida", "completa"]
+    for estado in orden:
+        grupo = [p for p in puntos if p["estado"] == estado]
+        if not grupo:
+            continue
+        ax.scatter(
+            [p["lon"] for p in grupo],
+            [p["lat"] for p in grupo],
+            s=[16 + p["agebs"] * 0.16 for p in grupo],
+            c=ESTADOS_COMPOSICION[estado][0],
+            edgecolor="#0f1319",
+            linewidth=0.7,
+            alpha=0.95 if estado != "pendiente" else 0.75,
+            zorder=3 + orden.index(estado),
+        )
+
+    # solo se rotulan las ciudades ya compuestas y las que fallaron: rotular las 138
+    # deja el mapa ilegible, y son esas dos las que interesa poder señalar por nombre
+    rotuladas = sorted(
+        (p for p in puntos if p["estado"] != "pendiente"),
+        key=lambda p: (-p["lat"], p["lon"]),
+    )
+    # las conurbaciones vecinas dejan sus rótulos uno encima de otro —Zapopan sobre
+    # Guadalajara, Mexicali sobre Tijuana—, así que cada rótulo que caiga muy cerca del
+    # anterior se empuja hacia abajo hasta despejarse
+    puestas: list[tuple[float, float]] = []
+    for p in rotuladas:
+        dx, dy = 6, 4
+        while any(
+            abs(p["lon"] - lon) < 1.7 and abs((p["lat"] + dy / 22) - lat) < 0.42
+            for lon, lat in puestas
+        ):
+            dy -= 11
+        puestas.append((p["lon"], p["lat"] + dy / 22))
+        ax.annotate(
+            p["nombre"],
+            (p["lon"], p["lat"]),
+            textcoords="offset points",
+            xytext=(dx, dy),
+            fontsize=6.4,
+            color="#c9d3de",
+            family="monospace",
+            zorder=8,
+        )
+
+    hechas = sum(1 for p in puntos if p["estado"] == "completa")
+    total_agebs = sum(p["agebs"] for p in puntos)
+    ax.set_xlim(-118.5, -85.5)
+    ax.set_ylim(13.5, 33.5)
+    ax.set_title(
+        f"Las {len(puntos)} ciudades del conjunto nacional · {total_agebs:,} AGEB urbanas\n"
+        f"{hechas} con la composición terminada",
+        color="#e6ebf1",
+        fontsize=13,
+        loc="left",
+        pad=14,
+    )
+    marcas = [
+        Line2D(
+            [],
+            [],
+            marker="o",
+            linestyle="",
+            markersize=7,
+            markerfacecolor=color,
+            markeredgecolor="#0f1319",
+            label=f"{estado} · {glosa}",
+        )
+        for estado, (color, glosa) in ESTADOS_COMPOSICION.items()
+    ]
+    leyenda = ax.legend(
+        handles=marcas,
+        loc="lower left",
+        fontsize=8,
+        framealpha=0.85,
+        facecolor="#141a22",
+        edgecolor="#3b4653",
+    )
+    for texto in leyenda.get_texts():
+        texto.set_color("#c9d3de")
+
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
+    plt.close(figura)
+    log.info("mapa del conjunto nacional: %s", destino)
+    return destino
