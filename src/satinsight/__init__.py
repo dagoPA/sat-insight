@@ -15,7 +15,7 @@ from satinsight.catalog import (
     orbita_dominante,
     resumen_nubes,
 )
-from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.composite import cobertura_util, compuesto_s1, compuesto_s2, orbita_util
 from satinsight.raster import a_db, estirar, leer_ventana
 from satinsight.render import a_data_uri, guardar_rgb
 
@@ -31,11 +31,13 @@ __all__ = [
     "abrir_catalogo",
     "agrupar_por_orbita",
     "buscar",
+    "cobertura_util",
     "compuesto_s1",
     "compuesto_s2",
     "estirar",
     "guardar_rgb",
     "leer_ventana",
     "orbita_dominante",
+    "orbita_util",
     "resumen_nubes",
 ]
