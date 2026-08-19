@@ -260,6 +260,24 @@
   }
 
   .thesis p { margin: 0; max-width: none; }
+  .caveat {
+    border: 1px solid #c2410c;
+    border-left: 3px solid #c2410c;
+    background: #fff7ed;
+    padding: 18px 22px;
+    max-width: var(--measure);
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin: 22px 0;
+  }
+  .caveat p { margin: 0; max-width: none; }
+  .caveat .etiqueta {
+    display: block;
+    font-variant: all-small-caps;
+    letter-spacing: 0.06em;
+    color: #9a3412;
+    margin-bottom: 6px;
+  }
 
   /* ---------- tables ---------- */
 
@@ -1779,6 +1797,23 @@ uv run satinsight baseline s1  # validación dejando una ciudad fuera</pre>
           intervalo [+0.050, +0.401]. Entre modalidades, en cambio, la ventaja óptica de +0.106 solo
           alcanza tres pliegues de cinco y su intervalo cruza el cero. La fusión de ambas no aporta
           nada sobre la mejor por separado.
+        </p>
+      </div>
+
+      <div class="caveat">
+        <span class="etiqueta">Resultado sujeto a recálculo</span>
+        <p>
+          La comparación entre modalidades de esta sección se calculó con un compuesto de radar
+          defectuoso en Acapulco. El producto Sentinel-1 RTC marca los píxeles sin observación con
+          el valor centinela −32768, y la lectura lo entregaba como número: la mediana anual lo
+          trataba como retrodispersión. En Acapulco el defecto alcanzó al 40% de la tierra firme
+          del recuadro, y ese es uno de los cinco pliegues que sostienen las cifras de arriba.
+        </p>
+        <p style="margin-top: 10px;">
+          El defecto está corregido y los compuestos rehechos. La conclusión sobre la escala de
+          cuantización se apoya en las cinco ciudades y en las dos modalidades por igual, de modo
+          que el error de un pliegue de radar no la mueve. La comparación entre modalidades sí
+          queda pendiente de recalcularse, y se rehará sobre la muestra nacional de 138 ciudades.
         </p>
       </div>
 
