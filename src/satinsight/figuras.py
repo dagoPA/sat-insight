@@ -428,7 +428,7 @@ ESTADOS_COMPOSICION = {
     "completa": ("#4ade80", "compuesta en las dos modalidades"),
     "a medias": ("#fbbf24", "una modalidad lista"),
     "fallida": ("#f87171", "abortada por lecturas fallidas"),
-    "pendiente": ("#475569", "sin empezar"),
+    "pendiente": ("#9aa7b6", "sin empezar"),
 }
 """Color y glosa de cada estado en que puede estar la composición de una ciudad."""
 
@@ -517,7 +517,7 @@ def mapa_ciudades_nacionales(
     figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
     _estilo_oscuro(ax)
-    mexico.plot(ax=ax, facecolor="#1d2530", edgecolor="#3b4653", linewidth=0.6)
+    mexico.plot(ax=ax, facecolor="#171d26", edgecolor="#333e4b", linewidth=0.5)
 
     orden = ["pendiente", "a medias", "fallida", "completa"]
     for estado in orden:
@@ -527,11 +527,11 @@ def mapa_ciudades_nacionales(
         ax.scatter(
             [p["lon"] for p in grupo],
             [p["lat"] for p in grupo],
-            s=[16 + p["agebs"] * 0.16 for p in grupo],
+            s=[30 + p["agebs"] * 0.2 for p in grupo],
             c=ESTADOS_COMPOSICION[estado][0],
             edgecolor="#0f1319",
             linewidth=0.7,
-            alpha=0.95 if estado != "pendiente" else 0.75,
+            alpha=0.95,
             zorder=3 + orden.index(estado),
         )
 
