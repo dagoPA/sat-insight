@@ -101,6 +101,41 @@ def compuesto_s2(
     return compuesto, usadas
 
 
+FRACCION_VALIDA = 0.80
+"""Fracción mínima de píxeles observados que se le exige a un compuesto de radar."""
+
+
+def _revisar_compuesto_s1(
+    compuesto: dict[str, np.ndarray], minimo: float = FRACCION_VALIDA
+) -> float:
+    """Rechaza un compuesto de radar que salga sin observar o con valores imposibles.
+
+    Gamma0 en potencia lineal es estrictamente positiva. Un píxel en cero o negativo solo
+    puede venir de que el sin-dato de la escena entrara a la mediana, y ese defecto no se
+    delata solo: con un número par de escenas la mediana promedia el centinela con un valor
+    bueno y devuelve un número intermedio que parece dato. La única forma de verlo es
+    contar signos.
+
+    Una fracción alta de NaN significa que la órbita elegida no pasa por la ciudad. Es
+    preferible que la ciudad falle a que entre al conjunto con un compuesto hueco.
+    """
+    for polarizacion, arreglo in compuesto.items():
+        finitos = np.isfinite(arreglo)
+        fraccion = float(finitos.mean())
+        if fraccion < minimo:
+            raise RuntimeError(
+                f"el compuesto Sentinel-1 solo observó el {100 * fraccion:.0f}% del recuadro "
+                f"en {polarizacion}; ninguna órbita cubre la ciudad"
+            )
+        impropios = float((arreglo[finitos] <= 0).mean())
+        if impropios > 0:
+            raise RuntimeError(
+                f"el {100 * impropios:.1f}% de {polarizacion} salió en cero o negativo, "
+                "que gamma0 lineal no admite: el sin-dato de la escena entró a la mediana"
+            )
+    return min(float(np.isfinite(a).mean()) for a in compuesto.values())
+
+
 MUESTRAS_DE_ORBITA = 4
 """Escenas que se sondean por órbita para estimar cuánto dato deja sobre el recuadro."""
 
@@ -209,7 +244,9 @@ def compuesto_s1(
         polarizacion: np.nanmedian(np.dstack(capas), axis=2)
         for polarizacion, capas in pilas.items()
     }
+    valida = _revisar_compuesto_s1(compuesto)
     meta = {
+        "fraccion_observada": round(valida, 3),
         "orbita": f"{estado} · relativa {relativa}",
         "escenas_usadas": len(pilas["vv"]),
         "escenas_disponibles": len(disponibles),
