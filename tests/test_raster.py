@@ -1,6 +1,9 @@
 import numpy as np
+import rasterio
+from rasterio.crs import CRS
+from rasterio.transform import from_origin
 
-from satinsight.raster import a_db, estirar, percentiles
+from satinsight.raster import a_db, estirar, leer_ventana, percentiles
 
 
 def test_estirar_devuelve_rango_completo():
@@ -48,3 +51,50 @@ def test_percentiles_ignora_nan():
     inferior, superior = percentiles(banda, 0, 100)
     assert inferior == 1.0
     assert superior == 4.0
+
+
+def test_el_centinela_de_la_escena_se_vuelve_nan(tmp_path):
+    """El valor de «sin dato» de un ráster de punto flotante no puede entrar a la mediana.
+
+    Sentinel-1 RTC declara -32768 y lo escribe fuera de la franja y en la sombra del radar.
+    Leído como número hunde el compuesto de las ciudades que asoman del borde de la escena.
+    """
+    ruta = tmp_path / "sar.tif"
+    datos = np.full((8, 8), 0.25, dtype="float32")
+    datos[:4] = -32768.0
+    perfil = {
+        "driver": "GTiff",
+        "height": 8,
+        "width": 8,
+        "count": 1,
+        "dtype": "float32",
+        "crs": CRS.from_epsg(4326),
+        "transform": from_origin(-93.14, 16.77, 0.005, 0.005),
+        "nodata": -32768.0,
+    }
+    with rasterio.open(ruta, "w", **perfil) as destino:
+        destino.write(datos, 1)
+
+    leida = leer_ventana(str(ruta), (-93.14, 16.73, -93.10, 16.77), (8, 8))
+    assert np.isnan(leida[:4]).all()
+    assert np.allclose(leida[4:], 0.25)
+
+
+def test_un_raster_entero_conserva_el_relleno_en_cero(tmp_path):
+    """Sentinel-2 y WorldCover llegan en enteros, que no admiten NaN."""
+    ruta = tmp_path / "optico.tif"
+    perfil = {
+        "driver": "GTiff",
+        "height": 8,
+        "width": 8,
+        "count": 1,
+        "dtype": "uint16",
+        "crs": CRS.from_epsg(4326),
+        "transform": from_origin(-93.14, 16.77, 0.005, 0.005),
+    }
+    with rasterio.open(ruta, "w", **perfil) as destino:
+        destino.write(np.full((8, 8), 1200, dtype="uint16"), 1)
+
+    leida = leer_ventana(str(ruta), (-93.20, 16.73, -93.10, 16.77), (8, 16))
+    assert leida.dtype == np.uint16
+    assert (leida == 0).any()

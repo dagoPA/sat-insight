@@ -33,13 +33,25 @@ def leer_ventana(
         limites = transform_bounds(CRS_GEOGRAFICO, origen.crs, *bbox)
         ventana = from_bounds(*limites, origen.transform)
         destino = forma or (int(ventana.height), int(ventana.width))
-        return origen.read(
+        # El relleno de la lectura sin límites y el centinela de la escena marcan lo mismo:
+        # píxeles jamás observados. En un ráster de punto flotante los dos se vuelven NaN,
+        # que es lo que las medianas del compuesto saben ignorar. Sentinel-1 RTC declara
+        # -32768 y lo escribe en la sombra del radar y fuera de la franja; dejarlo pasar
+        # como número hunde la mediana de toda ciudad cuyo recuadro asome del borde de la
+        # escena, y un cero de relleno se leería como retrodispersión nula, que tampoco es
+        # cierto. Los rásteres enteros —Sentinel-2, WorldCover— conservan el relleno en cero
+        # porque no admiten NaN y su cero ya significa fuera de dato.
+        flotante = np.issubdtype(np.dtype(origen.dtypes[0]), np.floating)
+        datos = origen.read(
             1,
             window=ventana,
             out_shape=destino,
             boundless=True,
-            fill_value=0,
+            fill_value=np.nan if flotante else 0,
         )
+        if flotante and origen.nodata is not None:
+            datos[datos == np.float32(origen.nodata)] = np.nan
+        return datos
 
 
 def estirar(banda: np.ndarray, inferior: float = 2, superior: float = 98) -> np.ndarray:

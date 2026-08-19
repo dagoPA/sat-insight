@@ -107,7 +107,12 @@ def agrupar_por_orbita(items: list["Item"]) -> dict[tuple[str, int], list["Item"
 
 
 def orbita_dominante(items: list["Item"]) -> tuple[tuple[str, int], list["Item"]]:
-    """Geometría de adquisición con más escenas disponibles, con sus escenas."""
+    """Geometría de adquisición con más escenas disponibles, con sus escenas.
+
+    Elegir por número a secas sirve cuando cualquier órbita cubre el recuadro. Sobre una
+    ciudad de frontera o de costa hace falta medir cuánto dato llega de verdad, y de eso se
+    encarga `composite.orbita_util`, que sí puede leer píxeles.
+    """
     grupos = agrupar_por_orbita(items)
     if not grupos:
         raise ValueError("no hay escenas SAR que agrupar")

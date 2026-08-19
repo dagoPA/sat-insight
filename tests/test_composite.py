@@ -90,3 +90,44 @@ def test_si_fallan_casi_todas_aborta(monkeypatch):
 def test_sin_escenas_falla_con_mensaje_claro():
     with pytest.raises(ValueError, match="no hay escenas"):
         compuesto_s1([], BBOX, FORMA)
+
+
+def test_la_orbita_se_elige_por_cobertura_medida(monkeypatch):
+    """Una órbita con menos pasadas gana si es la que de verdad ve la ciudad.
+
+    Es el caso de Mexicali: la órbita más repetida del catálogo roza el recuadro por el
+    filo de la franja y deja casi todo sin observar.
+    """
+    escenas = [escena_sar(f"filo{i}", orbita=166) for i in range(5)]
+    escenas += [escena_sar(f"plena{i}", orbita=173) for i in range(2)]
+
+    def leer(href, bbox, forma):
+        arreglo = np.full(forma, np.nan, dtype="float32")
+        if href.startswith("plena"):
+            arreglo[:] = 1.0
+        else:
+            arreglo[0, 0] = 1.0
+        return arreglo
+
+    monkeypatch.setattr(composite, "leer_ventana", leer)
+    clave, seleccion, cobertura = composite.orbita_util(escenas, BBOX)
+    assert clave == ("ascending", 173)
+    assert len(seleccion) == 2
+    assert cobertura == pytest.approx(1.0)
+
+
+def test_a_igual_cobertura_gana_la_orbita_con_mas_escenas(monkeypatch):
+    escenas = [escena_sar(f"a{i}", orbita=10) for i in range(2)]
+    escenas += [escena_sar(f"b{i}", orbita=20) for i in range(6)]
+    monkeypatch.setattr(composite, "leer_ventana", lambda h, b, f: np.ones(f, dtype="float32"))
+    clave, seleccion, _ = composite.orbita_util(escenas, BBOX)
+    assert clave == ("ascending", 20)
+    assert len(seleccion) == 6
+
+
+def test_una_orbita_ilegible_cuenta_como_sin_cobertura(monkeypatch):
+    def leer(href, bbox, forma):
+        raise OSError("403")
+
+    monkeypatch.setattr(composite, "leer_ventana", leer)
+    assert composite.cobertura_util([escena_sar("x")], BBOX) == 0.0

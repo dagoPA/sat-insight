@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pystac import Item
 
 from satinsight.aoi import Bbox
-from satinsight.catalog import SCL_VALIDOS, orbita_dominante, por_nubosidad
+from satinsight.catalog import SCL_VALIDOS, agrupar_por_orbita, por_nubosidad
 from satinsight.raster import leer_ventana
 
 log = logging.getLogger(__name__)
@@ -101,6 +101,63 @@ def compuesto_s2(
     return compuesto, usadas
 
 
+MUESTRAS_DE_ORBITA = 4
+"""Escenas que se sondean por órbita para estimar cuánto dato deja sobre el recuadro."""
+
+FORMA_SONDA = (64, 64)
+"""Rejilla del sondeo. Basta para medir qué fracción del recuadro cae dentro de la franja."""
+
+
+def cobertura_util(
+    items: list["Item"],
+    bbox: Bbox,
+    muestras: int = MUESTRAS_DE_ORBITA,
+    leer=None,
+) -> float:
+    """Fracción media de píxeles observados que unas escenas dejan sobre el recuadro.
+
+    La huella que declara el catálogo no responde esta pregunta. Sobre Mexicali, la órbita
+    cuya huella cubre el 99% del recuadro entrega escenas que alternan entre 1% y 99% de
+    píxeles con dato, porque la ciudad cae en el filo de la franja. Se sondean unas pocas
+    escenas a baja resolución y se promedia lo que de verdad llega.
+
+    Una lectura que falle cuenta como cero, que es como la vería el compuesto.
+
+    `leer` se resuelve al llamar y no al definir, para que sustituir `leer_ventana` en el
+    módulo baste para dejar las pruebas sin red.
+    """
+    leer = leer or leer_ventana
+    fracciones = []
+    for item in items[:muestras]:
+        try:
+            leida = leer(item.assets["vv"].href, bbox, FORMA_SONDA).astype("float32")
+        except Exception:
+            log.warning("sondeo fallido en %s", item.id, exc_info=True)
+            fracciones.append(0.0)
+            continue
+        fracciones.append(float(np.isfinite(leida).mean()))
+    return float(np.mean(fracciones)) if fracciones else 0.0
+
+
+def orbita_util(
+    items: list["Item"],
+    bbox: Bbox,
+    muestras: int = MUESTRAS_DE_ORBITA,
+    leer=None,
+) -> tuple[tuple[str, int], list["Item"], float]:
+    """Geometría de adquisición que más píxeles observados deja sobre el recuadro.
+
+    Manda la cobertura medida y el número de escenas solo desempata, redondeando a
+    centésimas para que una diferencia de nada no tire una órbita con muchas más pasadas.
+    """
+    grupos = agrupar_por_orbita(items)
+    if not grupos:
+        raise ValueError("no hay escenas SAR que agrupar")
+    cobertura = {k: cobertura_util(v, bbox, muestras, leer) for k, v in grupos.items()}
+    clave = max(grupos, key=lambda k: (round(cobertura[k], 2), len(grupos[k])))
+    return clave, grupos[clave], cobertura[clave]
+
+
 def compuesto_s1(
     items: list["Item"],
     bbox: Bbox,
@@ -120,7 +177,8 @@ def compuesto_s1(
     if not items:
         raise ValueError("no hay escenas Sentinel-1 para componer")
 
-    (estado, relativa), disponibles = orbita_dominante(items)
+    (estado, relativa), disponibles, cobertura = orbita_util(items, bbox)
+    log.info("S1 órbita %s relativa %d: cubre %.0f%%", estado, relativa, 100 * cobertura)
     seleccion = disponibles[:max_escenas]
 
     pilas: dict[str, list[np.ndarray]] = {"vv": [], "vh": []}
@@ -155,5 +213,6 @@ def compuesto_s1(
         "orbita": f"{estado} · relativa {relativa}",
         "escenas_usadas": len(pilas["vv"]),
         "escenas_disponibles": len(disponibles),
+        "cobertura_orbita": round(cobertura, 3),
     }
     return compuesto, meta
