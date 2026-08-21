@@ -6,7 +6,11 @@ import logging
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 from satinsight import aoi as modulo_aoi
+from satinsight.agebs import CIUDADES, agebs_de_ciudad, resumen_grados
+from satinsight.baseline import comparar, diagnostico_transferencia, resumen
 from satinsight.catalog import (
     COLECCION_S1,
     COLECCION_S2,
@@ -16,6 +20,15 @@ from satinsight.catalog import (
     resumen_nubes,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.figuras import (
+    mapa_agebs_por_ciudad,
+    mapa_nacional,
+    panel_agebs,
+    panel_brazos,
+    panel_contraste,
+)
+from satinsight.ingesta import RAIZ_DATOS
+from satinsight.pipeline import SENSORES, rasgos_de_todas
 from satinsight.raster import a_db, estirar, leer_ventana, percentiles
 from satinsight.render import guardar_rgb
 
@@ -115,6 +128,125 @@ def cmd_panels(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agebs(args: argparse.Namespace) -> int:
+    """Resume las AGEB de cada ciudad piloto y su distribución de grados."""
+    total = 0
+    for clave in args.ciudades or sorted(CIUDADES):
+        agebs = agebs_de_ciudad(clave)
+        total += len(agebs)
+        habitantes = int(agebs["poblacion"].sum())
+        print(f"\n{CIUDADES[clave].nombre} · {len(agebs)} AGEB · {habitantes:,} hab")
+        print(resumen_grados(agebs).to_string())
+    print(f"\ntotal: {total} AGEB")
+    return 0
+
+
+def cmd_rasgos(args: argparse.Namespace) -> int:
+    """Extrae los rasgos por AGEB de un sensor y los deja en disco."""
+    tabla = rasgos_de_todas(
+        args.sensor,
+        tuple(args.ciudades or sorted(CIUDADES)),
+        max_escenas=args.max_escenas,
+    )
+    destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    tabla.to_parquet(destino, index=False)
+    print(f"{len(tabla)} AGEB × {tabla.shape[1]} columnas → {destino}")
+    return 0
+
+
+def cmd_baseline(args: argparse.Namespace) -> int:
+    """Corre la comparación de la fase 1 sobre una tabla de rasgos ya extraída."""
+    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    if not origen.exists():
+        print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
+        return 1
+
+    tabla = pd.read_parquet(origen)
+    detalle = comparar(tabla, estandarizar=args.estandarizar)
+    print(f"\n{len(tabla)} AGEB · partición dejando una ciudad fuera\n")
+    print(resumen(detalle).to_string(index=False))
+    print("\npor pliegue:\n")
+    columnas = ["conjunto", "modelo", "ciudad_prueba", "n_prueba", "kappa", "spearman"]
+    print(detalle[columnas].round(3).to_string(index=False))
+
+    if args.salida:
+        detalle.to_csv(args.salida, index=False)
+        print(f"\ndetalle → {args.salida}")
+    return 0
+
+
+def cmd_diagnostico(args: argparse.Namespace) -> int:
+    """Reporta, por conjunto de rasgos, si describen la ciudad o el rezago."""
+    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    if not origen.exists():
+        print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
+        return 1
+
+    tabla = pd.read_parquet(origen)
+    print(f"\n{len(tabla)} AGEB · {tabla['ciudad'].nunique()} ciudades\n")
+    print("Razón entre la varianza que explica la ciudad y la que explica el grado.")
+    print("Por encima de uno, el rasgo describe dónde se midió más que qué se midió.\n")
+
+    for conjunto in ("cobertura", "densidad", "textura"):
+        detalle = diagnostico_transferencia(tabla, conjunto).dropna(subset=["razon"])
+        if detalle.empty:
+            continue
+        bajo, medio, alto = detalle["razon"].quantile([0.25, 0.5, 0.75])
+        peores = ", ".join(detalle.head(3)["rasgo"])
+        print(
+            f"  {conjunto:<10} n={len(detalle):<3} "
+            f"cuartiles {bajo:>6.1f} /{medio:>6.1f} /{alto:>6.1f}"
+        )
+        print(f"  {'':<10} peores: {peores}")
+
+    print(
+        "\nSe lee junto con la fiabilidad por mitades, nunca solo: un rasgo que es ruido "
+        "sale con razón baja\nporque el ruido no correlaciona con nada."
+    )
+    return 0
+
+
+def cmd_figuras(args: argparse.Namespace) -> int:
+    """Regenera las figuras de la fase 1 desde el caché de compuestos."""
+    destino = Path(args.salida)
+    panel_brazos(args.ciudad, destino / "f1_brazos.png")
+    panel_agebs(args.ciudad, destino / "f2_agebs.png")
+    for sensor in SENSORES:
+        panel_contraste(args.ciudad, sensor, destino / f"f3_contraste_{sensor}.png")
+    mapa_nacional(destino / "f4_nacional.png")
+    mapa_agebs_por_ciudad(destino / "f5_agebs_ciudades.png")
+    print(f"figuras de {args.ciudad} → {destino}")
+    return 0
+
+
+def cmd_avance(args: argparse.Namespace) -> int:
+    """Reporta cuántas ciudades del conjunto tienen ya sus dos compuestos.
+
+    La composición nacional tarda días y sobrevive a la sesión que la lanzó, así que hace
+    falta poder consultarla desde cualquier otra.
+    """
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.cache import ruta_compuesto
+
+    catalogo = ciudades_por_tamano(estratificar=not args.sin_estratificar)
+    raiz = RAIZ_DATOS / "compuestos"
+    completas, a_medias, faltan = [], [], []
+    for clave in catalogo:
+        hechos = [s for s in SENSORES if ruta_compuesto(clave, s, raiz).exists()]
+        destino = completas if len(hechos) == len(SENSORES) else a_medias if hechos else faltan
+        destino.append(clave)
+
+    tamano = sum(p.stat().st_size for p in raiz.glob("*.tif")) / 1e9 if raiz.exists() else 0
+    print(f"\n{len(completas)} de {len(catalogo)} ciudades completas")
+    print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {tamano:.1f} GB en disco")
+    if a_medias:
+        print(f"\nen curso: {', '.join(a_medias[:8])}")
+    if args.detalle and faltan:
+        print(f"\npendientes: {', '.join(faltan)}")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -134,6 +266,47 @@ def construir_parser() -> argparse.ArgumentParser:
     panels.add_argument("--max-s2", type=int, default=36, help="escenas máximas del compuesto S2")
     panels.add_argument("--max-s1", type=int, default=24, help="escenas máximas del compuesto S1")
     panels.set_defaults(func=cmd_panels)
+
+    agebs = sub.add_parser("agebs", help="resume las AGEB y sus grados por ciudad")
+    agebs.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
+    agebs.set_defaults(func=cmd_agebs)
+
+    rasgos = sub.add_parser("rasgos", help="extrae los rasgos por AGEB de un sensor")
+    rasgos.add_argument("sensor", choices=SENSORES)
+    rasgos.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
+    rasgos.add_argument("--salida", help="ruta del parquet de salida")
+    rasgos.add_argument(
+        "--max-escenas",
+        type=int,
+        help="escenas máximas del compuesto; bajarlo acorta la descarga",
+    )
+    rasgos.set_defaults(func=cmd_rasgos)
+
+    base = sub.add_parser("baseline", help="corre la comparación de la fase 1")
+    base.add_argument("sensor", choices=SENSORES)
+    base.add_argument("--rasgos", help="parquet de rasgos ya extraído")
+    base.add_argument("--salida", help="csv donde dejar el detalle por pliegue")
+    base.add_argument(
+        "--estandarizar",
+        action="store_true",
+        help="centra cada rasgo dentro de su ciudad; corre como ablación",
+    )
+    base.set_defaults(func=cmd_baseline)
+
+    diag = sub.add_parser("diagnostico", help="mide si los rasgos describen la ciudad o el rezago")
+    diag.add_argument("sensor", choices=SENSORES)
+    diag.add_argument("--rasgos", help="parquet de rasgos ya extraído")
+    diag.set_defaults(func=cmd_diagnostico)
+
+    avance = sub.add_parser("avance", help="cuántas ciudades llevan sus dos compuestos")
+    avance.add_argument("--detalle", action="store_true", help="lista las pendientes")
+    avance.add_argument("--sin-estratificar", action="store_true", help="solo las 81 mayores")
+    avance.set_defaults(func=cmd_avance)
+
+    figs = sub.add_parser("figuras", help="regenera las figuras de la fase 1")
+    figs.add_argument("ciudad", help="clave de ciudad, por ejemplo tapachula")
+    figs.add_argument("--salida", default="docs/figs", help="carpeta de destino")
+    figs.set_defaults(func=cmd_figuras)
 
     return parser
 

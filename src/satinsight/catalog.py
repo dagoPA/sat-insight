@@ -24,9 +24,32 @@ SCL_VALIDOS = frozenset({4, 5, 6, 7})
 desnudo, agua y no clasificado. El resto es nube, sombra, nieve o saturación."""
 
 
+DOMINIO_FIRMABLE = "blob.core.windows.net"
+
+
 def abrir_catalogo() -> pystac_client.Client:
     """Cliente STAC con firma automática de los enlaces a los COG."""
     return pystac_client.Client.open(STAC_URL, modifier=pc.sign_inplace)
+
+
+def firmar(href: str) -> str:
+    """Renueva la firma de un enlace justo antes de leerlo.
+
+    Firmar al consultar el catálogo alcanza para una lectura inmediata y falla para un
+    compuesto: los tokens de Planetary Computer caducan cerca de la hora, y componer una
+    ciudad toma más que eso. Las lecturas tardías reciben 403, y como el compositing
+    descarta la escena que falla, el resultado es un compuesto construido con una
+    fracción de las escenas pedidas y sin ningún error a la vista.
+
+    `planetary_computer` guarda el token en memoria por contenedor y solo vuelve a pedirlo
+    cuando expira, así que renovar en cada lectura no cuesta una petición extra.
+
+    Lo que no apunta a un contenedor de Azure se devuelve intacto, para que las pruebas
+    puedan leer archivos locales por esta misma ruta.
+    """
+    if DOMINIO_FIRMABLE not in href:
+        return href
+    return pc.sign(href.split("?", 1)[0])
 
 
 def buscar(
@@ -84,7 +107,12 @@ def agrupar_por_orbita(items: list["Item"]) -> dict[tuple[str, int], list["Item"
 
 
 def orbita_dominante(items: list["Item"]) -> tuple[tuple[str, int], list["Item"]]:
-    """Geometría de adquisición con más escenas disponibles, con sus escenas."""
+    """Geometría de adquisición con más escenas disponibles, con sus escenas.
+
+    Elegir por número a secas sirve cuando cualquier órbita cubre el recuadro. Sobre una
+    ciudad de frontera o de costa hace falta medir cuánto dato llega de verdad, y de eso se
+    encarga `composite.orbita_util`, que sí puede leer píxeles.
+    """
     grupos = agrupar_por_orbita(items)
     if not grupos:
         raise ValueError("no hay escenas SAR que agrupar")
