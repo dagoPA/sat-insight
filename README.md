@@ -35,6 +35,18 @@ uv run satinsight panels tuxtla --salida docs/figs -v
 | `aoi` | Lista los recuadros piloto con su tamaño en píxeles |
 | `probe` | Cuenta escenas disponibles y resume la nubosidad sobre un AOI |
 | `panels` | Descarga una muestra y renderiza los cuatro paneles de inspección |
+| `agebs` | Resume las AGEB de cada ciudad y su distribución de grados |
+| `rasgos` | Extrae los rasgos de textura por AGEB de un sensor |
+| `baseline` | Corre la comparación de la fase 1 sobre los rasgos extraídos |
+
+La fase 1 se corre en ese orden. El primer `rasgos` descarga y compone, que es lo caro; a
+partir de ahí el compuesto queda en `data/compuestos/` y las corridas siguientes lo releen.
+
+```bash
+uv run satinsight agebs
+uv run satinsight rasgos s2 -v
+uv run satinsight baseline s2
+```
 
 Como API:
 
@@ -54,6 +66,13 @@ src/satinsight/
 ├── catalog.py     consultas al STAC de Planetary Computer
 ├── raster.py      lectura por ventana de COG remotos y transformaciones
 ├── composite.py   compuestos mediana anuales de Sentinel-1 y Sentinel-2
+├── malla.py       la georreferencia sobre la que viven compuesto y polígonos
+├── cache.py       compuestos persistidos como GeoTIFF
+├── ingesta.py     descarga de INEGI y CONEVAL
+├── agebs.py       cruce de geometría con Grado de Rezago Social
+├── textura.py     rasgos GLCM por polígono
+├── pipeline.py    de una ciudad a su tabla de rasgos
+├── baseline.py    validación dejando una ciudad fuera
 ├── render.py      paneles PNG y codificación a data URI
 └── cli.py         ejecutable satinsight
 tests/             pruebas sin red de la lógica pura
@@ -74,8 +93,17 @@ verifica con `satinsight probe`.
 
 ## Estado
 
-Fase 0 cerrada. Propuesta lista, librería reproducible, datos de ilustración descargados.
+Fase 0 cerrada. Fase 1 en curso: el baseline de GLCM y gradient boosting a nivel AGEB,
+corrido en ambos brazos, que funciona como puerta de decisión del proyecto.
 
-Lo siguiente es el baseline de la fase 1 — GLCM y gradient boosting a nivel AGEB sobre
-tres ciudades piloto, corrido en ambos brazos, que funciona como puerta de decisión del
-proyecto.
+Las ciudades piloto son cinco. A las tres de la fase 0 se sumaron Tapachula y Acapulco
+porque entre las primeras cubrían mal el extremo alto del rezago: sumaban 1,199 AGEB con
+apenas 5.8% de grado alto, contra 23% en el país.
+
+| Ciudad | AGEB | Grado alto |
+|---|---|---|
+| Tuxtla Gutiérrez | 226 | 13.7% |
+| Mérida | 519 | 6.7% |
+| Iztapalapa | 454 | 0.7% |
+| Tapachula | 181 | 48.6% |
+| Acapulco de Juárez | 534 | 36.5% |
