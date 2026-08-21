@@ -247,6 +247,71 @@ def cmd_avance(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_bolsas(args: argparse.Namespace) -> int:
+    """Tesela ciudades y arma sus bolsas MIL, sin codificar los parches."""
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.dataset import build_city
+
+    catalogo = ciudades_por_tamano(estratificar=True)
+    claves = args.ciudades or [
+        p.stem.replace(f"_{args.sensor}", "")
+        for p in sorted((RAIZ_DATOS / "compuestos").glob(f"*_{args.sensor}.tif"))
+    ]
+    hechas = 0
+    for clave in claves:
+        try:
+            salidas = build_city(
+                clave, args.sensor, encoder=None, size=args.tamano, catalogo=catalogo
+            )
+        except Exception as e:
+            print(f"FALLO {clave}: {type(e).__name__}: {e}")
+            continue
+        bolsas = pd.read_parquet(salidas["bolsas"])
+        instancias = pd.read_parquet(salidas["instancias"])
+        print(f"{clave}: {len(bolsas)} bolsas, {len(instancias)} instancias")
+        hechas += 1
+    print(f"\n{hechas} de {len(claves)} ciudades")
+    return 0
+
+
+def cmd_particion(args: argparse.Namespace) -> int:
+    """Escribe la partición espacial del conjunto nacional."""
+    from satinsight.dataset import build_split
+
+    particion = build_split(forzar=args.forzar, n_test=args.test, n_folds=args.pliegues)
+    resumen = particion.groupby("conjunto").agg(
+        ciudades=("ciudad", "size"),
+        agebs=("tamano", "sum"),
+        rezago_medio=("estrato_valor", "mean"),
+    )
+    print(resumen.round(3).to_string())
+    print(f"\npliegues: {sorted(particion.pliegue.dropna().unique().tolist())}")
+    return 0
+
+
+def cmd_vectores(args: argparse.Namespace) -> int:
+    """Codifica los parches con el modelo fundacional congelado."""
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.dataset import build_city
+    from satinsight.encoders import DofaEncoder
+
+    encoder = DofaEncoder()
+    catalogo = ciudades_por_tamano(estratificar=True)
+    claves = args.ciudades or [
+        p.stem.replace(f"_{args.sensor}", "")
+        for p in sorted((RAIZ_DATOS / "instancias").glob(f"*_{args.sensor}.parquet"))
+    ]
+    for clave in claves:
+        try:
+            salidas = build_city(
+                clave, args.sensor, encoder=encoder, catalogo=catalogo, forzar=args.forzar
+            )
+            print(f"{clave}: {salidas['vectores'].name}")
+        except Exception as e:
+            print(f"FALLO {clave}: {type(e).__name__}: {e}")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -307,6 +372,24 @@ def construir_parser() -> argparse.ArgumentParser:
     figs.add_argument("ciudad", help="clave de ciudad, por ejemplo tapachula")
     figs.add_argument("--salida", default="docs/figs", help="carpeta de destino")
     figs.set_defaults(func=cmd_figuras)
+
+    bolsas = sub.add_parser("bolsas", help="tesela ciudades y arma sus bolsas MIL")
+    bolsas.add_argument("sensor", choices=("s2", "s1"))
+    bolsas.add_argument("ciudades", nargs="*", help="claves; vacío corre las ya compuestas")
+    bolsas.add_argument("--tamano", type=int, default=64, help="lado del parche en píxeles")
+    bolsas.set_defaults(func=cmd_bolsas)
+
+    particion = sub.add_parser("particion", help="reparte las ciudades en prueba y pliegues")
+    particion.add_argument("--test", type=int, default=20, help="ciudades apartadas")
+    particion.add_argument("--pliegues", type=int, default=5)
+    particion.add_argument("--forzar", action="store_true", help="rehace una partición ya escrita")
+    particion.set_defaults(func=cmd_particion)
+
+    vectores = sub.add_parser("vectores", help="codifica los parches con el modelo fundacional")
+    vectores.add_argument("sensor", choices=("s2", "s1"))
+    vectores.add_argument("ciudades", nargs="*")
+    vectores.add_argument("--forzar", action="store_true")
+    vectores.set_defaults(func=cmd_vectores)
 
     return parser
 
