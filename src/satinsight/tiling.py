@@ -21,14 +21,27 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-TILE_SIZE = 64
-"""Patch side in pixels. At 10 m this is 640 m, a few city blocks across.
+WINDOW_SIZE = 224
+"""Side of the window handed to the foundation model, in pixels.
 
-Measured on the national set, this leaves a median of about 1,250 patches per city,
-which is the order of magnitude attention-based MIL is known to work with. Going up to
-the 224 px that vision transformers take natively would leave around 100 patches per
-city, and the smallest cities would drop to 32.
+Fixed by the model rather than chosen: DOFA builds its positional embedding for a 224 px
+input and refuses anything else. At 10 m that is 2.24 km, far too coarse to be an
+instance on its own, which is why a window is cut into tokens instead of being embedded
+whole.
 """
+
+TOKEN_SIZE = 16
+"""Side of one token, in pixels. Also fixed by the model: it is the ViT patch size.
+
+At 10 m a token covers 160 m, or 0.026 km². The median urban AGEB measures 0.255 km²,
+so about ten tokens fall inside it. That ratio is what makes the attention map worth
+comparing against the AGEB grade at all; embedding the whole 224 px window instead would
+put one instance across twenty AGEB.
+"""
+
+TILE_SIZE = TOKEN_SIZE
+"""What an instance measures. Kept as a name of its own because it is the unit the bags,
+the attention scores and the validation all speak in."""
 
 MIN_VALID_FRACTION = 0.9
 """Share of observed pixels a patch needs to be kept.
@@ -67,7 +80,7 @@ class Tile(NamedTuple):
         return self.y0 + self.size / 2, self.x0 + self.size / 2
 
 
-def grid(shape: tuple[int, int], size: int = TILE_SIZE) -> list[Tile]:
+def grid(shape: tuple[int, int], size: int = WINDOW_SIZE) -> list[Tile]:
     """Lays a grid of whole patches over an array of this shape.
 
     Partial patches along the right and bottom edges are dropped. A ragged instance would
@@ -106,7 +119,7 @@ def valid_fraction(bands: dict[str, np.ndarray], tile: Tile) -> float:
 
 def select(
     bands: dict[str, np.ndarray],
-    size: int = TILE_SIZE,
+    size: int = WINDOW_SIZE,
     min_valid_fraction: float = MIN_VALID_FRACTION,
 ) -> list[Tile]:
     """Patches of a city that carry enough observed pixels to be worth embedding."""
@@ -151,3 +164,57 @@ def stack(bands: dict[str, np.ndarray], tile: Tile, order: list[str] | None = No
     order = order or sorted(bands)
     window = tile.window
     return np.stack([bands[name][window] for name in order]).astype("float32")
+
+
+def tokens(window: Tile, token_size: int = TOKEN_SIZE) -> list[Tile]:
+    """Cuts a window into the cells the model will return one vector for.
+
+    Coordinates come back in the full image, not relative to the window, because every
+    instance has to be locatable on the ground for the attention map to be scored against
+    an AGEB. The row and column indices are the token's place inside the window, which is
+    the order the model returns its vectors in.
+    """
+    if window.size % token_size:
+        raise ValueError(f"a {window.size} px window does not divide into {token_size} px tokens")
+    lado = window.size // token_size
+    return [
+        Tile(
+            row=r,
+            col=c,
+            y0=window.y0 + r * token_size,
+            x0=window.x0 + c * token_size,
+            size=token_size,
+        )
+        for r in range(lado)
+        for c in range(lado)
+    ]
+
+
+def instances(
+    windows: list[Tile],
+    bands: dict[str, np.ndarray],
+    token_size: int = TOKEN_SIZE,
+    min_valid_fraction: float = MIN_VALID_FRACTION,
+) -> tuple[list[Tile], np.ndarray]:
+    """Every token of every window, with the index it holds among the model's outputs.
+
+    A window keeps its tokens even where a few are short of observed pixels, because the
+    model is fed the window whole and returns all of them anyway. The ones below the
+    threshold are dropped afterwards, and the returned index says which output row each
+    surviving token came from.
+    """
+    conservados: list[Tile] = []
+    indices: list[int] = []
+    por_ventana = (windows[0].size // token_size) ** 2 if windows else 0
+    for i, ventana in enumerate(windows):
+        for j, token in enumerate(tokens(ventana, token_size)):
+            if valid_fraction(bands, token) >= min_valid_fraction:
+                conservados.append(token)
+                indices.append(i * por_ventana + j)
+    log.info(
+        "%d tokens kept of %d, from %d windows",
+        len(conservados),
+        len(windows) * por_ventana,
+        len(windows),
+    )
+    return conservados, np.array(indices, dtype="int64")

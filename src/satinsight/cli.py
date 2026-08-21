@@ -376,7 +376,7 @@ def construir_parser() -> argparse.ArgumentParser:
     bolsas = sub.add_parser("bolsas", help="tesela ciudades y arma sus bolsas MIL")
     bolsas.add_argument("sensor", choices=("s2", "s1"))
     bolsas.add_argument("ciudades", nargs="*", help="claves; vacío corre las ya compuestas")
-    bolsas.add_argument("--tamano", type=int, default=64, help="lado del parche en píxeles")
+    bolsas.add_argument("--tamano", type=int, default=224, help="lado de la ventana en píxeles")
     bolsas.set_defaults(func=cmd_bolsas)
 
     particion = sub.add_parser("particion", help="reparte las ciudades en prueba y pliegues")

@@ -11,6 +11,7 @@ class EncoderFalso:
     """Devuelve la media de cada canal, para poder comprobar qué recibió."""
 
     dim = 2
+    tokens = 196
 
     def __init__(self):
         self.longitudes = None
@@ -21,8 +22,18 @@ class EncoderFalso:
         self.lotes += 1
         return batch.mean(axis=(2, 3)).astype("float32")
 
+    def embed_tokens(self, batch, wavelengths):
+        """Un vector por token, con el índice del token en la primera componente."""
+        self.longitudes = wavelengths
+        self.lotes += 1
+        n = batch.shape[0]
+        salida = np.zeros((n, self.tokens, self.dim), dtype="float32")
+        salida[..., 0] = np.arange(self.tokens)[None, :]
+        salida[..., 1] = batch.mean(axis=(2, 3))[:, :1]
+        return salida
 
-def bandas(alto=128, ancho=128):
+
+def bandas(alto=224, ancho=448):
     return {
         "vv": np.full((alto, ancho), 0.1, dtype="float32"),
         "vh": np.full((alto, ancho), 0.05, dtype="float32"),
@@ -45,31 +56,42 @@ def test_normalize_checks_the_channel_names_match():
         normalize(np.zeros((2, 4, 4), "float32"), ["vv"])
 
 
-def test_extract_returns_one_vector_per_patch():
+def test_extract_returns_one_vector_per_token():
     b = bandas()
-    tiles = grid((128, 128), size=64)
+    ventanas = grid((224, 448), size=224)
     encoder = EncoderFalso()
-    salida = extract(b, tiles, encoder, order=["vv", "vh"], batch=2)
-    assert salida.shape == (len(tiles), 2)
-    assert encoder.lotes == 2
+    matriz, tokens = extract(b, ventanas, encoder, order=["vv", "vh"], batch=1)
+    assert len(ventanas) == 2
+    assert matriz.shape == (len(tokens), 2)
+    assert len(tokens) == 2 * 196
+    assert all(t.size == 16 for t in tokens)
+
+
+def test_each_vector_keeps_the_token_it_came_from():
+    """La fila i tiene que corresponder al token i, no a otro de la misma ventana."""
+    b = bandas()
+    ventanas = grid((224, 448), size=224)
+    matriz, tokens = extract(b, ventanas, EncoderFalso(), order=["vv", "vh"])
+    esperado = [i % 196 for i in range(len(tokens))]
+    assert matriz[:, 0].astype(int).tolist() == esperado
 
 
 def test_extract_hands_over_the_wavelength_of_each_channel_in_order():
     encoder = EncoderFalso()
-    extract(bandas(), grid((64, 64), 64), encoder, order=["vh", "vv"])
+    extract(bandas(224, 224), grid((224, 224), 224), encoder, order=["vh", "vv"])
     assert encoder.longitudes == [WAVELENGTHS_UM["vh"], WAVELENGTHS_UM["vv"]]
 
 
 def test_extract_refuses_a_channel_with_no_wavelength():
     b = bandas()
-    b["inventado"] = np.zeros((128, 128), "float32")
+    b["inventado"] = np.zeros((224, 448), "float32")
     with pytest.raises(KeyError, match="inventado"):
-        extract(b, grid((128, 128), 64), EncoderFalso(), order=["inventado"])
+        extract(b, grid((224, 448), 224), EncoderFalso(), order=["inventado"])
 
 
-def test_extract_on_no_patches_returns_an_empty_matrix():
-    salida = extract(bandas(), [], EncoderFalso(), order=["vv", "vh"])
-    assert salida.shape == (0, 2)
+def test_extract_on_no_windows_returns_an_empty_matrix():
+    matriz, tokens = extract(bandas(), [], EncoderFalso(), order=["vv", "vh"])
+    assert matriz.shape == (0, 2) and tokens == []
 
 
 def test_save_and_load_round_trip(tmp_path):

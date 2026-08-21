@@ -18,6 +18,7 @@ from typing import Protocol, runtime_checkable
 import numpy as np
 
 from satinsight.textura import RANGOS_FIJOS
+from satinsight.tiling import MIN_VALID_FRACTION, TOKEN_SIZE
 
 log = logging.getLogger(__name__)
 
@@ -27,17 +28,20 @@ WAVELENGTHS_UM = {
     "B04": 0.665,
     "B08": 0.842,
     "B11": 1.610,
-    "vv": 55500.0,
-    "vh": 55500.0,
+    "vv": 3.75,
+    "vh": 3.75,
 }
-"""Central wavelength of each channel in micrometres.
+"""What each channel is called in the units the model conditions its input projection on.
 
-The optical figures are the Sentinel-2 band centres. Sentinel-1 rides C band at 5.405
-GHz, which is 5.55 cm, and the value is written in the same unit so one dictionary
-covers both sensors. A wavelength-conditioned model generates its input projection from
-these numbers, so pairing a channel with the wrong one silently produces a valid-looking
-vector that means nothing; the units its checkpoint expects have to be confirmed against
-the reference implementation before the first extraction is trusted.
+The optical figures are the Sentinel-2 band centres in micrometres. The radar pair is
+the surprise: Sentinel-1 rides C band at 5.405 GHz, which is 5.55 cm, and the physical
+figure is the wrong one to pass. The DOFA v1 weights were trained with 3.75 standing in
+as a modality marker for VV and VH, so that is what the checkpoint recognises.
+
+Getting this wrong costs nothing visible. The model would accept 55500, generate a
+projection for it, and return vectors of the right shape carrying no useful signal. The
+numbers are pinned here after reading them out of the reference implementation, and any
+new checkpoint has to be checked the same way before its first extraction is believed.
 """
 
 BATCH = 64
@@ -75,7 +79,15 @@ class PatchEncoder(Protocol):
     dim: int
 
     def embed(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
-        """Takes (n, channel, row, column) and returns (n, dim)."""
+        """Takes (n, channel, row, column) and returns one summary vector per window."""
+        ...
+
+    def embed_tokens(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
+        """Takes (n, channel, row, column) and returns (n, token, dim).
+
+        One vector per token is what the MIL bag needs: the summary of a whole 224 px
+        window spans twenty AGEB and cannot be scored against any of them.
+        """
         ...
 
 
@@ -91,7 +103,7 @@ class DofaEncoder:
         import torch
 
         self._torch = torch
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or self._mejor_dispositivo()
         self.model = self._cargar(checkpoint)
         self.model.eval().to(self.device)
         for parametro in self.model.parameters():
@@ -99,38 +111,81 @@ class DofaEncoder:
         self.dim = int(getattr(self.model, "embed_dim", 768))
         log.info("%s loaded on %s, %d dimensions", checkpoint, self.device, self.dim)
 
-    def _cargar(self, checkpoint: str):
-        """Fetches the pretrained weights, preferring torchgeo over torch.hub."""
-        try:
-            import torchgeo.models as modelos
+    def _mejor_dispositivo(self) -> str:
+        """Picks the fastest accelerator present, Apple silicon included."""
+        torch = self._torch
+        if torch.cuda.is_available():
+            return "cuda"
+        if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
+            return "mps"
+        return "cpu"
 
-            return modelos.dofa_base_patch16_224(weights=modelos.DOFABase16_Weights.DOFA_MAE)
-        except Exception:
-            log.warning("torchgeo unavailable, falling back to torch.hub", exc_info=True)
-            return self._torch.hub.load("zhu-xlab/DOFA", checkpoint, pretrained=True)
+    def _cargar(self, checkpoint: str):
+        """Fetches the pretrained weights through torchgeo, which hosts the checkpoints."""
+        import torchgeo.models as modelos
+
+        constructor = getattr(modelos, checkpoint.replace("-", "_"), None)
+        if constructor is None:
+            disponibles = sorted(n for n in dir(modelos) if n.startswith("dofa_"))
+            raise KeyError(f"unknown checkpoint {checkpoint!r}. Available: {disponibles}")
+        pesos = modelos.DOFABase16_Weights.DOFA_MAE if "base" in checkpoint else None
+        return constructor(weights=pesos)
+
+    def _tensor(self, batch: np.ndarray):
+        return self._torch.from_numpy(np.ascontiguousarray(batch)).float().to(self.device)
 
     def embed(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
         torch = self._torch
-        tensor = torch.from_numpy(np.ascontiguousarray(batch)).float().to(self.device)
         with torch.inference_mode():
-            salida = self.model.forward_features(tensor, wave_list=wavelengths)
+            salida = self.model.forward_features(self._tensor(batch), wavelengths)
             if salida.ndim == 3:
-                # (n, token, dim): the leading token is the summary and the rest are the
-                # patch tokens; the summary is what represents the whole instance
                 salida = salida[:, 0]
         return salida.float().cpu().numpy()
+
+    def embed_tokens(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
+        """Runs the transformer and hands back every token instead of their average.
+
+        `forward_features` folds the tokens into one vector before returning, so the run
+        is reproduced here up to that last step. It touches only the pieces the published
+        architecture is built from —the input projection, the positional embedding, the
+        blocks and the final norm— and repeats them in the order the reference
+        implementation does, so a checkpoint that loads at all will run through this.
+
+        Each token has already attended to the rest of its window, so it carries the 2.24
+        km around it while still describing its own 160 m.
+        """
+        torch = self._torch
+        tensor = self._tensor(batch)
+        longitudes = torch.tensor(wavelengths, device=tensor.device, dtype=tensor.dtype)
+        with torch.inference_mode():
+            tokens, _ = self.model.patch_embed(tensor, longitudes)
+            tokens = tokens + self.model.pos_embed[:, 1:, :]
+            resumen = (self.model.cls_token + self.model.pos_embed[:, :1, :]).expand(
+                tokens.shape[0], -1, -1
+            )
+            estado = torch.cat((resumen, tokens), dim=1)
+            for bloque in self.model.blocks:
+                estado = bloque(estado)
+            estado = self.model.fc_norm(estado)
+        return estado[:, 1:].float().cpu().numpy()
 
 
 def extract(
     bands: dict[str, np.ndarray],
-    tiles: list,
+    windows: list,
     encoder: PatchEncoder,
     *,
     order: list[str] | None = None,
     batch: int = BATCH,
-) -> np.ndarray:
-    """Runs every patch of a city through the encoder and returns (n_tiles, dim)."""
-    from satinsight.tiling import stack
+    token_size: int = TOKEN_SIZE,
+    min_valid_fraction: float = MIN_VALID_FRACTION,
+) -> tuple[np.ndarray, list]:
+    """Encodes every window of a city and returns one vector per surviving token.
+
+    Gives back the vectors and the instances they belong to, in the same order, so the
+    two never have to be lined up again by hand later.
+    """
+    from satinsight.tiling import instances, stack
 
     order = order or sorted(bands)
     faltantes = [n for n in order if n not in WAVELENGTHS_UM]
@@ -138,17 +193,20 @@ def extract(
         raise KeyError(f"no wavelength registered for {faltantes}")
     longitudes = [WAVELENGTHS_UM[n] for n in order]
 
+    tokens, indices = instances(windows, bands, token_size, min_valid_fraction)
+    if not windows:
+        return np.empty((0, encoder.dim), dtype="float32"), []
+
     vectores = []
-    for inicio in range(0, len(tiles), batch):
+    for inicio in range(0, len(windows), batch):
         lote = np.stack(
-            [normalize(stack(bands, t, order), order) for t in tiles[inicio : inicio + batch]]
+            [normalize(stack(bands, w, order), order) for w in windows[inicio : inicio + batch]]
         )
-        vectores.append(encoder.embed(lote, longitudes))
-    if not vectores:
-        return np.empty((0, encoder.dim), dtype="float32")
-    salida = np.concatenate(vectores)
-    log.info("%d patches encoded into %d dimensions", *salida.shape)
-    return salida
+        salida = encoder.embed_tokens(lote, longitudes)
+        vectores.append(salida.reshape(-1, salida.shape[-1]))
+    matriz = np.concatenate(vectores)[indices]
+    log.info("%d instances encoded into %d dimensions", *matriz.shape)
+    return matriz, tokens
 
 
 def save(embeddings: np.ndarray, destino: Path, **etiquetas) -> Path:
