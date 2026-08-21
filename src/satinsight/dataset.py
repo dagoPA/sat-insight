@@ -80,7 +80,7 @@ def build_city(
     *,
     raiz: Path = RAIZ_DATOS,
     encoder: encoders.PatchEncoder | None = None,
-    size: int = tiling.TILE_SIZE,
+    size: int = tiling.WINDOW_SIZE,
     min_valid_fraction: float = tiling.MIN_VALID_FRACTION,
     minimo_instancias: int = 32,
     catalogo: dict | None = None,
@@ -112,8 +112,11 @@ def build_city(
     catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
     _, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
 
-    tiles = tiling.select(bandas, size=size, min_valid_fraction=min_valid_fraction)
-    instancias, bolsas = bags.build(tiles, malla, agebs, clave, minimo_instancias=minimo_instancias)
+    ventanas = tiling.select(bandas, size=size, min_valid_fraction=min_valid_fraction)
+    tokens, _ = tiling.instances(ventanas, bandas, min_valid_fraction=min_valid_fraction)
+    instancias, bolsas = bags.build(
+        tokens, malla, agebs, clave, minimo_instancias=minimo_instancias
+    )
 
     for nombre in ("instancias", "bolsas"):
         salidas[nombre].parent.mkdir(parents=True, exist_ok=True)
@@ -129,12 +132,19 @@ def build_city(
         salidas["vectores"] = vectores
         return salidas
 
-    # solo se codifican los parches que sobrevivieron al armado de bolsas: los que
-    # cayeron fuera de toda AGEB o en una bolsa demasiado chica ya no son instancias
-    conservados = [tiles[i] for i in instancias.tile]
-    matriz = encoders.extract(bandas, conservados, encoder, order=CANALES[sensor])
+    # el modelo recibe ventanas enteras y devuelve todos sus tokens, así que se codifica
+    # una vez y después se conservan las filas que siguieron siendo instancias
+    matriz, codificados = encoders.extract(
+        bandas, ventanas, encoder, order=CANALES[sensor], min_valid_fraction=min_valid_fraction
+    )
+    posicion = {(t.y0, t.x0): i for i, t in enumerate(codificados)}
+    filas = [posicion[(y, x)] for y, x in zip(instancias.y0, instancias.x0, strict=True)]
     salidas["vectores"] = encoders.save(
-        matriz, vectores, tile=instancias.tile.to_numpy(), cvegeo=instancias.cvegeo.to_numpy()
+        matriz[filas],
+        vectores,
+        y0=instancias.y0.to_numpy(),
+        x0=instancias.x0.to_numpy(),
+        cvegeo=instancias.cvegeo.to_numpy(),
     )
     return salidas
 

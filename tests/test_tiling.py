@@ -68,3 +68,33 @@ def test_stack_respects_the_channel_order_it_is_given():
     apilado = stack(b, Tile(0, 0, 0, 0, 64), order=["vh", "vv"])
     assert apilado.shape == (2, 64, 64)
     assert apilado[0].mean() == 1.0 and apilado[1].mean() == 0.0
+
+
+def test_a_window_splits_into_the_expected_token_grid():
+    from satinsight.tiling import tokens
+
+    celdas = tokens(Tile(0, 0, 224, 448, 224), token_size=16)
+    assert len(celdas) == 196
+    assert celdas[0].y0 == 224 and celdas[0].x0 == 448
+    # las coordenadas vienen en la imagen completa, no relativas a la ventana
+    assert celdas[-1].y0 == 224 + 13 * 16
+    assert celdas[-1].x0 == 448 + 13 * 16
+
+
+def test_tokens_must_divide_the_window():
+    from satinsight.tiling import tokens
+
+    with pytest.raises(ValueError, match="does not divide"):
+        tokens(Tile(0, 0, 0, 0, 100), token_size=16)
+
+
+def test_instances_index_points_at_the_right_model_output():
+    from satinsight.tiling import instances
+
+    b = bandas(224, 448)
+    ventanas = grid((224, 448), size=224)
+    b["vv"][:16, :16] = np.nan  # solo el primer token de la primera ventana
+    tokens_validos, indices = instances(ventanas, b)
+    assert len(tokens_validos) == len(indices) == 2 * 196 - 1
+    assert indices[0] == 1
+    assert indices[-1] == 2 * 196 - 1
