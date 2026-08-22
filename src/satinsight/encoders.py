@@ -210,13 +210,19 @@ def extract(
 
 
 def save(embeddings: np.ndarray, destino: Path, **etiquetas) -> Path:
-    """Writes the vectors as half precision, which halves the disk for no measurable loss."""
+    """Writes the vectors as half precision, which halves the disk for no measurable loss.
+
+    Label columns of strings arrive from pandas as arrays of objects, and numpy can only
+    store those by pickling. Reading a pickle back means trusting whatever the file
+    contains, so they are narrowed to fixed-width text and the archive stays loadable
+    with pickling switched off.
+    """
     destino.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        destino,
-        embeddings=embeddings.astype("float16"),
-        **{k: np.asarray(v) for k, v in etiquetas.items()},
-    )
+    limpias = {}
+    for clave, valor in etiquetas.items():
+        arreglo = np.asarray(valor)
+        limpias[clave] = arreglo.astype("U") if arreglo.dtype == object else arreglo
+    np.savez_compressed(destino, embeddings=embeddings.astype("float16"), **limpias)
     log.info("%s (%.1f MB)", destino.name, destino.stat().st_size / 1e6)
     return destino
 
