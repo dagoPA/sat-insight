@@ -101,3 +101,13 @@ def test_save_and_load_round_trip(tmp_path):
     assert leidos.shape == vectores.shape
     assert np.allclose(leidos, vectores, atol=1e-3)
     assert (etiquetas["tile"] == np.arange(7)).all()
+
+
+def test_string_labels_survive_the_round_trip(tmp_path):
+    """Las claves de AGEB llegan como texto y no deben obligar a leer con pickle."""
+    import pandas as pd
+
+    claves = pd.Series(["0710100010001", "0710100010002"]).to_numpy()
+    ruta = save(np.zeros((2, 3), "float32"), tmp_path / "y.npz", cvegeo=claves)
+    _, etiquetas = load(ruta)
+    assert list(etiquetas["cvegeo"]) == ["0710100010001", "0710100010002"]
