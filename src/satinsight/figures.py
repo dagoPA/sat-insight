@@ -1,10 +1,10 @@
-"""Figuras de la fase 1: qué ve el modelo y qué mide dentro de cada AGEB.
+"""Phase one figures: what the model sees and what it measures inside each AGEB.
 
 Las cifras de la propuesta describen el proceso pero no lo muestran. Estas figuras salen de
-los mismos composites y polígonos que alimentan el baseline, de modo que lo que se ve en la
-página es exactamente lo que entra al modelo, sin una capa de ilustración de por medio.
+the same composites and polygons that feed the baseline, so what shows on the page is
+exactly what enters the model, with no illustration layer in between.
 
-Todas se regeneran con `satinsight figuras`, y su fuente es el caché de composites.
+They all regenerate with `satinsight figures`, and their source is the composite cache.
 """
 
 import logging
@@ -29,14 +29,14 @@ GRADE_COLOUR = {
     "Alto": (208, 138, 62),
     "Muy alto": (168, 72, 12),
 }
-"""Rampa ordinal de verde azulado a naranja, la misma pareja de acentos que usa la página."""
+"""Ordinal ramp from teal to orange, the same pair of accents the page uses."""
 
 TINTA = (245, 245, 245)
 FONDO = (20, 24, 31)
 
 
 def _rgb_from_composite(bands: dict, sensor: str) -> np.ndarray:
-    """Arreglo RGB de 8 bits listo para mostrar, según el sensor."""
+    """Eight-bit RGB array ready to display, according to the sensor."""
     if sensor == "s2":
         return np.dstack([stretch(bands[b]) for b in ("B04", "B03", "B02")])
     vv, vh = to_db(bands["vv"]), to_db(bands["vh"])
@@ -59,12 +59,12 @@ def _text(image: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> No
 def modality_panel(city: str, destination: Path, side: int = 520) -> Path:
     """Los dos sensores sobre el mismo recuadro, uno al side del otro.
 
-    Es la comparación que el documento sostiene en prosa: el óptico tiene la traza urbana
-    nítida a 10 m, el radar la ve más basta pero en una magnitud calibrada.
+    This is the comparison the document makes in prose: optical has the urban fabric sharp
+    at 10 m, radar sees it coarser but in a calibrated quantity.
     """
     root = Path("data") / "composites"
     paneles = []
-    for sensor, title in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
+    for sensor, title in (("s2", "Sentinel-2 · optical"), ("s1", "Sentinel-1 · radar")):
         bands, _, etiquetas = cache.load(cache.composite_path(city, sensor, root))
         rgb = _rgb_from_composite(bands, sensor)
         alto, ancho = rgb.shape[:2]
@@ -91,7 +91,7 @@ def modality_panel(city: str, destination: Path, side: int = 520) -> Path:
 
 
 def _thicken(mask: np.ndarray, radio: int = 1) -> np.ndarray:
-    """Dilata una máscara booleana desplazándola. Un border de un píxel se pierde al escalar."""
+    """Dilates a boolean mask by shifting it. A one-pixel border is lost when scaling."""
     output = mask.copy()
     for eje in (0, 1):
         for signo in (1, -1):
@@ -100,11 +100,10 @@ def _thicken(mask: np.ndarray, radio: int = 1) -> np.ndarray:
 
 
 def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 420) -> Path:
-    """El compuesto con los bordes de las AGEB encima, teñidos por grado.
+    """The composite with the AGEB borders on top, tinted by grade.
 
-    Muestra la unidad de análisis apoyada sobre los píxeles que la alimentan, que es lo que
-    hace falta para entender por qué el tamaño del polígono condiciona lo que se puede medir
-    dentro de él.
+    Shows the unit of analysis resting on the pixels that feed it, which is what it takes to
+    understand why the size of the polygon conditions what can be measured inside it.
     """
     root = Path("data") / "composites"
     _, agebs = city_aoi(city)
@@ -133,7 +132,7 @@ def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 
         mask = _thicken(border & (etiquetas == indice))
         pintado[mask] = GRADE_COLOUR[grado]
 
-    # crop centrado en la zona con más AGEB, chico para que el border se distinga al ampliar
+    # crop centred on the area with most AGEB, small so the border shows when enlarged
     rows, columns = np.where(etiquetas > 0)
     cf, cc = int(np.median(rows)), int(np.median(columns))
     half = min(ventana_px, rgb.shape[0], rgb.shape[1]) // 2
@@ -144,8 +143,8 @@ def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 
     alto_leyenda = 30
     image = Image.new("RGB", (side, side + alto_leyenda), FONDO)
     image.paste(Image.fromarray(crop).resize((side, side), Image.LANCZOS), (0, 0))
-    _text(image, (10, 8), f"{city} · bordes de AGEB, teñidos por grado de rezago")
-    _text(image, (10, side - 22), f"{2 * half * 10 / 1000:.1f} km de side · píxel de 10 m", 11)
+    _text(image, (10, 8), f"{city} · AGEB borders, tinted by deprivation grade")
+    _text(image, (10, side - 22), f"{2 * half * 10 / 1000:.1f} km across · 10 m pixel", 11)
 
     dibujo = ImageDraw.Draw(image)
     x = 10
@@ -178,8 +177,8 @@ def _ageb_crop(rgb: np.ndarray, channel: np.ndarray, grid, geometry, margen: int
 def contrast_panel(city: str, sensor: str, destination: Path, side: int = 190) -> Path:
     """Cuatro AGEB de la misma city, dos de rezago bajo y dos de rezago alto.
 
-    Debajo de cada una van su contraste y su homogeneidad medidos. Es la forma de ver qué
-    está capturando la GLCM antes de creerle a un kappa.
+    Under each one go its measured contrast and homogeneity. It is the way to see what the
+    GLCM is capturing before believing a kappa.
     """
     root = Path("data") / "composites"
     _, agebs = city_aoi(city)
@@ -196,9 +195,9 @@ def contrast_panel(city: str, sensor: str, destination: Path, side: int = 190) -
         rango = (float(np.percentile(finitos, 2)), float(np.percentile(finitos, 98)))
     cuantizada = quantise(channel, rango)
 
-    # Elegir por área del polígono no basta: una AGEB costera puede ser grande y no tener
-    # un solo píxel de radar utilizable, porque sobre agua la retrodispersión cae a cero y
-    # `to_db` la vuelve nula. La candidata se mide por píxeles válidos del channel.
+    # Choosing by polygon area is not enough: a coastal AGEB can be large and hold
+    # a single usable radar pixel, because over water backscatter falls to zero and `to_db`
+    # turns it null. The candidate is measured by valid pixels of the channel.
     def utilizables(geometry) -> int:
         partes = _ageb_crop(rgb, cuantizada, grid, geometry)
         if partes is None:
@@ -216,7 +215,7 @@ def contrast_panel(city: str, sensor: str, destination: Path, side: int = 190) -
 
     if len(seleccion) < 4:
         raise RuntimeError(
-            f"{city}/{sensor}: solo {len(seleccion)} AGEB con píxeles suficientes "
+            f"{city}/{sensor}: only {len(seleccion)} AGEB with enough pixels "
             "en ambos extremos del rezago"
         )
 
@@ -249,7 +248,7 @@ def contrast_panel(city: str, sensor: str, destination: Path, side: int = 190) -
 
 
 def _dark_style(ax) -> None:
-    """Deja los ejes sin marco ni handles, sobre el mismo fondo que los demás paneles."""
+    """Leaves the axes with no frame or ticks, on the same background as the other panels."""
     ax.set_facecolor(_hex(FONDO))
     ax.set_xticks([])
     ax.set_yticks([])
@@ -262,11 +261,11 @@ def _hex(rgb: tuple[int, int, int]) -> str:
 
 
 def national_map(destination: Path, root: Path | None = None) -> Path:
-    """Sitúa las cinco cities piloto dentro del país.
+    """Places the five pilot cities inside the country.
 
-    El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
+    The size of each mark is its number of AGEB and the colour the share sitting at grade
     alto o muy alto. Puestas sobre el mapa se ve de un vistazo el sesgo de la muestra: las
-    dos cities que aportan rezago alto están en el sur y en la costa del Pacífico.
+    two cities contributing high deprivation are in the south and on the Pacific coast.
     """
     import matplotlib
 
@@ -365,10 +364,10 @@ def national_map(destination: Path, root: Path | None = None) -> Path:
 
 
 def agebs_by_city_map(destination: Path, root: Path | None = None) -> Path:
-    """El split completo de AGEB de cada city, teñido por grado y a scale común.
+    """The complete set of AGEB of each city, tinted by grade and at a shared scale.
 
-    Los paneles de image muestran recortes; este muestra la extensión entera que entra al
-    baseline. Compartir la scale en kilómetros permite comparar el tamaño real de las cinco
+    The image panels show crops; this one shows the whole extent that enters the baseline.
+    Sharing the scale in kilometres allows comparing the real size of the five
     manchas urbanas.
     """
     import matplotlib
@@ -433,7 +432,7 @@ GRADE_LABELS = {
     "Alto": "High",
     "Muy alto": "Very high",
 }
-"""Nombre en inglés de los cinco grados. Las figuras van al paper y el paper va en inglés."""
+"""English name of the five grades. The figures go to the paper and the paper is English."""
 
 STATE_LABELS = {
     "completa": "complete",
@@ -441,7 +440,7 @@ STATE_LABELS = {
     "fallida": "failed",
     "pendiente": "pending",
 }
-"""Nombre en inglés de cada estado, porque las figuras van al paper y el paper va en inglés."""
+"""English name of each state, because the figures go to the paper and it is in English."""
 
 COMPOSITING_STATES = {
     "completa": ("#4ade80", "composited in both modalities"),
@@ -449,18 +448,18 @@ COMPOSITING_STATES = {
     "fallida": ("#f87171", "aborted on failed reads"),
     "pendiente": ("#9aa7b6", "not started"),
 }
-"""Color y gloss de cada estado en que puede estar la composición de una city."""
+"""Colour and gloss of each state a city's compositing can be in."""
 
 
 def compositing_state(
     keys: list[str], root: Path | None = None, logs: Path | None = None
 ) -> dict[str, str]:
-    """Clasifica cada city según lo que hay en disco y lo que dicen los registros.
+    """Classifies each city by what is on disk and what the logs say.
 
-    Una city que abortó deja su nombre en una línea `FALLO` del logfile y ningún archivo,
-    lo cual la vuelve indistinguible de una que todavía no empieza. La distinción importa
+    A city that aborted leaves its name on a `FALLO` line of the log and no file at all,
+    which makes it indistinguishable from one that has not started. The distinction matters
     porque una city abortada no se reintenta sola: el barrido la salta y termina sin
-    señalarla. Solo se leen las líneas posteriores al último relanzamiento.
+    flag it. Only the lines after the last relaunch are read.
     """
     from satinsight.download import DATA_ROOT
 
@@ -480,8 +479,8 @@ def compositing_state(
         if found == 2:
             states[key] = "completa"
         elif key in failed:
-            # el fallo manda sobre el archivo suelto: una city que abortó en la segunda
-            # modalidad deja la primera en disco y se vería como si solo fuera lenta
+            # the failure outranks the lone file: a city that aborted on the second
+            # modality leaves the first on disk and would look merely slow
             states[key] = "fallida"
         elif found == 1:
             states[key] = "a medias"
@@ -493,10 +492,10 @@ def compositing_state(
 def national_cities_map(
     destination: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
-    """Sitúa las cities del split nacional y colorea cada una según su composición.
+    """Places the cities of the national set and colours each by its compositing state.
 
-    El tamaño de la marca es el número de AGEB urbanas de la city. Puestas sobre el país
-    se ve qué tanto cubre la muestra el territorio y dónde se concentra el trabajo hecho.
+    The size of the mark is the number of urban AGEB of the city. Laid over the country it
+    shows how much of the territory the sample covers and where the work done concentrates.
     """
     import matplotlib
 
@@ -517,7 +516,7 @@ def national_cities_map(
         try:
             area, agebs = city_aoi(key, root, catalogue=catalogue)
         except Exception:
-            log.warning("sin geometría para %s", key, exc_info=True)
+            log.warning("no geometry for %s", key, exc_info=True)
             continue
         points.append(
             {
@@ -555,13 +554,13 @@ def national_cities_map(
         )
 
     # solo se rotulan las cities ya compuestas y las que fallaron: rotular las 138
-    # deja el mapa ilegible, y son esas dos las que interesa poder señalar por nombre
+    # leaves the map unreadable, and those two are the ones worth naming
     labelled = sorted(
         (p for p in points if p["estado"] != "pendiente"),
         key=lambda p: (-p["lat"], p["lon"]),
     )
-    # las conurbaciones vecinas dejan sus rótulos uno encima de otro —Zapopan sobre
-    # Guadalajara, Mexicali sobre Tijuana—, así que cada rótulo que caiga muy cerca del
+    # neighbouring conurbations leave their labels on top of each other —Zapopan over
+    # Guadalajara, Mexicali over Tijuana— so every label landing too close to the
     # anterior se empuja hacia abajo hasta despejarse
     placed: list[tuple[float, float]] = []
     for p in labelled:
