@@ -20,7 +20,7 @@ from satinsight import cache
 from satinsight.agebs import CIUDADES, agebs_de_ciudad
 from satinsight.aoi import AOI
 from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
-from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.composite import composite_s1, composite_s2
 from satinsight.download import DATA_ROOT
 from satinsight.grid import Grid, grid_from_scenes
 from satinsight.landcover import fractions_per_ageb, mosaic
@@ -94,7 +94,7 @@ ruido residual, y como la validación reparte los pliegues por ciudad, esa difer
 leería como señal de esa ciudad. Responde al diseño experimental, y por eso vive aquí
 mientras la detección de averías vive en la librería.
 
-Se cuenta por píxel y no por escena porque una ciudad repartida entre dos teselas MGRS
+Se cuenta por píxel y no por escena porque una ciudad repartida entre dos tiles MGRS
 recibe escenas que solo cubren su mitad del recuadro: contarlas enteras da un número que
 ninguna parte de la imagen llegó a tener.
 """
@@ -138,7 +138,7 @@ def construir_compuesto(
     area: AOI,
     *,
     periodo: str = PERIODO_CENSO,
-    max_escenas: int | None = None,
+    max_scenes: int | None = None,
     catalogo=None,
 ) -> tuple[dict[str, np.ndarray], Grid, dict]:
     """Compone una ciudad y un sensor desde el catálogo, sin consultar el disco."""
@@ -158,24 +158,24 @@ def construir_compuesto(
 
         def puntuar(grupo):
             from satinsight.catalog import group_by_orbit
-            from satinsight.composite import cobertura_util
+            from satinsight.composite import useful_coverage
 
             orbitas = group_by_orbit(grupo)
-            return max((cobertura_util(v, area.bbox) for v in orbitas.values()), default=0.0)
+            return max((useful_coverage(v, area.bbox) for v in orbitas.values()), default=0.0)
 
     malla, escenas = grid_from_scenes(area.bbox, escenas, puntuar=puntuar)
     log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixels)
 
     if sensor == "s2":
-        tope = max_escenas or TOPE_S2
-        bandas, meta = compuesto_s2(escenas, area.bbox, malla.shape, BANDAS_S2, tope)
-        etiquetas = {"escenas_disponibles": len(escenas), **meta}
-        profundidad = int(meta["profundidad_mediana"])
+        tope = max_scenes or TOPE_S2
+        bandas, meta = composite_s2(escenas, area.bbox, malla.shape, BANDAS_S2, tope)
+        etiquetas = {"scenes_available": len(escenas), **meta}
+        profundidad = int(meta["median_depth"])
     else:
-        tope = max_escenas or TOPE_S1
-        bandas, meta = compuesto_s1(escenas, area.bbox, malla.shape, tope)
+        tope = max_scenes or TOPE_S1
+        bandas, meta = composite_s1(escenas, area.bbox, malla.shape, tope)
         etiquetas = dict(meta)
-        profundidad = int(meta["escenas_usadas"])
+        profundidad = int(meta["scenes_used"])
 
     _exigir_profundidad(clave, sensor, profundidad, min(PROFUNDIDAD_MINIMA, tope))
     etiquetas |= {"ciudad": clave, "sensor": sensor, "periodo": periodo, "bbox": list(area.bbox)}
@@ -290,7 +290,7 @@ def rasgos_de_ciudad(
     raiz: Path = DATA_ROOT,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
-    max_escenas: int | None = None,
+    max_scenes: int | None = None,
     escala: str = "nativa",
     catalogo: dict | None = None,
 ) -> pd.DataFrame:
@@ -306,7 +306,7 @@ def rasgos_de_ciudad(
         raiz=raiz,
         periodo=periodo,
         forzar=forzar,
-        max_escenas=max_escenas,
+        max_scenes=max_scenes,
     )
 
     proyectadas = agebs.to_crs(malla.crs)
@@ -345,7 +345,7 @@ def rasgos_de_todas(
     ciudades: tuple[str, ...] = tuple(CIUDADES),
     *,
     raiz: Path = DATA_ROOT,
-    max_escenas: int | None = None,
+    max_scenes: int | None = None,
     escala: str = "nativa",
     catalogo: dict | None = None,
 ) -> pd.DataFrame:
@@ -359,7 +359,7 @@ def rasgos_de_todas(
         try:
             partes.append(
                 rasgos_de_ciudad(
-                    c, sensor, raiz=raiz, max_escenas=max_escenas, escala=escala, catalogo=catalogo
+                    c, sensor, raiz=raiz, max_scenes=max_scenes, escala=escala, catalogo=catalogo
                 )
             )
         except Exception:

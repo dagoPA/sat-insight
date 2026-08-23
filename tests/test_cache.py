@@ -46,12 +46,10 @@ def test_el_orden_de_las_bandas_se_conserva(tmp_path, malla):
 
 
 def test_las_etiquetas_sobreviven(tmp_path, malla):
-    guardar(
-        bandas_de(malla), malla, tmp_path / "x.tif", escenas_usadas=17, orbita="ascendente · 99"
-    )
+    guardar(bandas_de(malla), malla, tmp_path / "x.tif", scenes_used=17, orbit="ascendente · 99")
     _, _, etiquetas = cargar(tmp_path / "x.tif")
-    assert etiquetas["escenas_usadas"] == 17
-    assert etiquetas["orbita"] == "ascendente · 99"
+    assert etiquetas["scenes_used"] == 17
+    assert etiquetas["orbit"] == "ascendente · 99"
 
 
 def test_los_nan_sobreviven(tmp_path, malla):

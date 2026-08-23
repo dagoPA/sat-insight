@@ -5,7 +5,7 @@ de abrir cada COG remoto, muy por encima de los bytes transferidos. Guardar el r
 convierte ese gasto en algo que se paga una sola vez.
 
 El compuesto de Sentinel-1 se guarda en potencia lineal, que es como lo entrega
-`compuesto_s1`. La conversión a decibeles ocurre al leer, nunca antes de escribir: promediar
+`composite_s1`. La conversión a decibeles ocurre al leer, nunca antes de escribir: promediar
 en decibeles y promediar en potencia dan resultados distintos, y el promedio en decibeles
 está sesgado hacia los valores bajos.
 

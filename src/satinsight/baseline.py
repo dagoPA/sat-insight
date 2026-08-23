@@ -389,8 +389,8 @@ def intervalo_por_ciudades(
     """
     valores = por_ciudad[columna].to_numpy(dtype="float64")
     rng = np.random.default_rng(semilla)
-    muestras = valores[rng.integers(0, len(valores), size=(repeticiones, len(valores)))]
-    medias = muestras.mean(axis=1)
+    samples = valores[rng.integers(0, len(valores), size=(repeticiones, len(valores)))]
+    medias = samples.mean(axis=1)
     return {
         "media": float(valores.mean()),
         "ic_bajo": float(np.percentile(medias, 2.5)),
@@ -558,7 +558,7 @@ def fusionar(optico: pd.DataFrame, radar: pd.DataFrame, *, clave: str = "cvegeo"
     así que conviven sin chocar.
 
     Se conservan solo las AGEB presentes en las dos. Comparar la fusión contra cada
-    modalidad por separado sobre muestras distintas mezclaría la diferencia de sensor con
+    modalidad por separado sobre samples distintas mezclaría la diferencia de sensor con
     la de qué filas evalúa cada uno.
     """
     solo_radar = [c for c in radar.columns if c.startswith("s1")]
