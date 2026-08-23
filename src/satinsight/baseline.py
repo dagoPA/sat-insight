@@ -436,7 +436,11 @@ def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict
         objetivo = (verdad == k).astype(int)
         if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
             continue
-        marca = puntuaciones[:, k] if puntuaciones.ndim == 2 else puntuaciones
+        # con una sola puntuación ordenada, la evidencia a favor de la clase k es la
+        # cercanía a k. Usar el orden crudo invierte las clases bajas —para ellas una
+        # puntuación alta significa lo contrario— y el promedio de las cinco sale en 0.5
+        # por cancelación, aparentando azar donde el modelo separa bien
+        marca = puntuaciones[:, k] if puntuaciones.ndim == 2 else -np.abs(puntuaciones - k)
         salida[f"auroc_{grado.lower().replace(' ', '_')}"] = float(roc_auc_score(objetivo, marca))
     if salida:
         salida["auroc_macro"] = float(np.mean(list(salida.values())))
@@ -496,9 +500,15 @@ def evaluar_particion(
             f"{evaluar_en}; ¿coinciden las claves de ciudad?"
         )
 
-    prediccion = _predecir(modelo, entrena[columnas], entrena[columna_objetivo], mide[columnas])
+    prediccion, puntuaciones = _puntuaciones(
+        modelo, entrena[columnas], entrena[columna_objetivo], mide[columnas]
+    )
     verdad = mide[columna_objetivo].to_numpy()
-    metricas = _metricas(verdad, prediccion)
+    metricas = {
+        **_metricas(verdad, prediccion),
+        **auroc_una_contra_resto(verdad, puntuaciones),
+        **auroc_acumulada(verdad, puntuaciones),
+    }
 
     por_ciudad = pd.DataFrame(
         {"ciudad": mide[columna_grupo].to_numpy(), "acierto": verdad == prediccion}

@@ -264,3 +264,30 @@ def test_un_rasgo_sin_medicion_de_fiabilidad_queda_fuera():
     fiab = fiabilidad_de(tabla)
     sel = seleccionar_rasgos(tabla, fiab[fiab.rasgo != "c_contrast_d2"]).set_index("rasgo")
     assert not sel.loc["c_contrast_d2", "conservado"]
+
+
+def test_el_auroc_de_las_clases_bajas_no_sale_invertido():
+    """Con una sola puntuación ordenada, la evidencia a favor de k es la cercanía a k.
+
+    Usar el orden crudo invierte las clases bajas y el promedio sale en 0.5 por
+    cancelación, aparentando azar donde el modelo separa casi perfecto.
+    """
+    import numpy as np
+
+    from satinsight.baseline import auroc_una_contra_resto
+
+    verdad = np.array([0, 1, 2, 3, 4] * 20)
+    casi_perfecto = verdad + np.random.default_rng(0).normal(0, 0.2, len(verdad))
+    r = auroc_una_contra_resto(verdad, casi_perfecto)
+    assert r["auroc_muy_bajo"] > 0.9
+    assert r["auroc_macro"] > 0.85
+
+
+def test_el_auroc_acumulado_respeta_el_orden():
+    import numpy as np
+
+    from satinsight.baseline import auroc_acumulada
+
+    verdad = np.array([0, 1, 2, 3, 4] * 20)
+    r = auroc_acumulada(verdad, verdad.astype(float))
+    assert all(v == 1.0 for k, v in r.items() if k.startswith("auroc_ge_"))
