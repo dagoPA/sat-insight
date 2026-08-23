@@ -149,13 +149,13 @@ def check(partition: pd.DataFrame, instancias: pd.DataFrame | None = None) -> No
     sin_asignar = marcadas.split.isna().sum()
     if sin_asignar:
         raise ValueError(f"{sin_asignar} instances belong to a city outside the partition")
-    for columna in ("cvegeo", "municipio"):
-        if columna not in marcadas.columns:
+    for column in ("cvegeo", "municipio"):
+        if column not in marcadas.columns:
             continue
-        cruzados = marcadas.groupby(columna, observed=True).split.nunique()
+        cruzados = marcadas.groupby(column, observed=True).split.nunique()
         if (cruzados > 1).any():
             culpables = cruzados[cruzados > 1].index.tolist()[:5]
-            raise ValueError(f"{columna} spanning both sides of the partition: {culpables}")
+            raise ValueError(f"{column} spanning both sides of the partition: {culpables}")
     log.info("partition clean over %d instances", len(instancias))
 
 

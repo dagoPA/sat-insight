@@ -1,8 +1,7 @@
-"""Desagregación del rezago social a partir de imágenes satelitales.
+"""Spatial disaggregation of social deprivation from satellite imagery.
 
-Herramientas reutilizables para consultar el catálogo STAC de Planetary Computer,
-construir compuestos anuales de Sentinel-1 y Sentinel-2 sobre un área de interés, y
-renderizar paneles de inspección visual.
+Reusable tools to query the Planetary Computer STAC catalogue, build annual Sentinel-1 and
+Sentinel-2 composites over an area of interest, and render visual inspection panels.
 """
 
 from satinsight.aoi import AOI, PILOT
