@@ -98,7 +98,7 @@ def test_cada_distancia_sale_como_columna_propia():
 def test_un_rango_fijo_no_depende_de_la_banda():
     """Dos bandas con distinto nivel deben cuantizarse igual si el rango se fija.
 
-    Es lo que sostiene la comparabilidad del radar entre ciudades y entre países.
+    Es lo que sostiene la comparabilidad del radar entre cities y entre países.
     """
     rng = np.random.default_rng(1)
     patron = rng.normal(0, 1, (60, 60))

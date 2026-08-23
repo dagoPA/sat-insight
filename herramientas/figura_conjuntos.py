@@ -60,10 +60,10 @@ def dibujar(resultados: pd.DataFrame, destino: str) -> None:
             eje.axhline(0.5, color="#c0392b", ls="--", lw=1.1)
         eje.legend(frameon=False, fontsize=9, ncols=3)
 
-    ciudades = int(resultados.ciudades_mide.iloc[0])
+    cities = int(resultados.ciudades_mide.iloc[0])
     agebs = int(resultados.n_mide.iloc[0])
     figura.suptitle(
-        f"Validation on {ciudades} held-out cities · {agebs:,} AGEB · "
+        f"Validation on {cities} held-out cities · {agebs:,} AGEB · "
         "intervals from 400 city-level bootstrap replicates",
         fontsize=12.5,
     )

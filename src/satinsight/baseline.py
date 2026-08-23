@@ -128,10 +128,10 @@ def estandarizar_por_grupo(
 
     Es adaptación de dominio sin supervisión: usa la distribución de los rasgos de la ciudad
     retenida, nunca sus etiquetas, así que no filtra información del objetivo. Lo que
-    elimina es la deriva radiométrica y morfológica entre ciudades.
+    elimina es la deriva radiométrica y morfológica entre cities.
 
     El precio es real y hay que declararlo: también borra cualquier diferencia de nivel
-    entre ciudades que sí fuera señal de rezago. Una ciudad entera más pobre que otra queda
+    entre cities que sí fuera señal de rezago. Una ciudad entera más pobre que otra queda
     centrada igual que la rica. Por eso se evalúa como ablación declarada.
 
     Un rasgo constante dentro de una ciudad queda centrado en cero. La distinción importa: varias
@@ -144,10 +144,10 @@ def estandarizar_por_grupo(
     valores = salida[columnas]
     agrupado = salida.groupby(columna_grupo, observed=True)[columnas]
     media = agrupado.transform("mean")
-    escala = agrupado.transform("std").where(lambda d: d > 0)
+    scale = agrupado.transform("std").where(lambda d: d > 0)
 
-    centrada = (valores - media) / escala
-    salida[columnas] = centrada.mask(escala.isna() & valores.notna(), 0.0)
+    centrada = (valores - media) / scale
+    salida[columnas] = centrada.mask(scale.isna() & valores.notna(), 0.0)
     return salida
 
 
@@ -195,10 +195,10 @@ def evaluar(
     """Validación cruzada dejando una ciudad fuera en cada pliegue.
 
     Devuelve un renglón por pliegue, para poder ver si el resultado se sostiene en las
-    ciudades o lo carga una sola.
+    cities o lo carga una sola.
 
     Con `estandarizar` cada rasgo se centra dentro de su ciudad antes de entrenar. Es una
-    ablación y no el modo normal: quita la deriva radiométrica entre ciudades, y de paso
+    ablación y no el modo normal: quita la deriva radiométrica entre cities, y de paso
     cualquier diferencia de nivel entre ellas que sí fuera señal de rezago.
     """
     columnas = columnas_de_conjunto(tabla, conjunto)
@@ -308,10 +308,10 @@ def seleccionar_rasgos(
     Los umbrales se fijan antes de mirar desempeño, que es lo que evita elegir el corte que
     conviene al resultado.
 
-    `fiabilidad` viene de `textura.split_half_reliability` agregada sobre las ciudades, con
-    columnas `rasgo` y `r_mediana`.
+    `fiabilidad` viene de `textura.split_half_reliability` agregada sobre las cities, con
+    columnas `rasgo` y `r_median`.
     """
-    reproduce = dict(zip(fiabilidad["feature"], fiabilidad["r_mediana"], strict=True))
+    reproduce = dict(zip(fiabilidad["feature"], fiabilidad["r_median"], strict=True))
     filas = []
     for columna in columnas_de_conjunto(tabla, "textura"):
         canal = columna.rsplit("_", 2)[0]
@@ -350,15 +350,15 @@ def seleccionar_rasgos(
 def prueba_de_signos(diferencias: np.ndarray) -> dict[str, float]:
     """Prueba exacta de signos sobre las diferencias por pliegue.
 
-    Con cinco ciudades hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
+    Con cinco cities hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
     están correlacionadas espacialmente entre sí. Tratar cada AGEB como independiente
     inflaría la significancia; la unidad independiente es la ciudad.
 
     Cinco pliegues dan 32 asignaciones de signo posibles. Con los cinco a favor, el valor p a
     dos colas es 2/32 = 0.0625, que es el mínimo alcanzable con este tamaño de muestra: la
-    prueba **nunca** puede bajar de 0.05 con cinco ciudades. Eso es una propiedad del diseño
+    prueba **nunca** puede bajar de 0.05 con cinco cities. Eso es una propiedad del diseño
     y conviene reportarla junto al resultado, porque invita a leer el tamaño del efecto y su
-    intervalo antes que el valor p, y a sumar ciudades si se quiere evidencia concluyente.
+    intervalo antes que el valor p, y a sumar cities si se quiere evidencia concluyente.
     """
     diferencias = np.asarray(diferencias, dtype="float64")
     diferencias = diferencias[diferencias != 0]
@@ -381,7 +381,7 @@ def intervalo_por_ciudades(
     repeticiones: int = 10000,
     semilla: int = SEMILLA,
 ) -> dict[str, float]:
-    """Intervalo de confianza de una diferencia, remuestreando ciudades enteras.
+    """Intervalo de confianza de una diferencia, remuestreando cities enteras.
 
     El bootstrap por conglomerados respeta que la unidad independiente es la ciudad. Con
     cinco conglomerados el intervalo sale ancho, que es la respuesta honesta al tamaño de
@@ -430,7 +430,7 @@ def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict
 
     Las clases de en medio salen castigadas por construcción: sus negativos incluyen a la
     vez lo que está por debajo y lo que está por encima, y separarlas exige recortar una
-    banda en el centro de una escala ordenada.
+    banda en el centro de una scale ordenada.
     """
     salida = {}
     for k, grado in enumerate(GRADES):
@@ -451,7 +451,7 @@ def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict
 def auroc_acumulada(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, float]:
     """Área bajo la curva de cada umbral «grado mayor o igual que k».
 
-    Preserva el orden de la escala, cosa que una contra el resto no hace, y es la misma
+    Preserva el orden de la scale, cosa que una contra el resto no hace, y es la misma
     descomposición que usa una pérdida ordinal.
     """
     orden = (
@@ -479,13 +479,13 @@ def evaluar_particion(
     columna_objetivo: str = "ordinal",
     remuestreos: int = 400,
 ) -> dict[str, float]:
-    """Entrena sobre las ciudades de entrenamiento y mide sobre las de validación o prueba.
+    """Entrena sobre las cities de entrenamiento y mide sobre las de validación o prueba.
 
-    Reemplaza a dejar una ciudad fuera por pliegue, que servía con cinco ciudades y con
+    Reemplaza a dejar una ciudad fuera por pliegue, que servía con cinco cities y con
     ciento treinta y ocho daría otros tantos pliegues entrenados cada uno con el 99.3% de
     los datos, donde la dispersión entre pliegues es casi toda ruido.
 
-    La incertidumbre sale de un remuestreo por ciudades dentro del conjunto medido, porque
+    La incertidumbre sale de un remuestreo por cities dentro del conjunto medido, porque
     las AGEB vecinas están correlacionadas y tratarlas como independientes estrecha los
     intervalos sin motivo.
     """
@@ -512,16 +512,16 @@ def evaluar_particion(
         **auroc_acumulada(verdad, puntuaciones),
     }
 
-    # el intervalo remuestrea ciudades enteras y recalcula la métrica en cada réplica:
+    # el intervalo remuestrea cities enteras y recalcula la métrica en cada réplica:
     # las AGEB vecinas están correlacionadas, y remuestrearlas sueltas daría intervalos
     # estrechos que no sobrevivirían a cambiar de ciudad, que es justo lo que se mide
-    ciudades = mide[columna_grupo].to_numpy()
+    cities = mide[columna_grupo].to_numpy()
     azar = np.random.default_rng(SEMILLA)
-    unicas = np.unique(ciudades)
+    unicas = np.unique(cities)
     replicas: dict[str, list[float]] = defaultdict(list)
     for _ in range(remuestreos):
         elegidas = azar.choice(unicas, size=len(unicas), replace=True)
-        filas = np.concatenate([np.flatnonzero(ciudades == c) for c in elegidas])
+        filas = np.concatenate([np.flatnonzero(cities == c) for c in elegidas])
         v, pr, puntos = verdad[filas], prediccion[filas], puntuaciones[filas]
         if len(set(v)) < 2:
             continue

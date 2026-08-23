@@ -22,7 +22,7 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 PROPORCIONES = (0.8, 0.1, 0.1)
-"""Reparto de ciudades entre entrenamiento, validación y prueba."""
+"""Reparto de cities entre entrenamiento, validación y prueba."""
 
 CONJUNTOS = ("train", "val", "test")
 
@@ -45,7 +45,7 @@ def _bins(valores: pd.Series, n: int) -> pd.Series:
 
 
 def assign(
-    ciudades: pd.DataFrame,
+    cities: pd.DataFrame,
     *,
     proporciones: tuple[float, float, float] = PROPORCIONES,
     seed: int = SEED,
@@ -63,15 +63,15 @@ def assign(
     pattern, so the proportions come out exact and every stratum is spread across the
     three sets rather than sampled into them.
     """
-    faltantes = {columna_ciudad, columna_tamano, columna_estrato} - set(ciudades.columns)
+    faltantes = {columna_ciudad, columna_tamano, columna_estrato} - set(cities.columns)
     if faltantes:
         raise KeyError(f"the city table is missing {sorted(faltantes)}")
     if abs(sum(proporciones) - 1.0) > 1e-9:
         raise ValueError(f"proportions must add up to one, got {proporciones}")
-    if len(ciudades) < len(CONJUNTOS):
-        raise ValueError(f"{len(ciudades)} cities cannot fill {len(CONJUNTOS)} sets")
+    if len(cities) < len(CONJUNTOS):
+        raise ValueError(f"{len(cities)} cities cannot fill {len(CONJUNTOS)} sets")
 
-    tabla = ciudades[[columna_ciudad, columna_tamano, columna_estrato]].copy()
+    tabla = cities[[columna_ciudad, columna_tamano, columna_estrato]].copy()
     tabla.columns = ["ciudad", "tamano", "estrato_valor"]
     tabla["estrato"] = (
         _bins(tabla.tamano, ESTRATOS).astype(str)
@@ -99,7 +99,7 @@ def assign(
     tabla["conjunto"] = tabla.ciudad.map(asignado)
 
     resumen = tabla.groupby("conjunto", observed=True).agg(
-        ciudades=("ciudad", "size"),
+        cities=("ciudad", "size"),
         agebs=("tamano", "sum"),
         rezago_medio=("estrato_valor", "mean"),
     )
@@ -163,9 +163,9 @@ def dueno_de_municipio(tabla: pd.DataFrame, catalogue: dict) -> dict[str, str]:
     """Asigna cada municipio a una sola ciudad, para que ninguna AGEB pertenezca a dos.
 
     El recuadro de una ciudad envuelve su mancha urbana conurbada, y las manchas de dos
-    ciudades vecinas se solapan: Guadalajara y Zapopan son entradas distintas del catálogo
+    cities vecinas se solapan: Guadalajara y Zapopan son entradas distintas del catálogo
     y comparten 302 AGEB. Extraídas bajo ambas, esas AGEB entran dos veces a la tabla, y si
-    las dos ciudades caen a lados distintos de la partición el modelo ve en entrenamiento
+    las dos cities caen a lados distintos de la partición el modelo ve en entrenamiento
     filas que después se le miden. Sobre la partición nacional eran 1,880 AGEB.
 
     Manda la ciudad cuya clave de municipio es la del AGEB, que es la que el catálogo
@@ -191,7 +191,7 @@ def desduplicar(tabla: pd.DataFrame, catalogue: dict) -> pd.DataFrame:
     salida = tabla[tabla.ciudad == municipio.map(dueno)].copy()
     sobrantes = len(tabla) - len(salida)
     if sobrantes:
-        log.info("%d filas duplicadas entre ciudades conurbadas descartadas", sobrantes)
+        log.info("%d filas duplicadas entre cities conurbadas descartadas", sobrantes)
     repetidas = salida.cvegeo.duplicated().sum()
     if repetidas:
         raise ValueError(f"quedan {repetidas} AGEB repetidas tras desduplicar")

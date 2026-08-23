@@ -149,7 +149,7 @@ def test_un_factor_sin_relacion_explica_poco():
 
 
 def test_el_diagnostico_delata_el_rasgo_que_solo_conoce_la_ciudad():
-    """Un rasgo que separa ciudades sin separar grados debe salir con razón alta."""
+    """Un rasgo que separa cities sin separar grados debe salir con razón alta."""
     tabla = tabla_sintetica(80, fuerza=1.5)
     tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CITIES)})
     d = diagnostico_transferencia(tabla, "densidad").set_index("feature")
@@ -202,14 +202,14 @@ def test_una_tabla_sin_rasgos_del_conjunto_falla():
 def fiabilidad_de(tabla, valor=0.9):
     """Tabla de fiabilidad sintética con el mismo valor para todos los rasgos."""
     rasgos = columnas_de_conjunto(tabla, "textura")
-    return pd.DataFrame({"feature": rasgos, "r_mediana": [valor] * len(rasgos)})
+    return pd.DataFrame({"feature": rasgos, "r_median": [valor] * len(rasgos)})
 
 
 def test_un_rasgo_que_no_se_reproduce_queda_fuera():
     tabla = tabla_sintetica(40)
     tabla["c_n_px"] = 1000
     fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.feature == "c_contrast_d1", "r_mediana"] = 0.2
+    fiab.loc[fiab.feature == "c_contrast_d1", "r_median"] = 0.2
 
     sel = seleccionar_rasgos(tabla, fiab).set_index("feature")
     assert not sel.loc["c_contrast_d1", "kept"]
@@ -251,7 +251,7 @@ def test_el_ruido_puro_lo_atrapa_la_fiabilidad_y_no_el_tamano():
     tabla["c_energy_d4"] = rng.normal(0, 1, len(tabla))
 
     fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.feature == "c_energy_d4", "r_mediana"] = 0.05
+    fiab.loc[fiab.feature == "c_energy_d4", "r_median"] = 0.05
     sel = seleccionar_rasgos(tabla, fiab).set_index("feature")
 
     assert abs(sel.loc["c_energy_d4", "r_n_px"]) < 0.30

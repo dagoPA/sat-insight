@@ -127,7 +127,7 @@ def test_check_passes_on_a_clean_partition():
 
 
 def _tabla_conurbada():
-    """Dos ciudades vecinas que comparten AGEB, como Guadalajara y Zapopan."""
+    """Dos cities vecinas que comparten AGEB, como Guadalajara y Zapopan."""
     return pd.DataFrame(
         {
             "cvegeo": ["1403900010001", "1403900010002", "1412000010001", "1403900010001"],

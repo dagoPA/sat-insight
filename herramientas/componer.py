@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 from satinsight.agebs import cities_by_size  # noqa: E402
-from satinsight.pipeline import aoi_de_ciudad, asegurar_compuesto  # noqa: E402
+from satinsight.pipeline import city_aoi, ensure_composite  # noqa: E402
 
 catalogue = cities_by_size(stratify=True)
 argumentos = sys.argv[1:]
@@ -28,14 +28,14 @@ else:
     mias = argumentos or list(catalogue)
     etiqueta = "corrida"
 
-print(f"{etiqueta}: {len(mias)} ciudades", flush=True)
+print(f"{etiqueta}: {len(mias)} cities", flush=True)
 fallidas = []
 for n, clave in enumerate(mias, start=1):
     inicio = time.time()
     try:
-        area, agebs = aoi_de_ciudad(clave, catalogue=catalogue)
+        area, agebs = city_aoi(clave, catalogue=catalogue)
         for sensor in ("s2", "s1"):
-            asegurar_compuesto(clave, sensor, area=area)
+            ensure_composite(clave, sensor, area=area)
         minutos = (time.time() - inicio) / 60
         print(f"OK {clave} ({n}/{len(mias)}) {len(agebs)} AGEB en {minutos:.1f} min", flush=True)
     except Exception as e:
@@ -43,6 +43,6 @@ for n, clave in enumerate(mias, start=1):
         print(f"FALLO {clave} ({n}/{len(mias)}): {type(e).__name__}: {e}", flush=True)
 
 print(f"FIN {etiqueta}: {len(fallidas)} fallidas {fallidas}", flush=True)
-# el código de salida distingue la corrida completa de la que dejó ciudades atrás, para
+# el código de salida distingue la corrida completa de la que dejó cities atrás, para
 # que un bucle de reintento sepa si volver a llamarla
 sys.exit(1 if fallidas else 0)
