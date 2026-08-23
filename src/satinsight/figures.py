@@ -302,8 +302,8 @@ def national_map(destination: Path, root: Path | None = None) -> Path:
             _hex(GRADE_COLOUR["Muy alto"]),
         ],
     )
-    # desplazamientos escogidos a mano: placed todas a la derecha, las etiquetas de
-    # Acapulco y Tuxtla se encimaban y la de Mérida caía sobre la bar de color
+    # offsets picked by hand: with all of them placed to the right, the labels of
+    # Acapulco and Tuxtla overlapped and Mérida's fell on the colour bar
     offsets = {
         "tuxtla": (14, -16),
         "merida": (-16, 12),
