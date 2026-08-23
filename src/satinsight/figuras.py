@@ -18,7 +18,7 @@ from satinsight import cache
 from satinsight.agebs import GRADOS
 from satinsight.pipeline import aoi_de_ciudad, canales_s1, canales_s2
 from satinsight.raster import stretch, to_db
-from satinsight.textura import MINIMO_PIXELES, RANGOS_FIJOS_S1, cuantizar, rasgos_de_recorte
+from satinsight.texture import FIXED_RANGES_S1, MIN_PIXELS, features_of_patch, quantise
 
 log = logging.getLogger(__name__)
 
@@ -190,11 +190,11 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
     nombre_canal = "s2nir" if sensor == "s2" else "s1vh"
     canal = canales[nombre_canal]
-    rango = RANGOS_FIJOS_S1.get(nombre_canal)
+    rango = FIXED_RANGES_S1.get(nombre_canal)
     if rango is None:
         finitos = canal[np.isfinite(canal)]
         rango = (float(np.percentile(finitos, 2)), float(np.percentile(finitos, 98)))
-    cuantizada = cuantizar(canal, rango)
+    cuantizada = quantise(canal, rango)
 
     # Elegir por área del polígono no basta: una AGEB costera puede ser grande y no tener
     # un solo píxel de radar utilizable, porque sobre agua la retrodispersión cae a cero y
@@ -207,11 +207,11 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
         return int((dentro & (recorte_q > 0)).sum())
 
     area_px = proyectadas.geometry.area / 100
-    grandes = proyectadas[area_px > MINIMO_PIXELES * 3].copy()
+    grandes = proyectadas[area_px > MIN_PIXELS * 3].copy()
     seleccion = []
     for grados in (("Muy bajo", "Bajo"), ("Alto", "Muy alto")):
         candidatas = grandes[grandes.grado.isin(grados)]
-        validas = [f for f in candidatas.itertuples() if utilizables(f.geometry) >= MINIMO_PIXELES]
+        validas = [f for f in candidatas.itertuples() if utilizables(f.geometry) >= MIN_PIXELS]
         seleccion.extend(validas[:2])
 
     if len(seleccion) < 4:
@@ -228,7 +228,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
             continue
         vista, recorte_q, dentro = partes
         enmascarado = np.where(dentro & (recorte_q > 0), recorte_q, 0).astype(np.uint8)
-        rasgos = rasgos_de_recorte(enmascarado)
+        rasgos = features_of_patch(enmascarado)
 
         imagen = Image.fromarray(vista).resize((celda, celda), Image.NEAREST)
         borde = ImageDraw.Draw(imagen)

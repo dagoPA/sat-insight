@@ -17,7 +17,7 @@ from typing import Protocol, runtime_checkable
 
 import numpy as np
 
-from satinsight.textura import RANGOS_FIJOS
+from satinsight.texture import FIXED_RANGES
 from satinsight.tiling import MIN_VALID_FRACTION, TOKEN_SIZE
 
 log = logging.getLogger(__name__)
@@ -61,8 +61,8 @@ def normalize(patch: np.ndarray, names: list[str]) -> np.ndarray:
         raise ValueError(f"{len(names)} channel names for {patch.shape[0]} channels")
     salida = np.empty_like(patch, dtype="float32")
     for i, nombre in enumerate(names):
-        clave = {"B04": "s2rojo", "B08": "s2nir"}.get(nombre, nombre)
-        rango = RANGOS_FIJOS.get(clave)
+        clave = {"B04": "s2red", "B08": "s2nir"}.get(nombre, nombre)
+        rango = FIXED_RANGES.get(clave)
         if rango is None:
             canal = patch[i][np.isfinite(patch[i])]
             rango = (float(canal.min()), float(canal.max())) if canal.size else (0.0, 1.0)
