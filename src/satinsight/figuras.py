@@ -323,7 +323,7 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
             zorder=3,
         )
         ax.annotate(
-            f"{nombre}\n{n} AGEB · {100 * altos:.0f}% alto",
+            f"{nombre}\n{n} AGEB · {100 * altos:.0f}% high",
             (lon, lat),
             textcoords="offset points",
             xytext=desplazamiento[clave],
@@ -337,7 +337,7 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
     ax.set_xlim(-118.5, -85.5)
     ax.set_ylim(13.5, 33.5)
     ax.set_title(
-        "Las cinco ciudades piloto de la fase 1",
+        "The five pilot cities of phase one",
         color="#e6ebf1",
         fontsize=13,
         loc="left",
@@ -351,7 +351,7 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
         pad=0.02,
         aspect=45,
     )
-    barra.set_label("% de AGEB en grado alto o muy alto", color="#a8b3c0", fontsize=9)
+    barra.set_label("% of AGEB at high or very high deprivation", color="#a8b3c0", fontsize=9)
     barra.ax.tick_params(colors="#a8b3c0", labelsize=8)
     barra.outline.set_edgecolor("#3b4653")
 
@@ -400,7 +400,7 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
 
         altos = 100 * agebs.grado.isin(("Alto", "Muy alto")).mean()
         ax.set_title(
-            f"{CIUDADES[clave].nombre}\n{len(agebs)} AGEB · {altos:.0f}% alto"
+            f"{CIUDADES[clave].nombre}\n{len(agebs)} AGEB · {altos:.0f}% high"
             f" · {lado / 1000:.0f} km",
             color="#e6ebf1",
             fontsize=9.5,
@@ -409,7 +409,7 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
         )
 
     figura.legend(
-        handles=[Patch(facecolor=_hex(c), label=g) for g, c in COLOR_GRADO.items()],
+        handles=[Patch(facecolor=_hex(c), label=GRADOS_EN[g]) for g, c in COLOR_GRADO.items()],
         loc="lower center",
         ncol=5,
         frameon=False,
@@ -424,11 +424,28 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
     return destino
 
 
+GRADOS_EN = {
+    "Muy bajo": "Very low",
+    "Bajo": "Low",
+    "Medio": "Medium",
+    "Alto": "High",
+    "Muy alto": "Very high",
+}
+"""Nombre en inglés de los cinco grados. Las figuras van al paper y el paper va en inglés."""
+
+ESTADOS_EN = {
+    "completa": "complete",
+    "a medias": "partial",
+    "fallida": "failed",
+    "pendiente": "pending",
+}
+"""Nombre en inglés de cada estado, porque las figuras van al paper y el paper va en inglés."""
+
 ESTADOS_COMPOSICION = {
-    "completa": ("#4ade80", "compuesta en las dos modalidades"),
-    "a medias": ("#fbbf24", "una modalidad lista"),
-    "fallida": ("#f87171", "abortada por lecturas fallidas"),
-    "pendiente": ("#9aa7b6", "sin empezar"),
+    "completa": ("#4ade80", "composited in both modalities"),
+    "a medias": ("#fbbf24", "one modality ready"),
+    "fallida": ("#f87171", "aborted on failed reads"),
+    "pendiente": ("#9aa7b6", "not started"),
 }
 """Color y glosa de cada estado en que puede estar la composición de una ciudad."""
 
@@ -569,8 +586,8 @@ def mapa_ciudades_nacionales(
     ax.set_xlim(-118.5, -85.5)
     ax.set_ylim(13.5, 33.5)
     ax.set_title(
-        f"Las {len(puntos)} ciudades del conjunto nacional · {total_agebs:,} AGEB urbanas\n"
-        f"{hechas} con la composición terminada",
+        f"The {len(puntos)} cities of the national set · {total_agebs:,} urban AGEB\n"
+        f"{hechas} with compositing finished",
         color="#e6ebf1",
         fontsize=13,
         loc="left",
@@ -585,7 +602,7 @@ def mapa_ciudades_nacionales(
             markersize=7,
             markerfacecolor=color,
             markeredgecolor="#0f1319",
-            label=f"{estado} · {glosa}",
+            label=f"{ESTADOS_EN.get(estado, estado)} · {glosa}",
         )
         for estado, (color, glosa) in ESTADOS_COMPOSICION.items()
     ]
