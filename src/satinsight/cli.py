@@ -28,7 +28,7 @@ from satinsight.figuras import (
     panel_contraste,
 )
 from satinsight.ingesta import RAIZ_DATOS
-from satinsight.pipeline import SENSORES, rasgos_de_todas
+from satinsight.pipeline import ESCALAS, SENSORES, rasgos_de_todas
 from satinsight.raster import a_db, estirar, leer_ventana, percentiles
 from satinsight.render import guardar_rgb
 
@@ -142,13 +142,22 @@ def cmd_agebs(args: argparse.Namespace) -> int:
 
 
 def cmd_rasgos(args: argparse.Namespace) -> int:
-    """Extrae los rasgos por AGEB de un sensor y los deja en disco."""
+    """Extrae la textura por AGEB de un sensor y la deja en disco."""
+    from satinsight.agebs import ciudades_por_tamano
+
+    catalogo = ciudades_por_tamano(estratificar=True)
+    claves = args.ciudades or sorted(
+        p.stem.replace(f"_{args.sensor}", "")
+        for p in (RAIZ_DATOS / "compuestos").glob(f"*_{args.sensor}.tif")
+    )
     tabla = rasgos_de_todas(
         args.sensor,
-        tuple(args.ciudades or sorted(CIUDADES)),
+        tuple(claves),
         max_escenas=args.max_escenas,
+        escala=args.escala,
+        catalogo=catalogo,
     )
-    destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}_{args.escala}.parquet")
     destino.parent.mkdir(parents=True, exist_ok=True)
     tabla.to_parquet(destino, index=False)
     print(f"{len(tabla)} AGEB × {tabla.shape[1]} columnas → {destino}")
@@ -340,6 +349,9 @@ def construir_parser() -> argparse.ArgumentParser:
     rasgos.add_argument("sensor", choices=SENSORES)
     rasgos.add_argument("ciudades", nargs="*", help="claves de ciudad; vacío corre todas")
     rasgos.add_argument("--salida", help="ruta del parquet de salida")
+    rasgos.add_argument(
+        "--escala", default="fija", choices=ESCALAS, help="cómo se cuantiza la textura"
+    )
     rasgos.add_argument(
         "--max-escenas",
         type=int,
