@@ -110,7 +110,7 @@ def test_build_returns_matching_instance_and_bag_tables():
 def test_bags_below_the_minimum_are_dropped_with_their_instances():
     malla, tiles = malla_y_tiles()
     agebs = agebs_falsas(malla, cortes=8, municipios=tuple(f"0710{i}" for i in range(8)))
-    instancias, bolsas = build(tiles, malla, agebs, "prueba", minimo_instancias=1000)
+    instancias, bolsas = build(tiles, malla, agebs, "prueba", min_instances=1000)
     assert bolsas.empty and instancias.empty
 
 

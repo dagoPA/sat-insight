@@ -43,11 +43,11 @@ def _rgb_desde_compuesto(bandas: dict, sensor: str) -> np.ndarray:
     return np.dstack([stretch(vv), stretch(vh), stretch(vv - vh)])
 
 
-def _texto(imagen: Image.Image, xy, texto: str, tamano: int = 13, color=TINTA) -> None:
+def _texto(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> None:
     """Escribe una etiqueta con un halo oscuro para que se lea sobre cualquier fondo."""
     dibujo = ImageDraw.Draw(imagen)
     try:
-        fuente = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", tamano)
+        fuente = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", size)
     except OSError:
         fuente = ImageFont.load_default()
     x, y = xy
@@ -363,7 +363,7 @@ def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
 
 
 def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
-    """El conjunto completo de AGEB de cada ciudad, teñido por grado y a scale común.
+    """El split completo de AGEB de cada ciudad, teñido por grado y a scale común.
 
     Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
     baseline. Compartir la scale en kilómetros permite comparar el tamaño real de las cinco
@@ -490,7 +490,7 @@ def estado_de_composicion(
 def mapa_ciudades_nacionales(
     destino: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
-    """Sitúa las cities del conjunto nacional y colorea cada una según su composición.
+    """Sitúa las cities del split nacional y colorea cada una según su composición.
 
     El tamaño de la marca es el número de AGEB urbanas de la ciudad. Puestas sobre el país
     se ve qué tanto cubre la muestra el territorio y dónde se concentra el trabajo hecho.
@@ -619,5 +619,5 @@ def mapa_ciudades_nacionales(
     destino.parent.mkdir(parents=True, exist_ok=True)
     figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
     plt.close(figura)
-    log.info("mapa del conjunto nacional: %s", destino)
+    log.info("mapa del split nacional: %s", destino)
     return destino

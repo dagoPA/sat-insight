@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-CONJUNTOS = ["cobertura", "densidad", "textura", "completo"]
+SETS = ["cobertura", "densidad", "textura", "completo"]
 ETIQUETAS = {
     "cobertura": "land cover",
     "densidad": "intensity",
@@ -32,10 +32,10 @@ def dibujar(resultados: pd.DataFrame, destino: str) -> None:
     figura, ejes = plt.subplots(1, 3, figsize=(18, 5.4))
     ancho = 0.26
     for eje, (metrica, titulo, piso, techo) in zip(ejes, METRICAS, strict=True):
-        x = np.arange(len(CONJUNTOS))
+        x = np.arange(len(SETS))
         for i, (modalidad, etiqueta) in enumerate(MODALIDADES.items()):
-            sub = resultados[resultados.modalidad == modalidad].set_index("conjunto")
-            sub = sub.loc[CONJUNTOS]
+            sub = resultados[resultados.modalidad == modalidad].set_index("split")
+            sub = sub.loc[SETS]
             valor = sub[metrica].to_numpy()
             eje.bar(
                 x + (i - 1) * ancho,
@@ -51,7 +51,7 @@ def dibujar(resultados: pd.DataFrame, destino: str) -> None:
             for xi, vi in zip(x + (i - 1) * ancho, valor, strict=True):
                 eje.text(xi, vi + 0.008, f"{vi:.3f}", ha="center", fontsize=7.4)
         eje.set_xticks(x)
-        eje.set_xticklabels([ETIQUETAS[c] for c in CONJUNTOS], fontsize=9)
+        eje.set_xticklabels([ETIQUETAS[c] for c in SETS], fontsize=9)
         eje.set_title(titulo, fontsize=11.5)
         eje.grid(axis="y", alpha=0.25)
         eje.set_axisbelow(True)

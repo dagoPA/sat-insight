@@ -29,13 +29,13 @@ CHANNELS = {
 """Channels fed to the encoder per sensor, in the order their wavelengths are declared."""
 
 
-def rutas(root: Path = DATA_ROOT) -> dict[str, Path]:
+def paths(root: Path = DATA_ROOT) -> dict[str, Path]:
     """Where each artefact of the stage lives."""
     return {
-        "instancias": root / "instancias",
-        "bolsas": root / "bolsas",
-        "vectores": root / "vectores",
-        "particion": root / "particion.csv",
+        "instances": root / "instancias",
+        "bags": root / "bolsas",
+        "vectors": root / "vectores",
+        "partition": root / "particion.csv",
         "cities": root / "ciudades_nacional.csv",
     }
 
@@ -46,43 +46,43 @@ def city_table(root: Path = DATA_ROOT, *, force: bool = False) -> pd.DataFrame:
     Cached to disk because it walks the AGEB layer of all 32 states, and the partition has
     to be reproducible from the same numbers every time it is rebuilt.
     """
-    destino = rutas(root)["cities"]
-    if destino.exists() and not force:
-        return pd.read_csv(destino, dtype={"clave": str})
+    destination = paths(root)["cities"]
+    if destination.exists() and not force:
+        return pd.read_csv(destination, dtype={"clave": str})
 
     catalogue = cities_by_size(root=root, stratify=True)
-    filas = []
-    for clave in catalogue:
+    rows = []
+    for key in catalogue:
         try:
-            _, agebs = city_aoi(clave, root, catalogue=catalogue)
+            _, agebs = city_aoi(key, root, catalogue=catalogue)
         except Exception:
-            log.warning("no geometry for %s", clave, exc_info=True)
+            log.warning("no geometry for %s", key, exc_info=True)
             continue
-        filas.append(
+        rows.append(
             {
-                "clave": clave,
-                "nombre": catalogue[clave].name,
-                "entidad": catalogue[clave].state,
+                "clave": key,
+                "nombre": catalogue[key].name,
+                "entidad": catalogue[key].state,
                 "agebs": len(agebs),
                 "altos": float(agebs.grado.isin(("Alto", "Muy alto")).mean()),
             }
         )
-    tabla = pd.DataFrame(filas)
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    tabla.to_csv(destino, index=False)
-    log.info("%d cities catalogued into %s", len(tabla), destino)
-    return tabla
+    table = pd.DataFrame(rows)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    table.to_csv(destination, index=False)
+    log.info("%d cities catalogued into %s", len(table), destination)
+    return table
 
 
 def build_city(
-    clave: str,
+    key: str,
     sensor: str,
     *,
     root: Path = DATA_ROOT,
     encoder: encoders.PatchEncoder | None = None,
     size: int = tiling.WINDOW_SIZE,
     min_valid_fraction: float = tiling.MIN_VALID_FRACTION,
-    minimo_instancias: int = 32,
+    min_instances: int = 32,
     catalogue: dict | None = None,
     force: bool = False,
 ) -> dict[str, Path]:
@@ -93,94 +93,88 @@ def build_city(
     """
     if sensor not in CHANNELS:
         raise KeyError(f"unknown sensor {sensor!r}, expected one of {sorted(CHANNELS)}")
-    destino = rutas(root)
-    salidas = {
-        "instancias": destino["instancias"] / f"{clave}_{sensor}.parquet",
-        "bolsas": destino["bolsas"] / f"{clave}.parquet",
+    where = paths(root)
+    outputs = {
+        "instances": where["instances"] / f"{key}_{sensor}.parquet",
+        "bags": where["bags"] / f"{key}.parquet",
     }
 
-    compuesto = root / "compuestos" / f"{clave}_{sensor}.tif"
-    if not compuesto.exists():
-        raise FileNotFoundError(f"{clave} has no {sensor} composite yet: {compuesto}")
+    composite = root / "compuestos" / f"{key}_{sensor}.tif"
+    if not composite.exists():
+        raise FileNotFoundError(f"{key} has no {sensor} composite yet: {composite}")
 
-    bandas, malla, _ = load(compuesto)
-    faltantes = [c for c in CHANNELS[sensor] if c not in bandas]
-    if faltantes:
-        raise KeyError(f"{compuesto.name} is missing {faltantes}")
-    bandas = {c: bandas[c] for c in CHANNELS[sensor]}
+    bands, grid, _ = load(composite)
+    missing = [c for c in CHANNELS[sensor] if c not in bands]
+    if missing:
+        raise KeyError(f"{composite.name} is missing {missing}")
+    bands = {c: bands[c] for c in CHANNELS[sensor]}
 
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
-    _, agebs = city_aoi(clave, root, catalogue=catalogue)
+    _, agebs = city_aoi(key, root, catalogue=catalogue)
 
-    ventanas = tiling.select(bandas, size=size, min_valid_fraction=min_valid_fraction)
-    tokens, _ = tiling.instances(ventanas, bandas, min_valid_fraction=min_valid_fraction)
-    instancias, bolsas = bags.build(
-        tokens, malla, agebs, clave, minimo_instancias=minimo_instancias
-    )
+    windows = tiling.select(bands, size=size, min_valid_fraction=min_valid_fraction)
+    tokens, _ = tiling.instances(windows, bands, min_valid_fraction=min_valid_fraction)
+    instances, bag_table = bags.build(tokens, grid, agebs, key, min_instances=min_instances)
 
-    for nombre in ("instancias", "bolsas"):
-        salidas[nombre].parent.mkdir(parents=True, exist_ok=True)
-    instancias.to_parquet(salidas["instancias"], index=False)
-    bolsas.to_parquet(salidas["bolsas"], index=False)
+    for name in ("instances", "bags"):
+        outputs[name].parent.mkdir(parents=True, exist_ok=True)
+    instances.to_parquet(outputs["instances"], index=False)
+    bag_table.to_parquet(outputs["bags"], index=False)
 
     if encoder is None:
-        return salidas
+        return outputs
 
-    vectores = destino["vectores"] / f"{clave}_{sensor}.npz"
-    if vectores.exists() and not force:
-        log.info("%s already encoded", vectores.name)
-        salidas["vectores"] = vectores
-        return salidas
+    vectors = where["vectors"] / f"{key}_{sensor}.npz"
+    if vectors.exists() and not force:
+        log.info("%s already encoded", vectors.name)
+        outputs["vectors"] = vectors
+        return outputs
 
-    # el modelo recibe ventanas enteras y devuelve todos sus tokens, así que se codifica
-    # una vez y después se conservan las filas que siguieron siendo instancias
-    matriz, codificados = encoders.extract(
-        bandas, ventanas, encoder, order=CHANNELS[sensor], min_valid_fraction=min_valid_fraction
+    # the model receives whole windows and returns all of their tokens, so it encodes once
+    # and afterwards the rows that stayed instances are the ones kept
+    matrix, encoded = encoders.extract(
+        bands, windows, encoder, order=CHANNELS[sensor], min_valid_fraction=min_valid_fraction
     )
-    posicion = {(t.y0, t.x0): i for i, t in enumerate(codificados)}
-    filas = [posicion[(y, x)] for y, x in zip(instancias.y0, instancias.x0, strict=True)]
-    salidas["vectores"] = encoders.save(
-        matriz[filas],
-        vectores,
-        y0=instancias.y0.to_numpy(),
-        x0=instancias.x0.to_numpy(),
-        cvegeo=instancias.cvegeo.to_numpy(),
+    position = {(t.y0, t.x0): i for i, t in enumerate(encoded)}
+    rows_kept = [position[(y, x)] for y, x in zip(instances.y0, instances.x0, strict=True)]
+    outputs["vectors"] = encoders.save(
+        matrix[rows_kept],
+        vectors,
+        y0=instances.y0.to_numpy(),
+        x0=instances.x0.to_numpy(),
+        cvegeo=instances.cvegeo.to_numpy(),
     )
-    return salidas
+    return outputs
 
 
 def build_split(root: Path = DATA_ROOT, *, force: bool = False, **kwargs) -> pd.DataFrame:
-    """Writes the train and test partition of the national set.
+    """Writes the train, validation and test partition of the national set.
 
     Built once and read from disk afterwards, because a partition that quietly changes
     between runs turns every comparison of results into a comparison of partitions.
     """
     from satinsight import splits
 
-    destino = rutas(root)["particion"]
-    if destino.exists() and not force:
-        return pd.read_csv(destino)
-    particion = splits.assign(city_table(root), **kwargs)
-    particion.to_csv(destino, index=False)
-    log.info("partition written to %s", destino)
-    return particion
+    destination = paths(root)["partition"]
+    if destination.exists() and not force:
+        return pd.read_csv(destination)
+    partition = splits.assign(city_table(root), **kwargs)
+    partition.to_csv(destination, index=False)
+    log.info("partition written to %s", destination)
+    return partition
 
 
 def collect(sensor: str, root: Path = DATA_ROOT) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Gathers the per-city tables of every city already built into two national ones."""
-    destino = rutas(root)
-    instancias = sorted(destino["instancias"].glob(f"*_{sensor}.parquet"))
-    if not instancias:
+    where = paths(root)
+    instance_files = sorted(where["instances"].glob(f"*_{sensor}.parquet"))
+    if not instance_files:
         raise FileNotFoundError(f"no city has been tiled for {sensor} yet")
-    i = pd.concat([pd.read_parquet(p) for p in instancias], ignore_index=True)
-    claves = set(i.ciudad)
-    b = pd.concat(
-        [
-            pd.read_parquet(p)
-            for p in sorted(destino["bolsas"].glob("*.parquet"))
-            if p.stem in claves
-        ],
+    instances = pd.concat([pd.read_parquet(p) for p in instance_files], ignore_index=True)
+    keys = set(instances.ciudad)
+    bag_table = pd.concat(
+        [pd.read_parquet(p) for p in sorted(where["bags"].glob("*.parquet")) if p.stem in keys],
         ignore_index=True,
     )
-    log.info("%d cities, %d bags, %d instances", len(claves), len(b), len(i))
-    return i, b
+    log.info("%d cities, %d bags, %d instances", len(keys), len(bag_table), len(instances))
+    return instances, bag_table
