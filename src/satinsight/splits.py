@@ -6,27 +6,25 @@ of the same neighbourhood on both sides and the score comes out inflated. Holdin
 whole cities asks the question the project actually cares about: does this transfer to a
 city the model has never seen.
 
-A test set of whole cities is set aside once and left alone. The rest is cut into folds,
-and each fold serves as validation in turn. Leaving a single city out at a time made
-sense with five of them; with 138 it would mean 138 folds, each training on 99.3% of the
-data, and the spread between folds would be mostly noise.
+Cities are dealt into training, validation and test in an 80/10/10 split. Validation
+tunes, test is opened once at the end. Leaving a single city out at a time made sense
+with five of them; with 138 it would mean 138 folds, each training on 99.3% of the data,
+and the spread between folds would be mostly noise.
 """
 
 from __future__ import annotations
 
 import logging
-from itertools import zip_longest
 
 import numpy as np
 import pandas as pd
 
 log = logging.getLogger(__name__)
 
-N_TEST = 20
-"""Cities held out until the very end."""
+PROPORCIONES = (0.8, 0.1, 0.1)
+"""Reparto de ciudades entre entrenamiento, validación y prueba."""
 
-N_FOLDS = 5
-"""Folds the remaining cities are cut into."""
+CONJUNTOS = ("train", "val", "test")
 
 SEED = 20200101
 """Fixed so the partition can be rebuilt from scratch; it is the census reference date."""
@@ -49,29 +47,29 @@ def _bins(valores: pd.Series, n: int) -> pd.Series:
 def assign(
     ciudades: pd.DataFrame,
     *,
-    n_test: int = N_TEST,
-    n_folds: int = N_FOLDS,
+    proporciones: tuple[float, float, float] = PROPORCIONES,
     seed: int = SEED,
     columna_ciudad: str = "clave",
     columna_tamano: str = "agebs",
     columna_estrato: str = "altos",
 ) -> pd.DataFrame:
-    """Deals cities into a test set and into folds, balanced on size and on deprivation.
+    """Deals whole cities into training, validation and test, balanced on two variables.
 
-    Both variables are stratified because both bias the result on their own. Sorting only
-    by size leaves the test set with the wrong mix of deprived AGEB, and the high grades
-    are rare enough that an unlucky draw could leave a fold with almost none.
+    Both are stratified because both bias the result on their own. Sorting only by size
+    leaves the test set with the wrong mix of deprived AGEB, and the high grades are rare
+    enough that an unlucky draw could leave a split with almost none.
 
-    Dealing round-robin inside each stratum, rather than sampling, guarantees the strata
-    are spread evenly even when a stratum holds fewer cities than there are folds.
+    The deal walks an order that alternates strata and hands out places on a repeating
+    pattern, so the proportions come out exact and every stratum is spread across the
+    three sets rather than sampled into them.
     """
     faltantes = {columna_ciudad, columna_tamano, columna_estrato} - set(ciudades.columns)
     if faltantes:
         raise KeyError(f"the city table is missing {sorted(faltantes)}")
-    if n_test + n_folds > len(ciudades):
-        raise ValueError(
-            f"{len(ciudades)} cities cannot fill a test set of {n_test} plus {n_folds} folds"
-        )
+    if abs(sum(proporciones) - 1.0) > 1e-9:
+        raise ValueError(f"proportions must add up to one, got {proporciones}")
+    if len(ciudades) < len(CONJUNTOS):
+        raise ValueError(f"{len(ciudades)} cities cannot fill {len(CONJUNTOS)} sets")
 
     tabla = ciudades[[columna_ciudad, columna_tamano, columna_estrato]].copy()
     tabla.columns = ["ciudad", "tamano", "estrato_valor"]
@@ -82,52 +80,55 @@ def assign(
     )
 
     azar = np.random.default_rng(seed)
-    # las ciudades se ordenan alternando estratos, de modo que dos posiciones seguidas
-    # vengan de estratos distintos; cualquier reparto posterior que camine ese orden
-    # queda balanceado sin tener que contar cuotas por estrato
-    barajados = []
+    patron = _patron(proporciones)
+
+    # el reparto corre dentro de cada estrato y no sobre un orden global: recorriendo una
+    # lista única, un estrato entero puede caer en posiciones que el ciclo manda siempre al
+    # mismo conjunto, y la validación termina con la mitad del rezago del entrenamiento
+    # aunque el reparto global cuadre. Cada estrato entrega ahora su propia proporción.
+    asignado: dict[str, str] = {}
+    desfase = 0
     for _estrato, grupo in tabla.groupby("estrato", observed=True, sort=True):
         claves = grupo.ciudad.to_numpy().copy()
         azar.shuffle(claves)
-        barajados.append(list(claves))
-    orden = [c for ronda in zip_longest(*barajados) for c in ronda if c is not None]
-
-    # el conjunto de prueba se toma en posiciones repartidas a lo largo del orden, no en
-    # ronda contra los pliegues: repartir en ronda sobre n_test + n_folds destinos manda
-    # a prueba la fracción n_test/(n_test+n_folds) de todo el catálogo, que con veinte
-    # plazas y cinco pliegues son cuatro de cada cinco ciudades
-    posiciones_prueba = {round(j * len(orden) / n_test) for j in range(n_test)}
-    asignado: dict[str, str] = {}
-    siguiente = 0
-    for i, ciudad in enumerate(orden):
-        if i in posiciones_prueba and sum(v == "test" for v in asignado.values()) < n_test:
-            asignado[ciudad] = "test"
-        else:
-            asignado[ciudad] = f"fold{siguiente % n_folds}"
-            siguiente += 1
-
-    tabla["destino"] = tabla.ciudad.map(asignado)
-    tabla["conjunto"] = np.where(tabla.destino == "test", "test", "train")
-    tabla["pliegue"] = (
-        tabla.destino.str.removeprefix("fold").where(tabla.conjunto == "train").astype("Int64")
-    )
+        for i, ciudad in enumerate(claves):
+            asignado[ciudad] = patron[(i + desfase) % len(patron)]
+        # el desfase evita que todos los estratos entreguen su primera ciudad al mismo
+        # conjunto, que con estratos chicos sesgaría el reparto entero
+        desfase = (desfase + len(claves)) % len(patron)
+    tabla["conjunto"] = tabla.ciudad.map(asignado)
 
     resumen = tabla.groupby("conjunto", observed=True).agg(
-        ciudades=("ciudad", "size"), rezago_medio=("estrato_valor", "mean")
+        ciudades=("ciudad", "size"),
+        agebs=("tamano", "sum"),
+        rezago_medio=("estrato_valor", "mean"),
     )
     log.info("partition:\n%s", resumen)
-    return tabla[["ciudad", "conjunto", "pliegue", "tamano", "estrato_valor", "estrato"]]
+    return tabla[["ciudad", "conjunto", "tamano", "estrato_valor", "estrato"]]
 
 
-def folds(particion: pd.DataFrame) -> list[tuple[list[str], list[str]]]:
-    """Turns the partition into the (train, validation) city lists of each fold."""
-    entrena = particion[particion.conjunto == "train"]
-    salida = []
-    for pliegue in sorted(entrena.pliegue.dropna().unique()):
-        validacion = entrena[entrena.pliegue == pliegue].ciudad.tolist()
-        resto = entrena[entrena.pliegue != pliegue].ciudad.tolist()
-        salida.append((resto, validacion))
-    return salida
+def _patron(proporciones: tuple[float, float, float], pasos: int = 10) -> list[str]:
+    """Ciclo de destinos que reproduce las proporciones pedidas.
+
+    Repartir por ciclo en vez de por muestreo hace que las proporciones salgan exactas y
+    que ningún conjunto se lleve una racha del mismo estrato.
+    """
+    cupos = [round(p * pasos) for p in proporciones]
+    cupos[0] += pasos - sum(cupos)
+    # prueba y validación se colocan al principio del ciclo, separadas entre sí, para que
+    # queden repartidas a lo largo del orden y no amontonadas en un extremo
+    patron = ["test", "val"] * min(cupos[2], cupos[1])
+    patron += ["test"] * (cupos[2] - min(cupos[2], cupos[1]))
+    patron += ["val"] * (cupos[1] - min(cupos[2], cupos[1]))
+    patron += ["train"] * cupos[0]
+    return patron
+
+
+def ciudades_de(particion: pd.DataFrame, conjunto: str) -> list[str]:
+    """Claves de ciudad de uno de los tres conjuntos."""
+    if conjunto not in CONJUNTOS:
+        raise KeyError(f"unknown set {conjunto!r}, expected one of {CONJUNTOS}")
+    return particion.loc[particion.conjunto == conjunto, "ciudad"].tolist()
 
 
 def check(particion: pd.DataFrame, instancias: pd.DataFrame | None = None) -> None:

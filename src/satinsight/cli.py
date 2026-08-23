@@ -287,14 +287,14 @@ def cmd_particion(args: argparse.Namespace) -> int:
     """Escribe la partición espacial del conjunto nacional."""
     from satinsight.dataset import build_split
 
-    particion = build_split(forzar=args.forzar, n_test=args.test, n_folds=args.pliegues)
+    particion = build_split(forzar=args.forzar, proporciones=tuple(args.proporciones))
     resumen = particion.groupby("conjunto").agg(
         ciudades=("ciudad", "size"),
         agebs=("tamano", "sum"),
         rezago_medio=("estrato_valor", "mean"),
     )
-    print(resumen.round(3).to_string())
-    print(f"\npliegues: {sorted(particion.pliegue.dropna().unique().tolist())}")
+    resumen["porcentaje"] = 100 * resumen.ciudades / resumen.ciudades.sum()
+    print(resumen.round(2).to_string())
     return 0
 
 
@@ -392,8 +392,14 @@ def construir_parser() -> argparse.ArgumentParser:
     bolsas.set_defaults(func=cmd_bolsas)
 
     particion = sub.add_parser("particion", help="reparte las ciudades en prueba y pliegues")
-    particion.add_argument("--test", type=int, default=20, help="ciudades apartadas")
-    particion.add_argument("--pliegues", type=int, default=5)
+    particion.add_argument(
+        "--proporciones",
+        type=float,
+        nargs=3,
+        default=[0.8, 0.1, 0.1],
+        metavar=("TRAIN", "VAL", "TEST"),
+        help="reparto de ciudades entre los tres conjuntos",
+    )
     particion.add_argument("--forzar", action="store_true", help="rehace una partición ya escrita")
     particion.set_defaults(func=cmd_particion)
 

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from satinsight.splits import assign, check, folds
+from satinsight.splits import CONJUNTOS, assign, check, ciudades_de
 
 
 def catalogo(n=138, seed=0):
@@ -22,14 +22,26 @@ def test_every_city_lands_in_exactly_one_place():
     p = assign(catalogo())
     assert len(p) == 138
     assert p.ciudad.is_unique
-    assert set(p.conjunto) == {"train", "test"}
+    assert set(p.conjunto) == set(CONJUNTOS)
 
 
-def test_the_test_set_has_the_size_asked_for():
-    p = assign(catalogo(), n_test=20, n_folds=5)
-    assert (p.conjunto == "test").sum() == 20
-    assert p[p.conjunto == "train"].pliegue.notna().all()
-    assert sorted(p.pliegue.dropna().unique()) == [0, 1, 2, 3, 4]
+def test_the_split_is_eighty_ten_ten():
+    p = assign(catalogo(n=138))
+    reparto = p.conjunto.value_counts(normalize=True)
+    assert reparto["train"] == pytest.approx(0.8, abs=0.02)
+    assert reparto["val"] == pytest.approx(0.1, abs=0.02)
+    assert reparto["test"] == pytest.approx(0.1, abs=0.02)
+
+
+def test_other_proportions_are_honoured():
+    p = assign(catalogo(n=100), proporciones=(0.6, 0.2, 0.2))
+    reparto = p.conjunto.value_counts(normalize=True)
+    assert reparto["train"] == pytest.approx(0.6, abs=0.02)
+
+
+def test_proportions_must_add_up():
+    with pytest.raises(ValueError, match="add up to one"):
+        assign(catalogo(), proporciones=(0.8, 0.2, 0.2))
 
 
 def test_the_partition_is_reproducible():
@@ -43,29 +55,29 @@ def test_a_different_seed_moves_cities_around():
     assert (a != b).any()
 
 
-def test_folds_never_validate_on_a_city_they_trained_with():
+def test_the_three_sets_never_share_a_city():
     p = assign(catalogo())
-    for entrena, valida in folds(p):
-        assert not set(entrena) & set(valida)
-    assert len(folds(p)) == 5
+    listas = {c: set(ciudades_de(p, c)) for c in CONJUNTOS}
+    assert not listas["train"] & listas["val"]
+    assert not listas["train"] & listas["test"]
+    assert not listas["val"] & listas["test"]
 
 
-def test_the_test_cities_appear_in_no_fold():
-    p = assign(catalogo())
-    prueba = set(p[p.conjunto == "test"].ciudad)
-    for entrena, valida in folds(p):
-        assert not prueba & set(entrena) and not prueba & set(valida)
-
-
-def test_deprivation_is_balanced_between_train_and_test():
+def test_deprivation_is_balanced_across_the_three():
     p = assign(catalogo(n=138))
     medias = p.groupby("conjunto").estrato_valor.mean()
-    assert abs(medias["train"] - medias["test"]) < 0.08
+    assert medias.max() - medias.min() < 0.08
+
+
+def test_size_is_balanced_across_the_three():
+    p = assign(catalogo(n=138))
+    medias = p.groupby("conjunto").tamano.mean()
+    assert medias.max() / medias.min() < 1.5
 
 
 def test_assign_refuses_a_catalogue_too_small():
     with pytest.raises(ValueError, match="cannot fill"):
-        assign(catalogo(n=10), n_test=20, n_folds=5)
+        assign(catalogo(n=2))
 
 
 def test_assign_demands_its_columns():
@@ -73,8 +85,13 @@ def test_assign_demands_its_columns():
         assign(catalogo().drop(columns=["altos"]))
 
 
+def test_ciudades_de_rejects_an_unknown_set():
+    with pytest.raises(KeyError, match="unknown set"):
+        ciudades_de(assign(catalogo(n=20)), "entrenamiento")
+
+
 def test_check_catches_an_ageb_on_both_sides():
-    p = assign(catalogo(n=20), n_test=4, n_folds=2)
+    p = assign(catalogo(n=20))
     dos = list(p.ciudad[:2])
     instancias = pd.DataFrame(
         {
@@ -90,20 +107,20 @@ def test_check_catches_an_ageb_on_both_sides():
 
 
 def test_check_catches_an_instance_from_an_unknown_city():
-    p = assign(catalogo(n=20), n_test=4, n_folds=2)
+    p = assign(catalogo(n=20))
     with pytest.raises(ValueError, match="outside the partition"):
         check(p, pd.DataFrame({"ciudad": ["fantasma"], "cvegeo": ["x"], "municipio": ["y"]}))
 
 
 def test_check_passes_on_a_clean_partition():
-    p = assign(catalogo(n=20), n_test=4, n_folds=2)
+    p = assign(catalogo(n=20))
     instancias = pd.DataFrame(
         {
             "ciudad": p.ciudad,
-            "cvegeo": [f"071010001{i:04d}" for i in range(len(p))],
             # cada ciudad con municipio propio: una conurbación pertenece a una sola
             # ciudad, y compartirlo entre dos sería precisamente la fuga que se busca
             "municipio": [f"07{i:03d}" for i in range(len(p))],
+            "cvegeo": [f"071010001{i:04d}" for i in range(len(p))],
         }
     )
     check(p, instancias)
