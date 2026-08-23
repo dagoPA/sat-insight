@@ -364,7 +364,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--scale", default="fixed", choices=SCALES, help="how texture is quantised"
     )
     features.add_argument(
-        "--max-escenas",
+        "--max-scenes",
         type=int,
         help="maximum scenes of the composite; lowering it shortens the download",
     )
