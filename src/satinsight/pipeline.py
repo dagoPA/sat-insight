@@ -368,3 +368,61 @@ def rasgos_de_todas(
         raise RuntimeError(f"ninguna ciudad dio rasgos para {sensor}")
     log.info("rasgos de %d de %d ciudades", len(partes), len(ciudades))
     return pd.concat(partes, ignore_index=True)
+
+
+def fiabilidad_de_ciudades(
+    sensor: str,
+    ciudades: tuple[str, ...] | None = None,
+    *,
+    raiz: Path = RAIZ_DATOS,
+    escala: str = "fija",
+    catalogo: dict | None = None,
+) -> pd.DataFrame:
+    """Correlación entre mitades de cada rasgo, agregada sobre muchas ciudades.
+
+    Cada ciudad aporta una correlación por rasgo, y se conserva la mediana entre ciudades
+    junto con la peor. Medirlo sobre pocas ciudades deja el criterio a merced de sus
+    particularidades: un rasgo puede reproducirse en cinco ciudades del sur y ser ruido
+    en el norte, y el filtro lo dejaría pasar sin que nada avisara.
+    """
+    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.textura import fiabilidad_por_mitades
+
+    catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
+    claves = ciudades or tuple(
+        p.stem.replace(f"_{sensor}", "")
+        for p in sorted((raiz / "compuestos").glob(f"*_{sensor}.tif"))
+    )
+
+    partes = []
+    for clave in claves:
+        try:
+            area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
+            bandas, malla, _ = asegurar_compuesto(clave, sensor, area=area, raiz=raiz)
+            agebs = agebs.to_crs(malla.crs)
+            canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
+            for nombre, banda in canales.items():
+                partes.append(
+                    fiabilidad_por_mitades(
+                        banda,
+                        malla.transform,
+                        list(agebs.geometry),
+                        list(agebs.cvegeo),
+                        prefijo=nombre,
+                        rango=_rango_de_canal(nombre, escala),
+                    ).assign(ciudad=clave)
+                )
+        except Exception:
+            log.warning("sin fiabilidad para %s", clave, exc_info=True)
+
+    if not partes:
+        raise RuntimeError(f"ninguna ciudad dio fiabilidad para {sensor}")
+    juntas = pd.concat(partes, ignore_index=True)
+    resumen = (
+        juntas.groupby("rasgo", observed=True)["r"]
+        .agg(r_mediana="median", r_min="min", ciudades="size")
+        .reset_index()
+        .sort_values("r_mediana", ascending=False)
+    )
+    log.info("fiabilidad de %d rasgos sobre %d ciudades", len(resumen), juntas.ciudad.nunique())
+    return resumen
