@@ -1,4 +1,4 @@
-"""Compone una porción del conjunto nacional. Uso: componer.py [indice total] [ciudad ...]
+"""Compone una porción del split nacional. Uso: componer.py [indice total] [ciudad ...]
 
 Vive en el repositorio y no en un directorio temporal: la corrida dura días y un
 scratchpad que se limpia deja el trabajo fallando en silencio contra un archivo que

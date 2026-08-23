@@ -25,11 +25,11 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-LARGO_CLAVE_MUNICIPIO = 5
+MUNICIPALITY_KEY_LENGTH = 5
 """Characters of an AGEB key that name its municipality: two of state, three of county."""
 
 
-def locate(tiles: list[Tile], malla: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFrame:
+def locate(tiles: list[Tile], grid: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     """Says which AGEB and which municipality each patch fell into.
 
     A patch is placed by its centre. Patches straddling a boundary therefore land in one
@@ -44,36 +44,36 @@ def locate(tiles: list[Tile], malla: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFr
     if not tiles:
         return pd.DataFrame(columns=["tile", "row", "col", "y0", "x0", "cvegeo", "municipio"])
 
-    puntos = gpd.GeoDataFrame(
+    points = gpd.GeoDataFrame(
         {"tile": np.arange(len(tiles))},
-        geometry=gpd.points_from_xy(*centers(tiles, malla).T),
-        crs=malla.crs,
+        geometry=gpd.points_from_xy(*centers(tiles, grid).T),
+        crs=grid.crs,
     )
-    unido = puntos.sjoin(
-        agebs.to_crs(malla.crs)[["cvegeo", "geometry"]], how="left", predicate="within"
+    joined = points.sjoin(
+        agebs.to_crs(grid.crs)[["cvegeo", "geometry"]], how="left", predicate="within"
     )
     # a patch centre sitting exactly on a shared edge matches both neighbours; the first
     # match keeps the assignment single-valued and the choice between two adjacent AGEB
     # is arbitrary either way
-    unido = unido[~unido.index.duplicated(keep="first")]
+    joined = joined[~joined.index.duplicated(keep="first")]
 
-    fuera = int(unido.cvegeo.isna().sum())
-    if fuera:
-        log.info("%d of %d patches fell outside every AGEB and were dropped", fuera, len(tiles))
-    unido = unido.dropna(subset=["cvegeo"])
+    outside = int(joined.cvegeo.isna().sum())
+    if outside:
+        log.info("%d of %d patches fell outside every AGEB and were dropped", outside, len(tiles))
+    joined = joined.dropna(subset=["cvegeo"])
 
-    tabla = pd.DataFrame(
+    table = pd.DataFrame(
         {
-            "tile": unido.tile.to_numpy(),
-            "row": [tiles[i].row for i in unido.tile],
-            "col": [tiles[i].col for i in unido.tile],
-            "y0": [tiles[i].y0 for i in unido.tile],
-            "x0": [tiles[i].x0 for i in unido.tile],
-            "cvegeo": unido.cvegeo.to_numpy(),
+            "tile": joined.tile.to_numpy(),
+            "row": [tiles[i].row for i in joined.tile],
+            "col": [tiles[i].col for i in joined.tile],
+            "y0": [tiles[i].y0 for i in joined.tile],
+            "x0": [tiles[i].x0 for i in joined.tile],
+            "cvegeo": joined.cvegeo.to_numpy(),
         }
     )
-    tabla["municipio"] = tabla.cvegeo.str[:LARGO_CLAVE_MUNICIPIO]
-    return tabla.reset_index(drop=True)
+    table["municipio"] = table.cvegeo.str[:MUNICIPALITY_KEY_LENGTH]
+    return table.reset_index(drop=True)
 
 
 def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
@@ -88,72 +88,72 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     The aggregate is the population-weighted mean of the ordinal grade, rounded. Weighting
     by population rather than by area stops a large empty AGEB from outvoting a dense one.
     """
-    faltantes = {"cvegeo", "ordinal", "poblacion"} - set(agebs.columns)
-    if faltantes:
-        raise KeyError(f"the AGEB table is missing {sorted(faltantes)}")
+    missing = {"cvegeo", "ordinal", "poblacion"} - set(agebs.columns)
+    if missing:
+        raise KeyError(f"the AGEB table is missing {sorted(missing)}")
 
-    tabla = pd.DataFrame(
+    table = pd.DataFrame(
         {
-            "municipio": agebs.cvegeo.str[:LARGO_CLAVE_MUNICIPIO],
+            "municipio": agebs.cvegeo.str[:MUNICIPALITY_KEY_LENGTH],
             "ordinal": pd.to_numeric(agebs.ordinal, errors="coerce"),
             "poblacion": pd.to_numeric(agebs.poblacion, errors="coerce").fillna(0.0),
         }
     ).dropna(subset=["ordinal"])
 
-    def resumir(grupo: pd.DataFrame) -> pd.Series:
-        peso = grupo.poblacion.to_numpy(dtype="float64")
-        if peso.sum() <= 0:
-            peso = np.ones(len(grupo))
-        medio = float(np.average(grupo.ordinal.to_numpy(dtype="float64"), weights=peso))
+    def summarise(group: pd.DataFrame) -> pd.Series:
+        weight = group.poblacion.to_numpy(dtype="float64")
+        if weight.sum() <= 0:
+            weight = np.ones(len(group))
+        middle = float(np.average(group.ordinal.to_numpy(dtype="float64"), weights=weight))
         return pd.Series(
             {
-                "ordinal": int(np.clip(round(medio), 0, len(GRADES) - 1)),
-                "ordinal_continuo": medio,
-                "poblacion": float(peso.sum()),
-                "agebs": len(grupo),
+                "ordinal": int(np.clip(round(middle), 0, len(GRADES) - 1)),
+                "ordinal_continuo": middle,
+                "poblacion": float(weight.sum()),
+                "agebs": len(group),
             }
         )
 
-    salida = tabla.groupby("municipio", observed=True).apply(resumir, include_groups=False)
-    salida["grado"] = salida.ordinal.map({v: k for k, v in ORDINAL.items()})
-    return salida.reset_index()
+    output = table.groupby("municipio", observed=True).apply(summarise, include_groups=False)
+    output["grado"] = output.ordinal.map({v: k for k, v in ORDINAL.items()})
+    return output.reset_index()
 
 
 def build(
     tiles: list[Tile],
-    malla: Grid,
+    grid: Grid,
     agebs: gpd.GeoDataFrame,
-    ciudad: str,
+    city: str,
     *,
-    minimo_instancias: int = 1,
+    min_instances: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Builds the instance table and the bag table of one city.
 
     Returns the patches with their AGEB and municipality, and one row per bag with its
-    label. `minimo_instancias` drops bags too small to be worth an attention mechanism;
-    a bag of three patches teaches the model nothing about where to look.
+    label. `min_instances` drops bags too small to be worth an attention mechanism; a bag
+    of three patches teaches the model nothing about where to look.
     """
-    instancias = locate(tiles, malla, agebs)
-    if instancias.empty:
-        raise ValueError(f"{ciudad}: no patch landed inside an AGEB")
+    instances = locate(tiles, grid, agebs)
+    if instances.empty:
+        raise ValueError(f"{city}: no patch landed inside an AGEB")
 
-    bolsas = municipal_labels(agebs)
-    cuenta = instancias.groupby("municipio", observed=True).size().rename("instancias")
-    bolsas = bolsas.merge(cuenta, on="municipio", how="inner")
+    bag_table = municipal_labels(agebs)
+    counts = instances.groupby("municipio", observed=True).size().rename("instancias")
+    bag_table = bag_table.merge(counts, on="municipio", how="inner")
 
-    chicas = bolsas[bolsas.instancias < minimo_instancias]
-    if not chicas.empty:
-        log.info("%s: %d bags below %d instances dropped", ciudad, len(chicas), minimo_instancias)
-        bolsas = bolsas[bolsas.instancias >= minimo_instancias]
-        instancias = instancias[instancias.municipio.isin(bolsas.municipio)]
+    small = bag_table[bag_table.instancias < min_instances]
+    if not small.empty:
+        log.info("%s: %d bags below %d instances dropped", city, len(small), min_instances)
+        bag_table = bag_table[bag_table.instancias >= min_instances]
+        instances = instances[instances.municipio.isin(bag_table.municipio)]
 
-    instancias.insert(0, "ciudad", ciudad)
-    bolsas.insert(0, "ciudad", ciudad)
+    instances.insert(0, "ciudad", city)
+    bag_table.insert(0, "ciudad", city)
     log.info(
         "%s: %d bags, %d instances, %.0f per bag on median",
-        ciudad,
-        len(bolsas),
-        len(instancias),
-        bolsas.instancias.median(),
+        city,
+        len(bag_table),
+        len(instances),
+        bag_table.instancias.median(),
     )
-    return instancias.reset_index(drop=True), bolsas.reset_index(drop=True)
+    return instances.reset_index(drop=True), bag_table.reset_index(drop=True)

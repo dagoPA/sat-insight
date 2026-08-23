@@ -43,7 +43,7 @@ SUFIJOS_TEXTURA = tuple(feature_names())
 SUFIJOS_COBERTURA = tuple(CLASSES.values())
 """Fracciones de cobertura de WorldCover, la única fuente ajena a los compuestos."""
 
-CONJUNTOS = {
+SETS = {
     "cobertura": SUFIJOS_COBERTURA,
     "densidad": SUFIJOS_DENSIDAD,
     "textura": SUFIJOS_TEXTURA,
@@ -60,15 +60,15 @@ sobre eso. `textura` pregunta si el arreglo espacial agrega algo sobre el brillo
 SEMILLA = 0
 
 
-def columnas_de_conjunto(tabla: pd.DataFrame, conjunto: str) -> list[str]:
-    """Selecciona las columnas de rasgos que pertenecen a un conjunto.
+def columnas_de_conjunto(tabla: pd.DataFrame, split: str) -> list[str]:
+    """Selecciona las columnas de rasgos que pertenecen a un split.
 
     El nombre de cada columna es el canal y el sufijo del estadístico unidos por guion
     bajo, así que basta con mirar el sufijo para clasificarla.
     """
-    if conjunto not in CONJUNTOS:
-        raise KeyError(f"conjunto desconocido: {conjunto!r}. Válidos: {', '.join(CONJUNTOS)}")
-    sufijos = CONJUNTOS[conjunto]
+    if split not in SETS:
+        raise KeyError(f"split desconocido: {split!r}. Válidos: {', '.join(SETS)}")
+    sufijos = SETS[split]
     return sorted(c for c in tabla.columns if any(c.endswith(f"_{s}") for s in sufijos))
 
 
@@ -92,7 +92,7 @@ def varianza_explicada(tabla: pd.DataFrame, columna: str, factor: str) -> float:
 
 def diagnostico_transferencia(
     tabla: pd.DataFrame,
-    conjunto: str,
+    split: str,
     *,
     columna_grupo: str = "ciudad",
     columna_objetivo: str = "grado",
@@ -107,7 +107,7 @@ def diagnostico_transferencia(
     buena solo significa algo en un rasgo que ya demostró reproducirse consigo mismo.
     """
     filas = []
-    for columna in columnas_de_conjunto(tabla, conjunto):
+    for columna in columnas_de_conjunto(tabla, split):
         por_ciudad = varianza_explicada(tabla, columna, columna_grupo)
         por_grado = varianza_explicada(tabla, columna, columna_objetivo)
         filas.append(
@@ -185,25 +185,25 @@ def _predecir(nombre: str, x_entrena, y_entrena, x_prueba) -> np.ndarray:
 
 def evaluar(
     tabla: pd.DataFrame,
-    conjunto: str,
+    split: str,
     modelo: str,
     *,
     columna_grupo: str = "ciudad",
     columna_objetivo: str = "ordinal",
     estandarizar: bool = False,
 ) -> pd.DataFrame:
-    """Validación cruzada dejando una ciudad fuera en cada pliegue.
+    """Validación cruzada dejando una ciudad fuera en cada fold.
 
-    Devuelve un renglón por pliegue, para poder ver si el resultado se sostiene en las
+    Devuelve un renglón por fold, para poder ver si el resultado se sostiene en las
     cities o lo carga una sola.
 
     Con `estandarizar` cada rasgo se centra dentro de su ciudad antes de entrenar. Es una
     ablación y no el modo normal: quita la deriva radiométrica entre cities, y de paso
     cualquier diferencia de nivel entre ellas que sí fuera señal de rezago.
     """
-    columnas = columnas_de_conjunto(tabla, conjunto)
+    columnas = columnas_de_conjunto(tabla, split)
     if not columnas:
-        raise ValueError(f"la tabla no tiene columnas del conjunto {conjunto!r}")
+        raise ValueError(f"la tabla no tiene columnas del split {split!r}")
 
     utilizable = tabla.dropna(subset=[columna_objetivo]).copy()
     if estandarizar:
@@ -227,7 +227,7 @@ def evaluar(
 
         renglones.append(
             {
-                "conjunto": conjunto,
+                "split": split,
                 "modelo": modelo,
                 "ciudad_prueba": ciudad,
                 "n_entrena": len(entrena),
@@ -242,23 +242,23 @@ def evaluar(
 
 def comparar(
     tabla: pd.DataFrame,
-    conjuntos: tuple[str, ...] = tuple(CONJUNTOS),
+    conjuntos: tuple[str, ...] = tuple(SETS),
     modelos: tuple[str, ...] = ("azar", "moda", "clasificador", "regresor"),
     *,
     estandarizar: bool = False,
 ) -> pd.DataFrame:
     """Corre la rejilla completa de conjuntos de rasgos por modelos."""
     partes = []
-    for conjunto in conjuntos:
+    for split in conjuntos:
         for modelo in modelos:
             if modelo in ("azar", "moda"):
-                if conjunto != conjuntos[0]:
+                if split != conjuntos[0]:
                     continue  # ignoran los rasgos; correrlos una vez alcanza
-                ciego = evaluar(tabla, conjunto, modelo, estandarizar=estandarizar)
-                ciego["conjunto"] = "ninguno"
+                ciego = evaluar(tabla, split, modelo, estandarizar=estandarizar)
+                ciego["split"] = "ninguno"
                 partes.append(ciego)
             else:
-                partes.append(evaluar(tabla, conjunto, modelo, estandarizar=estandarizar))
+                partes.append(evaluar(tabla, split, modelo, estandarizar=estandarizar))
     return pd.concat(partes, ignore_index=True)
 
 
@@ -266,7 +266,7 @@ def resumen(detalle: pd.DataFrame) -> pd.DataFrame:
     """Promedia los pliegues y ordena por kappa, que es la métrica que decide."""
     columnas = ["kappa", "exactitud", "f1_macro", "spearman", "mae_ordinal"]
     agregado = (
-        detalle.groupby(["conjunto", "modelo"], observed=True)[columnas]
+        detalle.groupby(["split", "modelo"], observed=True)[columnas]
         .mean()
         .round(3)
         .sort_values("kappa", ascending=False)
@@ -348,7 +348,7 @@ def seleccionar_rasgos(
 
 
 def prueba_de_signos(diferencias: np.ndarray) -> dict[str, float]:
-    """Prueba exacta de signos sobre las diferencias por pliegue.
+    """Prueba exacta de signos sobre las diferencias por fold.
 
     Con cinco cities hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
     están correlacionadas espacialmente entre sí. Tratar cada AGEB como independiente
@@ -470,7 +470,7 @@ def auroc_acumulada(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, f
 
 def evaluar_particion(
     tabla: pd.DataFrame,
-    conjunto: str,
+    split: str,
     modelo: str,
     particion: pd.DataFrame,
     *,
@@ -481,21 +481,21 @@ def evaluar_particion(
 ) -> dict[str, float]:
     """Entrena sobre las cities de entrenamiento y mide sobre las de validación o prueba.
 
-    Reemplaza a dejar una ciudad fuera por pliegue, que servía con cinco cities y con
+    Reemplaza a dejar una ciudad fuera por fold, que servía con cinco cities y con
     ciento treinta y ocho daría otros tantos pliegues entrenados cada uno con el 99.3% de
     los datos, donde la dispersión entre pliegues es casi toda ruido.
 
-    La incertidumbre sale de un remuestreo por cities dentro del conjunto medido, porque
+    La incertidumbre sale de un remuestreo por cities dentro del split medido, porque
     las AGEB vecinas están correlacionadas y tratarlas como independientes estrecha los
     intervalos sin motivo.
     """
-    from satinsight.splits import ciudades_de
+    from satinsight.splits import cities_of
 
     if evaluar_en not in ("val", "test"):
         raise KeyError(f"se mide sobre 'val' o 'test', no sobre {evaluar_en!r}")
-    columnas = columnas_de_conjunto(tabla, conjunto)
-    entrena = tabla[tabla[columna_grupo].isin(ciudades_de(particion, "train"))]
-    mide = tabla[tabla[columna_grupo].isin(ciudades_de(particion, evaluar_en))]
+    columnas = columnas_de_conjunto(tabla, split)
+    entrena = tabla[tabla[columna_grupo].isin(cities_of(particion, "train"))]
+    mide = tabla[tabla[columna_grupo].isin(cities_of(particion, evaluar_en))]
     if entrena.empty or mide.empty:
         raise ValueError(
             f"la partición deja {len(entrena)} filas de entrenamiento y {len(mide)} de "

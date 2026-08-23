@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from satinsight.splits import CONJUNTOS, assign, check, ciudades_de
+from satinsight.splits import SETS, assign, check, cities_of
 
 
 def catalogue(n=138, seed=0):
@@ -22,26 +22,26 @@ def test_every_city_lands_in_exactly_one_place():
     p = assign(catalogue())
     assert len(p) == 138
     assert p.ciudad.is_unique
-    assert set(p.conjunto) == set(CONJUNTOS)
+    assert set(p.split) == set(SETS)
 
 
 def test_the_split_is_eighty_ten_ten():
     p = assign(catalogue(n=138))
-    reparto = p.conjunto.value_counts(normalize=True)
+    reparto = p.split.value_counts(normalize=True)
     assert reparto["train"] == pytest.approx(0.8, abs=0.02)
     assert reparto["val"] == pytest.approx(0.1, abs=0.02)
     assert reparto["test"] == pytest.approx(0.1, abs=0.02)
 
 
 def test_other_proportions_are_honoured():
-    p = assign(catalogue(n=100), proporciones=(0.6, 0.2, 0.2))
-    reparto = p.conjunto.value_counts(normalize=True)
+    p = assign(catalogue(n=100), proportions=(0.6, 0.2, 0.2))
+    reparto = p.split.value_counts(normalize=True)
     assert reparto["train"] == pytest.approx(0.6, abs=0.02)
 
 
 def test_proportions_must_add_up():
     with pytest.raises(ValueError, match="add up to one"):
-        assign(catalogue(), proporciones=(0.8, 0.2, 0.2))
+        assign(catalogue(), proportions=(0.8, 0.2, 0.2))
 
 
 def test_the_partition_is_reproducible():
@@ -50,14 +50,14 @@ def test_the_partition_is_reproducible():
 
 
 def test_a_different_seed_moves_cities_around():
-    a = assign(catalogue(), seed=1).set_index("ciudad").conjunto
-    b = assign(catalogue(), seed=2).set_index("ciudad").conjunto
+    a = assign(catalogue(), seed=1).set_index("ciudad").split
+    b = assign(catalogue(), seed=2).set_index("ciudad").split
     assert (a != b).any()
 
 
 def test_the_three_sets_never_share_a_city():
     p = assign(catalogue())
-    listas = {c: set(ciudades_de(p, c)) for c in CONJUNTOS}
+    listas = {c: set(cities_of(p, c)) for c in SETS}
     assert not listas["train"] & listas["val"]
     assert not listas["train"] & listas["test"]
     assert not listas["val"] & listas["test"]
@@ -65,13 +65,13 @@ def test_the_three_sets_never_share_a_city():
 
 def test_deprivation_is_balanced_across_the_three():
     p = assign(catalogue(n=138))
-    medias = p.groupby("conjunto").estrato_valor.mean()
+    medias = p.groupby("split").stratum_value.mean()
     assert medias.max() - medias.min() < 0.08
 
 
 def test_size_is_balanced_across_the_three():
     p = assign(catalogue(n=138))
-    medias = p.groupby("conjunto").tamano.mean()
+    medias = p.groupby("split").n_agebs.mean()
     assert medias.max() / medias.min() < 1.5
 
 
@@ -87,7 +87,7 @@ def test_assign_demands_its_columns():
 
 def test_ciudades_de_rejects_an_unknown_set():
     with pytest.raises(KeyError, match="unknown set"):
-        ciudades_de(assign(catalogue(n=20)), "entrenamiento")
+        cities_of(assign(catalogue(n=20)), "entrenamiento")
 
 
 def test_check_catches_an_ageb_on_both_sides():
@@ -100,8 +100,8 @@ def test_check_catches_an_ageb_on_both_sides():
             "municipio": ["07101", "07101"],
         }
     )
-    p.loc[p.ciudad == dos[0], "conjunto"] = "train"
-    p.loc[p.ciudad == dos[1], "conjunto"] = "test"
+    p.loc[p.ciudad == dos[0], "split"] = "train"
+    p.loc[p.ciudad == dos[1], "split"] = "test"
     with pytest.raises(ValueError, match="spanning both sides"):
         check(p, instancias)
 
@@ -143,17 +143,17 @@ class _City:
 
 
 def test_una_ageb_compartida_queda_bajo_una_sola_ciudad():
-    from satinsight.splits import desduplicar
+    from satinsight.splits import deduplicate
 
     catalogue = {"guadalajara": _City("14039"), "zapopan": _City("14120")}
-    d = desduplicar(_tabla_conurbada(), catalogue)
+    d = deduplicate(_tabla_conurbada(), catalogue)
     assert len(d) == 3
     assert d.cvegeo.is_unique
     assert d.loc[d.cvegeo == "1403900010001", "ciudad"].item() == "guadalajara"
 
 
 def test_un_municipio_que_ninguna_ciudad_reclama_va_a_la_que_mas_tiene():
-    from satinsight.splits import dueno_de_municipio
+    from satinsight.splits import municipality_owner
 
     tabla = pd.DataFrame(
         {
@@ -162,14 +162,14 @@ def test_un_municipio_que_ninguna_ciudad_reclama_va_a_la_que_mas_tiene():
         }
     )
     catalogue = {"guadalajara": _City("14039"), "zapopan": _City("14120")}
-    assert dueno_de_municipio(tabla, catalogue)["14098"] == "guadalajara"
+    assert municipality_owner(tabla, catalogue)["14098"] == "guadalajara"
 
 
 def test_desduplicar_deja_la_particion_sin_fuga():
-    from satinsight.splits import desduplicar
+    from satinsight.splits import deduplicate
 
     catalogue = {"guadalajara": _City("14039"), "zapopan": _City("14120")}
-    d = desduplicar(_tabla_conurbada(), catalogue)
-    particion = pd.DataFrame({"ciudad": ["guadalajara", "zapopan"], "conjunto": ["train", "val"]})
+    d = deduplicate(_tabla_conurbada(), catalogue)
+    particion = pd.DataFrame({"ciudad": ["guadalajara", "zapopan"], "split": ["train", "val"]})
     d["municipio"] = d.cvegeo.str[:5]
     check(particion, d[["ciudad", "cvegeo", "municipio"]])

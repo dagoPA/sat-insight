@@ -45,7 +45,7 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
             "c_rango_intercuartil": rng.normal(0, 1, n_por_ciudad),
         }
         # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
-        # rompa la prueba, con lo que se evita que quede midiendo un conjunto vacío.
+        # rompa la prueba, con lo que se evita que quede midiendo un split vacío.
         for clase in CLASSES.values():
             columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
         for sufijo in feature_names():
@@ -87,7 +87,7 @@ def test_la_cobertura_no_se_mezcla_con_los_otros_escalones():
 
 
 def test_conjunto_desconocido_falla():
-    with pytest.raises(KeyError, match="conjunto desconocido"):
+    with pytest.raises(KeyError, match="split desconocido"):
         columnas_de_conjunto(tabla_sintetica(10), "inventado")
 
 
@@ -128,14 +128,14 @@ def test_el_regresor_predice_dentro_del_rango_ordinal():
 def test_comparar_corre_los_modelos_ciegos_una_sola_vez():
     detalle = comparar(tabla_sintetica(50))
     ciegos = detalle[detalle["modelo"].isin(["azar", "moda"])]
-    assert set(ciegos["conjunto"]) == {"ninguno"}
+    assert set(ciegos["split"]) == {"ninguno"}
     assert len(ciegos) == 2 * len(CITIES)
 
 
 def test_el_resumen_ordena_por_kappa():
     agregado = resumen(comparar(tabla_sintetica(80, fuerza=1.5)))
     assert list(agregado["kappa"]) == sorted(agregado["kappa"], reverse=True)
-    assert {"conjunto", "modelo", "kappa"} <= set(agregado.columns)
+    assert {"split", "modelo", "kappa"} <= set(agregado.columns)
 
 
 def test_la_varianza_explicada_reconoce_un_factor_perfecto():
@@ -195,7 +195,7 @@ def test_la_ablacion_estandarizada_corre_completa():
 
 def test_una_tabla_sin_rasgos_del_conjunto_falla():
     tabla = pd.DataFrame({"ciudad": ["a"], "ordinal": [1], "otra_cosa": [3.0]})
-    with pytest.raises(ValueError, match="conjunto"):
+    with pytest.raises(ValueError, match="split"):
         evaluar(tabla, "textura", "clasificador")
 
 

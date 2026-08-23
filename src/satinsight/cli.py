@@ -173,8 +173,8 @@ def cmd_baseline(args: argparse.Namespace) -> int:
     detalle = comparar(tabla, estandarizar=args.estandarizar)
     print(f"\n{len(tabla)} AGEB · partición dejando una ciudad fuera\n")
     print(resumen(detalle).to_string(index=False))
-    print("\npor pliegue:\n")
-    columnas = ["conjunto", "modelo", "ciudad_prueba", "n_prueba", "kappa", "spearman"]
+    print("\npor fold:\n")
+    columnas = ["split", "modelo", "ciudad_prueba", "n_prueba", "kappa", "spearman"]
     print(detalle[columnas].round(3).to_string(index=False))
 
     if args.salida:
@@ -184,7 +184,7 @@ def cmd_baseline(args: argparse.Namespace) -> int:
 
 
 def cmd_diagnostico(args: argparse.Namespace) -> int:
-    """Reporta, por conjunto de rasgos, si describen la ciudad o el rezago."""
+    """Reporta, por split de rasgos, si describen la ciudad o el rezago."""
     origen = Path(args.features or DATA_ROOT / f"rasgos_{args.sensor}.parquet")
     if not origen.exists():
         print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
@@ -195,15 +195,14 @@ def cmd_diagnostico(args: argparse.Namespace) -> int:
     print("Razón entre la varianza que explica la ciudad y la que explica el grado.")
     print("Por encima de uno, el rasgo describe dónde se midió más que qué se midió.\n")
 
-    for conjunto in ("cobertura", "densidad", "textura"):
-        detalle = diagnostico_transferencia(tabla, conjunto).dropna(subset=["razon"])
+    for split in ("cobertura", "densidad", "textura"):
+        detalle = diagnostico_transferencia(tabla, split).dropna(subset=["razon"])
         if detalle.empty:
             continue
         bajo, medio, alto = detalle["razon"].quantile([0.25, 0.5, 0.75])
         peores = ", ".join(detalle.head(3)["feature"])
         print(
-            f"  {conjunto:<10} n={len(detalle):<3} "
-            f"cuartiles {bajo:>6.1f} /{medio:>6.1f} /{alto:>6.1f}"
+            f"  {split:<10} n={len(detalle):<3} cuartiles {bajo:>6.1f} /{medio:>6.1f} /{alto:>6.1f}"
         )
         print(f"  {'':<10} peores: {peores}")
 
@@ -228,7 +227,7 @@ def cmd_figuras(args: argparse.Namespace) -> int:
 
 
 def cmd_avance(args: argparse.Namespace) -> int:
-    """Reporta cuántas cities del conjunto tienen ya sus dos compuestos.
+    """Reporta cuántas cities del split tienen ya sus dos compuestos.
 
     La composición nacional tarda días y sobrevive a la sesión que la lanzó, así que hace
     falta poder consultarla desde cualquier otra.
@@ -244,9 +243,9 @@ def cmd_avance(args: argparse.Namespace) -> int:
         destino = completas if len(hechos) == len(SENSORS) else a_medias if hechos else faltan
         destino.append(clave)
 
-    tamano = sum(p.stat().st_size for p in root.glob("*.tif")) / 1e9 if root.exists() else 0
+    size = sum(p.stat().st_size for p in root.glob("*.tif")) / 1e9 if root.exists() else 0
     print(f"\n{len(completas)} de {len(catalogue)} cities completas")
-    print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {tamano:.1f} GB en disco")
+    print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {size:.1f} GB en disco")
     if a_medias:
         print(f"\nen curso: {', '.join(a_medias[:8])}")
     if args.detalle and faltan:
@@ -268,7 +267,7 @@ def cmd_bolsas(args: argparse.Namespace) -> int:
     for clave in claves:
         try:
             salidas = build_city(
-                clave, args.sensor, encoder=None, size=args.tamano, catalogue=catalogue
+                clave, args.sensor, encoder=None, size=args.size, catalogue=catalogue
             )
         except Exception as e:
             print(f"FALLO {clave}: {type(e).__name__}: {e}")
@@ -282,14 +281,14 @@ def cmd_bolsas(args: argparse.Namespace) -> int:
 
 
 def cmd_particion(args: argparse.Namespace) -> int:
-    """Escribe la partición espacial del conjunto nacional."""
+    """Escribe la partición espacial del split nacional."""
     from satinsight.dataset import build_split
 
-    particion = build_split(force=args.force, proporciones=tuple(args.proporciones))
-    resumen = particion.groupby("conjunto").agg(
+    particion = build_split(force=args.force, proportions=tuple(args.proportions))
+    resumen = particion.groupby("split").agg(
         cities=("ciudad", "size"),
-        agebs=("tamano", "sum"),
-        rezago_medio=("estrato_valor", "mean"),
+        agebs=("n_agebs", "sum"),
+        rezago_medio=("stratum_value", "mean"),
     )
     resumen["porcentaje"] = 100 * resumen.cities / resumen.cities.sum()
     print(resumen.round(2).to_string())
@@ -374,7 +373,7 @@ def construir_parser() -> argparse.ArgumentParser:
     base = sub.add_parser("baseline", help="corre la comparación de la fase 1")
     base.add_argument("sensor", choices=SENSORS)
     base.add_argument("--rasgos", help="parquet de rasgos ya extraído")
-    base.add_argument("--salida", help="csv donde dejar el detalle por pliegue")
+    base.add_argument("--salida", help="csv donde dejar el detalle por fold")
     base.add_argument(
         "--estandarizar",
         action="store_true",
@@ -400,12 +399,12 @@ def construir_parser() -> argparse.ArgumentParser:
     bolsas = sub.add_parser("bolsas", help="tesela cities y arma sus bolsas MIL")
     bolsas.add_argument("sensor", choices=("s2", "s1"))
     bolsas.add_argument("cities", nargs="*", help="claves; vacío corre las ya compuestas")
-    bolsas.add_argument("--tamano", type=int, default=224, help="lado de la ventana en píxeles")
+    bolsas.add_argument("--size", type=int, default=224, help="lado de la ventana en píxeles")
     bolsas.set_defaults(func=cmd_bolsas)
 
     particion = sub.add_parser("particion", help="reparte las cities en prueba y pliegues")
     particion.add_argument(
-        "--proporciones",
+        "--proportions",
         type=float,
         nargs=3,
         default=[0.8, 0.1, 0.1],
