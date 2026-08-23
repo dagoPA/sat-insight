@@ -476,6 +476,7 @@ def evaluar_particion(
     evaluar_en: str = "test",
     columna_grupo: str = "ciudad",
     columna_objetivo: str = "ordinal",
+    remuestreos: int = 400,
 ) -> dict[str, float]:
     """Entrena sobre las ciudades de entrenamiento y mide sobre las de validación o prueba.
 
@@ -510,15 +511,35 @@ def evaluar_particion(
         **auroc_acumulada(verdad, puntuaciones),
     }
 
-    por_ciudad = pd.DataFrame(
-        {"ciudad": mide[columna_grupo].to_numpy(), "acierto": verdad == prediccion}
-    )
-    intervalo = intervalo_por_ciudades(por_ciudad, "acierto")
+    # el intervalo remuestrea ciudades enteras y recalcula la métrica en cada réplica:
+    # las AGEB vecinas están correlacionadas, y remuestrearlas sueltas daría intervalos
+    # estrechos que no sobrevivirían a cambiar de ciudad, que es justo lo que se mide
+    ciudades = mide[columna_grupo].to_numpy()
+    azar = np.random.default_rng(SEMILLA)
+    unicas = np.unique(ciudades)
+    replicas: dict[str, list[float]] = {"kappa": [], "auroc_macro": [], "spearman": []}
+    for _ in range(remuestreos):
+        elegidas = azar.choice(unicas, size=len(unicas), replace=True)
+        filas = np.concatenate([np.flatnonzero(ciudades == c) for c in elegidas])
+        v, pr = verdad[filas], prediccion[filas]
+        if len(set(v)) < 2:
+            continue
+        replicas["kappa"].append(float(cohen_kappa_score(v, pr, weights="quadratic")))
+        replicas["spearman"].append(float(spearmanr(v, pr).statistic))
+        puntos = puntuaciones[filas]
+        macro = auroc_una_contra_resto(v, puntos).get("auroc_macro")
+        if macro is not None:
+            replicas["auroc_macro"].append(macro)
+
+    intervalos = {}
+    for nombre, valores in replicas.items():
+        if valores:
+            intervalos[f"{nombre}_ic_bajo"] = float(np.percentile(valores, 2.5))
+            intervalos[f"{nombre}_ic_alto"] = float(np.percentile(valores, 97.5))
     return {
         **metricas,
+        **intervalos,
         "n_entrena": len(entrena),
         "n_mide": len(mide),
-        "ciudades_mide": mide[columna_grupo].nunique(),
-        "exactitud_ic_bajo": intervalo["ic_bajo"],
-        "exactitud_ic_alto": intervalo["ic_alto"],
+        "ciudades_mide": len(unicas),
     }
