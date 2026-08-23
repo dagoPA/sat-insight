@@ -157,3 +157,42 @@ def check(particion: pd.DataFrame, instancias: pd.DataFrame | None = None) -> No
             culpables = cruzados[cruzados > 1].index.tolist()[:5]
             raise ValueError(f"{columna} spanning both sides of the partition: {culpables}")
     log.info("partition clean over %d instances", len(instancias))
+
+
+def dueno_de_municipio(tabla: pd.DataFrame, catalogo: dict) -> dict[str, str]:
+    """Asigna cada municipio a una sola ciudad, para que ninguna AGEB pertenezca a dos.
+
+    El recuadro de una ciudad envuelve su mancha urbana conurbada, y las manchas de dos
+    ciudades vecinas se solapan: Guadalajara y Zapopan son entradas distintas del catálogo
+    y comparten 302 AGEB. Extraídas bajo ambas, esas AGEB entran dos veces a la tabla, y si
+    las dos ciudades caen a lados distintos de la partición el modelo ve en entrenamiento
+    filas que después se le miden. Sobre la partición nacional eran 1,880 AGEB.
+
+    Manda la ciudad cuya clave de municipio es la del AGEB, que es la que el catálogo
+    nombra. Un municipio que ninguna ciudad reclama —entra por vecindad, no por ser el
+    centro— va a la que más AGEB suyas tenga, y el empate se rompe por nombre para que la
+    asignación no dependa del orden en que se leyeron los archivos.
+    """
+    propietario = {c.municipio: clave for clave, c in catalogo.items()}
+    salida: dict[str, str] = {}
+    for municipio, grupo in tabla.groupby(tabla.cvegeo.str[:5], observed=True):
+        if municipio in propietario and propietario[municipio] in set(grupo.ciudad):
+            salida[municipio] = propietario[municipio]
+            continue
+        cuenta = grupo.ciudad.value_counts()
+        salida[municipio] = sorted(cuenta[cuenta == cuenta.max()].index)[0]
+    return salida
+
+
+def desduplicar(tabla: pd.DataFrame, catalogo: dict) -> pd.DataFrame:
+    """Deja una sola fila por AGEB, bajo la ciudad que se queda con su municipio."""
+    dueno = dueno_de_municipio(tabla, catalogo)
+    municipio = tabla.cvegeo.str[:5]
+    salida = tabla[tabla.ciudad == municipio.map(dueno)].copy()
+    sobrantes = len(tabla) - len(salida)
+    if sobrantes:
+        log.info("%d filas duplicadas entre ciudades conurbadas descartadas", sobrantes)
+    repetidas = salida.cvegeo.duplicated().sum()
+    if repetidas:
+        raise ValueError(f"quedan {repetidas} AGEB repetidas tras desduplicar")
+    return salida.reset_index(drop=True)
