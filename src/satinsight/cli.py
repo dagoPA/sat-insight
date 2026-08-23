@@ -21,12 +21,12 @@ from satinsight.catalog import (
 )
 from satinsight.composite import composite_s1, composite_s2
 from satinsight.download import DATA_ROOT
-from satinsight.figuras import (
-    mapa_agebs_por_ciudad,
-    mapa_nacional,
-    panel_agebs,
-    panel_brazos,
-    panel_contraste,
+from satinsight.figures import (
+    ageb_panel,
+    agebs_by_city_map,
+    contrast_panel,
+    modality_panel,
+    national_map,
 )
 from satinsight.pipeline import SCALES, SENSORS, features_of_all
 from satinsight.raster import percentiles, read_window, stretch, to_db
@@ -216,12 +216,12 @@ def cmd_diagnostico(args: argparse.Namespace) -> int:
 def cmd_figuras(args: argparse.Namespace) -> int:
     """Regenera las figuras de la fase 1 desde el caché de compuestos."""
     destino = Path(args.salida)
-    panel_brazos(args.ciudad, destino / "f1_brazos.png")
-    panel_agebs(args.ciudad, destino / "f2_agebs.png")
+    modality_panel(args.ciudad, destino / "f1_brazos.png")
+    ageb_panel(args.ciudad, destino / "f2_agebs.png")
     for sensor in SENSORS:
-        panel_contraste(args.ciudad, sensor, destino / f"f3_contraste_{sensor}.png")
-    mapa_nacional(destino / "f4_nacional.png")
-    mapa_agebs_por_ciudad(destino / "f5_agebs_ciudades.png")
+        contrast_panel(args.ciudad, sensor, destino / f"f3_contraste_{sensor}.png")
+    national_map(destino / "f4_nacional.png")
+    agebs_by_city_map(destino / "f5_agebs_ciudades.png")
     print(f"figuras de {args.ciudad} → {destino}")
     return 0
 
