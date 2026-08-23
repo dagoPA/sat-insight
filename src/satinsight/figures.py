@@ -1,10 +1,10 @@
 """Figuras de la fase 1: qué ve el modelo y qué mide dentro de cada AGEB.
 
 Las cifras de la propuesta describen el proceso pero no lo muestran. Estas figuras salen de
-los mismos compuestos y polígonos que alimentan el baseline, de modo que lo que se ve en la
+los mismos composites y polígonos que alimentan el baseline, de modo que lo que se ve en la
 página es exactamente lo que entra al modelo, sin una capa de ilustración de por medio.
 
-Todas se regeneran con `satinsight figuras`, y su fuente es el caché de compuestos.
+Todas se regeneran con `satinsight figuras`, y su fuente es el caché de composites.
 """
 
 import logging
@@ -35,17 +35,17 @@ TINTA = (245, 245, 245)
 FONDO = (20, 24, 31)
 
 
-def _rgb_from_composite(bandas: dict, sensor: str) -> np.ndarray:
+def _rgb_from_composite(bands: dict, sensor: str) -> np.ndarray:
     """Arreglo RGB de 8 bits listo para mostrar, según el sensor."""
     if sensor == "s2":
-        return np.dstack([stretch(bandas[b]) for b in ("B04", "B03", "B02")])
-    vv, vh = to_db(bandas["vv"]), to_db(bandas["vh"])
+        return np.dstack([stretch(bands[b]) for b in ("B04", "B03", "B02")])
+    vv, vh = to_db(bands["vv"]), to_db(bands["vh"])
     return np.dstack([stretch(vv), stretch(vh), stretch(vv - vh)])
 
 
-def _text(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> None:
+def _text(image: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> None:
     """Escribe una etiqueta con un halo oscuro para que se lea sobre cualquier fondo."""
-    dibujo = ImageDraw.Draw(imagen)
+    dibujo = ImageDraw.Draw(image)
     try:
         fuente = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", size)
     except OSError:
@@ -56,61 +56,61 @@ def _text(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> N
     dibujo.text(xy, texto, font=fuente, fill=color)
 
 
-def modality_panel(ciudad: str, destino: Path, lado: int = 520) -> Path:
-    """Los dos sensores sobre el mismo recuadro, uno al lado del otro.
+def modality_panel(city: str, destination: Path, side: int = 520) -> Path:
+    """Los dos sensores sobre el mismo recuadro, uno al side del otro.
 
     Es la comparación que el documento sostiene en prosa: el óptico tiene la traza urbana
     nítida a 10 m, el radar la ve más basta pero en una magnitud calibrada.
     """
-    root = Path("data") / "compuestos"
+    root = Path("data") / "composites"
     paneles = []
-    for sensor, titulo in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
-        bandas, _, etiquetas = cache.load(cache.composite_path(ciudad, sensor, root))
-        rgb = _rgb_from_composite(bandas, sensor)
+    for sensor, title in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
+        bands, _, etiquetas = cache.load(cache.composite_path(city, sensor, root))
+        rgb = _rgb_from_composite(bands, sensor)
         alto, ancho = rgb.shape[:2]
         lado_px = min(alto, ancho)
         f0, c0 = (alto - lado_px) // 2, (ancho - lado_px) // 2
-        recorte = rgb[f0 : f0 + lado_px, c0 : c0 + lado_px]
-        imagen = Image.fromarray(recorte).resize((lado, lado), Image.LANCZOS)
-        _text(imagen, (10, 8), titulo)
+        crop = rgb[f0 : f0 + lado_px, c0 : c0 + lado_px]
+        image = Image.fromarray(crop).resize((side, side), Image.LANCZOS)
+        _text(image, (10, 8), title)
         _text(
-            imagen,
-            (10, lado - 22),
-            f"{etiquetas.get('scenes_used', '?')} escenas · mediana anual",
+            image,
+            (10, side - 22),
+            f"{etiquetas.get('scenes_used', '?')} scenes · mediana anual",
             11,
         )
-        paneles.append(imagen)
+        paneles.append(image)
 
-    lienzo = Image.new("RGB", (lado * 2 + 6, lado), FONDO)
+    lienzo = Image.new("RGB", (side * 2 + 6, side), FONDO)
     lienzo.paste(paneles[0], (0, 0))
-    lienzo.paste(paneles[1], (lado + 6, 0))
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    lienzo.save(destino, optimize=True)
-    log.info("panel de brazos: %s", destino)
-    return destino
+    lienzo.paste(paneles[1], (side + 6, 0))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    lienzo.save(destination, optimize=True)
+    log.info("panel de brazos: %s", destination)
+    return destination
 
 
-def _thicken(mascara: np.ndarray, radio: int = 1) -> np.ndarray:
-    """Dilata una máscara booleana desplazándola. Un borde de un píxel se pierde al escalar."""
-    salida = mascara.copy()
+def _thicken(mask: np.ndarray, radio: int = 1) -> np.ndarray:
+    """Dilata una máscara booleana desplazándola. Un border de un píxel se pierde al escalar."""
+    output = mask.copy()
     for eje in (0, 1):
         for signo in (1, -1):
-            salida |= np.roll(mascara, signo * radio, axis=eje)
-    return salida
+            output |= np.roll(mask, signo * radio, axis=eje)
+    return output
 
 
-def ageb_panel(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 420) -> Path:
+def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 420) -> Path:
     """El compuesto con los bordes de las AGEB encima, teñidos por grado.
 
     Muestra la unidad de análisis apoyada sobre los píxeles que la alimentan, que es lo que
     hace falta para entender por qué el tamaño del polígono condiciona lo que se puede medir
     dentro de él.
     """
-    root = Path("data") / "compuestos"
-    _, agebs = city_aoi(ciudad)
-    bandas, malla, _ = cache.load(cache.composite_path(ciudad, "s2", root))
-    rgb = _rgb_from_composite(bandas, "s2")
-    proyectadas = agebs.to_crs(malla.crs)
+    root = Path("data") / "composites"
+    _, agebs = city_aoi(city)
+    bands, grid, _ = cache.load(cache.composite_path(city, "s2", root))
+    rgb = _rgb_from_composite(bands, "s2")
+    proyectadas = agebs.to_crs(grid.crs)
 
     # una etiqueta por grado, para dibujar los bordes con su color
     etiquetas = rasterize(
@@ -118,89 +118,89 @@ def ageb_panel(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 42
             (g, GRADES.index(t) + 1)
             for g, t in zip(proyectadas.geometry, proyectadas.grado, strict=True)
         ],
-        out_shape=malla.shape,
-        transform=malla.transform,
+        out_shape=grid.shape,
+        transform=grid.transform,
         fill=0,
         dtype="uint8",
     )
-    borde = np.zeros(malla.shape, dtype=bool)
+    border = np.zeros(grid.shape, dtype=bool)
     for eje in (0, 1):
         d = np.diff(etiquetas, axis=eje) != 0
-        borde |= np.pad(d, [(0, 1) if i == eje else (0, 0) for i in range(2)])
+        border |= np.pad(d, [(0, 1) if i == eje else (0, 0) for i in range(2)])
 
     pintado = rgb.copy()
     for indice, grado in enumerate(GRADES, start=1):
-        mascara = _thicken(borde & (etiquetas == indice))
-        pintado[mascara] = GRADE_COLOUR[grado]
+        mask = _thicken(border & (etiquetas == indice))
+        pintado[mask] = GRADE_COLOUR[grado]
 
-    # recorte centrado en la zona con más AGEB, chico para que el borde se distinga al ampliar
-    filas, columnas = np.where(etiquetas > 0)
-    cf, cc = int(np.median(filas)), int(np.median(columnas))
-    mitad = min(ventana_px, rgb.shape[0], rgb.shape[1]) // 2
-    f0 = max(0, min(cf - mitad, rgb.shape[0] - 2 * mitad))
-    c0 = max(0, min(cc - mitad, rgb.shape[1] - 2 * mitad))
-    recorte = pintado[f0 : f0 + 2 * mitad, c0 : c0 + 2 * mitad]
+    # crop centrado en la zona con más AGEB, chico para que el border se distinga al ampliar
+    rows, columns = np.where(etiquetas > 0)
+    cf, cc = int(np.median(rows)), int(np.median(columns))
+    half = min(ventana_px, rgb.shape[0], rgb.shape[1]) // 2
+    f0 = max(0, min(cf - half, rgb.shape[0] - 2 * half))
+    c0 = max(0, min(cc - half, rgb.shape[1] - 2 * half))
+    crop = pintado[f0 : f0 + 2 * half, c0 : c0 + 2 * half]
 
     alto_leyenda = 30
-    imagen = Image.new("RGB", (lado, lado + alto_leyenda), FONDO)
-    imagen.paste(Image.fromarray(recorte).resize((lado, lado), Image.LANCZOS), (0, 0))
-    _text(imagen, (10, 8), f"{ciudad} · bordes de AGEB, teñidos por grado de rezago")
-    _text(imagen, (10, lado - 22), f"{2 * mitad * 10 / 1000:.1f} km de lado · píxel de 10 m", 11)
+    image = Image.new("RGB", (side, side + alto_leyenda), FONDO)
+    image.paste(Image.fromarray(crop).resize((side, side), Image.LANCZOS), (0, 0))
+    _text(image, (10, 8), f"{city} · bordes de AGEB, teñidos por grado de rezago")
+    _text(image, (10, side - 22), f"{2 * half * 10 / 1000:.1f} km de side · píxel de 10 m", 11)
 
-    dibujo = ImageDraw.Draw(imagen)
+    dibujo = ImageDraw.Draw(image)
     x = 10
     for grado in GRADES:
-        dibujo.rectangle([x, lado + 11, x + 22, lado + 19], fill=GRADE_COLOUR[grado])
-        _text(imagen, (x + 28, lado + 8), grado, 11)
+        dibujo.rectangle([x, side + 11, x + 22, side + 19], fill=GRADE_COLOUR[grado])
+        _text(image, (x + 28, side + 8), grado, 11)
         x += 34 + 8 * len(grado)
 
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    imagen.save(destino, optimize=True)
-    log.info("panel de AGEB: %s", destino)
-    return destino
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    image.save(destination, optimize=True)
+    log.info("panel de AGEB: %s", destination)
+    return destination
 
 
-def _ageb_crop(rgb: np.ndarray, canal: np.ndarray, malla, geometria, margen: int = 6):
-    """Recorta una AGEB de la imagen y del canal, con un poco de aire alrededor."""
+def _ageb_crop(rgb: np.ndarray, channel: np.ndarray, grid, geometry, margen: int = 6):
+    """Recorta una AGEB de la image y del channel, con un poco de aire alrededor."""
     from satinsight.grid import polygon_window
 
-    ventana = polygon_window(malla.transform, geometria, canal.shape)
+    ventana = polygon_window(grid.transform, geometry, channel.shape)
     if ventana is None:
         return None
-    filas, columnas, dentro = ventana
-    f0 = max(0, filas.start - margen)
-    c0 = max(0, columnas.start - margen)
-    f1 = min(canal.shape[0], filas.stop + margen)
-    c1 = min(canal.shape[1], columnas.stop + margen)
-    return rgb[f0:f1, c0:c1], canal[filas, columnas], dentro
+    rows, columns, dentro = ventana
+    f0 = max(0, rows.start - margen)
+    c0 = max(0, columns.start - margen)
+    f1 = min(channel.shape[0], rows.stop + margen)
+    c1 = min(channel.shape[1], columns.stop + margen)
+    return rgb[f0:f1, c0:c1], channel[rows, columns], dentro
 
 
-def contrast_panel(ciudad: str, sensor: str, destino: Path, lado: int = 190) -> Path:
-    """Cuatro AGEB de la misma ciudad, dos de rezago bajo y dos de rezago alto.
+def contrast_panel(city: str, sensor: str, destination: Path, side: int = 190) -> Path:
+    """Cuatro AGEB de la misma city, dos de rezago bajo y dos de rezago alto.
 
     Debajo de cada una van su contraste y su homogeneidad medidos. Es la forma de ver qué
     está capturando la GLCM antes de creerle a un kappa.
     """
-    root = Path("data") / "compuestos"
-    _, agebs = city_aoi(ciudad)
-    bandas, malla, _ = cache.load(cache.composite_path(ciudad, sensor, root))
-    rgb = _rgb_from_composite(bandas, sensor)
-    proyectadas = agebs.to_crs(malla.crs)
+    root = Path("data") / "composites"
+    _, agebs = city_aoi(city)
+    bands, grid, _ = cache.load(cache.composite_path(city, sensor, root))
+    rgb = _rgb_from_composite(bands, sensor)
+    proyectadas = agebs.to_crs(grid.crs)
 
-    canales = channels_s2(bandas) if sensor == "s2" else channels_s1(bandas)
+    canales = channels_s2(bands) if sensor == "s2" else channels_s1(bands)
     nombre_canal = "s2nir" if sensor == "s2" else "s1vh"
-    canal = canales[nombre_canal]
+    channel = canales[nombre_canal]
     rango = FIXED_RANGES_S1.get(nombre_canal)
     if rango is None:
-        finitos = canal[np.isfinite(canal)]
+        finitos = channel[np.isfinite(channel)]
         rango = (float(np.percentile(finitos, 2)), float(np.percentile(finitos, 98)))
-    cuantizada = quantise(canal, rango)
+    cuantizada = quantise(channel, rango)
 
     # Elegir por área del polígono no basta: una AGEB costera puede ser grande y no tener
     # un solo píxel de radar utilizable, porque sobre agua la retrodispersión cae a cero y
-    # `to_db` la vuelve nula. La candidata se mide por píxeles válidos del canal.
-    def utilizables(geometria) -> int:
-        partes = _ageb_crop(rgb, cuantizada, malla, geometria)
+    # `to_db` la vuelve nula. La candidata se mide por píxeles válidos del channel.
+    def utilizables(geometry) -> int:
+        partes = _ageb_crop(rgb, cuantizada, grid, geometry)
         if partes is None:
             return 0
         _, recorte_q, dentro = partes
@@ -210,33 +210,31 @@ def contrast_panel(ciudad: str, sensor: str, destino: Path, lado: int = 190) -> 
     grandes = proyectadas[area_px > MIN_PIXELS * 3].copy()
     seleccion = []
     for grados in (("Muy bajo", "Bajo"), ("Alto", "Muy alto")):
-        candidatas = grandes[grandes.grado.isin(grados)]
-        validas = [f for f in candidatas.itertuples() if utilizables(f.geometry) >= MIN_PIXELS]
+        candidates = grandes[grandes.grado.isin(grados)]
+        validas = [f for f in candidates.itertuples() if utilizables(f.geometry) >= MIN_PIXELS]
         seleccion.extend(validas[:2])
 
     if len(seleccion) < 4:
         raise RuntimeError(
-            f"{ciudad}/{sensor}: solo {len(seleccion)} AGEB con píxeles suficientes "
+            f"{city}/{sensor}: solo {len(seleccion)} AGEB con píxeles suficientes "
             "en ambos extremos del rezago"
         )
 
-    celda, alto_celda = lado, lado + 34
+    celda, alto_celda = side, side + 34
     lienzo = Image.new("RGB", (celda * 4 + 18, alto_celda), FONDO)
-    for indice, fila in enumerate(seleccion[:4]):
-        partes = _ageb_crop(rgb, cuantizada, malla, fila.geometry)
+    for indice, row in enumerate(seleccion[:4]):
+        partes = _ageb_crop(rgb, cuantizada, grid, row.geometry)
         if partes is None:
             continue
         vista, recorte_q, dentro = partes
         enmascarado = np.where(dentro & (recorte_q > 0), recorte_q, 0).astype(np.uint8)
         rasgos = features_of_patch(enmascarado)
 
-        imagen = Image.fromarray(vista).resize((celda, celda), Image.NEAREST)
-        borde = ImageDraw.Draw(imagen)
-        borde.rectangle([0, 0, celda - 1, celda - 1], outline=GRADE_COLOUR[fila.grado], width=3)
-        lienzo.paste(imagen, (indice * (celda + 6), 0))
-        _text(
-            lienzo, (indice * (celda + 6) + 4, celda + 4), fila.grado, 12, GRADE_COLOUR[fila.grado]
-        )
+        image = Image.fromarray(vista).resize((celda, celda), Image.NEAREST)
+        border = ImageDraw.Draw(image)
+        border.rectangle([0, 0, celda - 1, celda - 1], outline=GRADE_COLOUR[row.grado], width=3)
+        lienzo.paste(image, (indice * (celda + 6), 0))
+        _text(lienzo, (indice * (celda + 6) + 4, celda + 4), row.grado, 12, GRADE_COLOUR[row.grado])
         _text(
             lienzo,
             (indice * (celda + 6) + 4, celda + 19),
@@ -244,26 +242,26 @@ def contrast_panel(ciudad: str, sensor: str, destino: Path, lado: int = 190) -> 
             10,
         )
 
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    lienzo.save(destino, optimize=True)
-    log.info("panel de contraste %s: %s", sensor, destino)
-    return destino
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    lienzo.save(destination, optimize=True)
+    log.info("panel de contraste %s: %s", sensor, destination)
+    return destination
 
 
 def _dark_style(ax) -> None:
-    """Deja los ejes sin marco ni marcas, sobre el mismo fondo que los demás paneles."""
+    """Deja los ejes sin marco ni handles, sobre el mismo fondo que los demás paneles."""
     ax.set_facecolor(_hex(FONDO))
     ax.set_xticks([])
     ax.set_yticks([])
-    for lado in ax.spines.values():
-        lado.set_visible(False)
+    for side in ax.spines.values():
+        side.set_visible(False)
 
 
 def _hex(rgb: tuple[int, int, int]) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
-def national_map(destino: Path, root: Path | None = None) -> Path:
+def national_map(destination: Path, root: Path | None = None) -> Path:
     """Sitúa las cinco cities piloto dentro del país.
 
     El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
@@ -280,19 +278,19 @@ def national_map(destino: Path, root: Path | None = None) -> Path:
     from satinsight.download import DATA_ROOT, ensure_naturalearth
 
     root = root or DATA_ROOT
-    estados = gpd.read_file(ensure_naturalearth(root))
-    mexico = estados[estados["admin"] == "Mexico"]
+    states = gpd.read_file(ensure_naturalearth(root))
+    mexico = states[states["admin"] == "Mexico"]
 
-    puntos = []
-    for clave in CITIES:
-        area, agebs = city_aoi(clave, root)
+    points = []
+    for key in CITIES:
+        area, agebs = city_aoi(key, root)
         lon = (area.bbox[0] + area.bbox[2]) / 2
         lat = (area.bbox[1] + area.bbox[3]) / 2
-        altos = float(agebs.grado.isin(("Alto", "Muy alto")).mean())
-        puntos.append((clave, CITIES[clave].name, lon, lat, len(agebs), altos))
+        high_share = float(agebs.grado.isin(("Alto", "Muy alto")).mean())
+        points.append((key, CITIES[key].name, lon, lat, len(agebs), high_share))
 
-    figura, ax = plt.subplots(figsize=(11, 7), dpi=150)
-    figura.patch.set_facecolor(_hex(FONDO))
+    figure, ax = plt.subplots(figsize=(11, 7), dpi=150)
+    figure.patch.set_facecolor(_hex(FONDO))
     _dark_style(ax)
 
     mexico.plot(ax=ax, facecolor="#1d2530", edgecolor="#3b4653", linewidth=0.6)
@@ -305,33 +303,33 @@ def national_map(destino: Path, root: Path | None = None) -> Path:
             _hex(GRADE_COLOUR["Muy alto"]),
         ],
     )
-    # desplazamientos escogidos a mano: puestas todas a la derecha, las etiquetas de
-    # Acapulco y Tuxtla se encimaban y la de Mérida caía sobre la barra de color
-    desplazamiento = {
+    # desplazamientos escogidos a mano: placed todas a la derecha, las etiquetas de
+    # Acapulco y Tuxtla se encimaban y la de Mérida caía sobre la bar de color
+    offsets = {
         "tuxtla": (14, -16),
         "merida": (-16, 12),
         "iztapalapa": (14, 6),
         "tapachula": (14, -14),
         "acapulco": (-16, -18),
     }
-    alineacion = {"merida": "right", "acapulco": "right"}
+    alignment = {"merida": "right", "acapulco": "right"}
 
-    for clave, nombre, lon, lat, n, altos in puntos:
+    for key, nombre, lon, lat, n, high_share in points:
         ax.scatter(
             lon,
             lat,
             s=40 + n * 0.55,
-            c=[cmap(altos / 0.5)],
+            c=[cmap(high_share / 0.5)],
             edgecolor="white",
             linewidth=1.1,
             zorder=3,
         )
         ax.annotate(
-            f"{nombre}\n{n} AGEB · {100 * altos:.0f}% high",
+            f"{nombre}\n{n} AGEB · {100 * high_share:.0f}% high",
             (lon, lat),
             textcoords="offset points",
-            xytext=desplazamiento[clave],
-            ha=alineacion.get(clave, "left"),
+            xytext=offsets[key],
+            ha=alignment.get(key, "left"),
             fontsize=8.5,
             color="#e6ebf1",
             family="monospace",
@@ -347,7 +345,7 @@ def national_map(destino: Path, root: Path | None = None) -> Path:
         loc="left",
         pad=14,
     )
-    barra = figura.colorbar(
+    bar = figure.colorbar(
         matplotlib.cm.ScalarMappable(matplotlib.colors.Normalize(0, 50), cmap),
         ax=ax,
         orientation="horizontal",
@@ -355,21 +353,21 @@ def national_map(destino: Path, root: Path | None = None) -> Path:
         pad=0.02,
         aspect=45,
     )
-    barra.set_label("% of AGEB at high or very high deprivation", color="#a8b3c0", fontsize=9)
-    barra.ax.tick_params(colors="#a8b3c0", labelsize=8)
-    barra.outline.set_edgecolor("#3b4653")
+    bar.set_label("% of AGEB at high or very high deprivation", color="#a8b3c0", fontsize=9)
+    bar.ax.tick_params(colors="#a8b3c0", labelsize=8)
+    bar.outline.set_edgecolor("#3b4653")
 
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
-    plt.close(figura)
-    log.info("mapa nacional: %s", destino)
-    return destino
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(destination, facecolor=figure.get_facecolor(), bbox_inches="tight")
+    plt.close(figure)
+    log.info("mapa nacional: %s", destination)
+    return destination
 
 
-def agebs_by_city_map(destino: Path, root: Path | None = None) -> Path:
-    """El split completo de AGEB de cada ciudad, teñido por grado y a scale común.
+def agebs_by_city_map(destination: Path, root: Path | None = None) -> Path:
+    """El split completo de AGEB de cada city, teñido por grado y a scale común.
 
-    Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
+    Los paneles de image muestran recortes; este muestra la extensión entera que entra al
     baseline. Compartir la scale en kilómetros permite comparar el tamaño real de las cinco
     manchas urbanas.
     """
@@ -383,35 +381,36 @@ def agebs_by_city_map(destino: Path, root: Path | None = None) -> Path:
 
     root = root or Path("data")
     cities = list(CITIES)
-    figura, ejes = plt.subplots(1, len(cities), figsize=(16, 3.7), dpi=150)
-    figura.patch.set_facecolor(_hex(FONDO))
+    figure, ejes = plt.subplots(1, len(cities), figsize=(16, 3.7), dpi=150)
+    figure.patch.set_facecolor(_hex(FONDO))
 
-    for ax, clave in zip(ejes, cities, strict=True):
-        _, agebs = city_aoi(clave, root)
-        metrico = agebs.to_crs(METRIC_CRS)
+    for ax, key in zip(ejes, cities, strict=True):
+        _, agebs = city_aoi(key, root)
+        metric = agebs.to_crs(METRIC_CRS)
         for grado, color in GRADE_COLOUR.items():
-            parte = metrico[metrico.grado == grado]
+            parte = metric[metric.grado == grado]
             if len(parte):
                 parte.plot(ax=ax, facecolor=_hex(color), edgecolor="none")
         _dark_style(ax)
         ax.set_aspect("equal")
 
-        x0, y0, x1, y1 = metrico.total_bounds
-        lado = max(x1 - x0, y1 - y0) * 1.05
+        x0, y0, x1, y1 = metric.total_bounds
+        side = max(x1 - x0, y1 - y0) * 1.05
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        ax.set_xlim(cx - lado / 2, cx + lado / 2)
-        ax.set_ylim(cy - lado / 2, cy + lado / 2)
+        ax.set_xlim(cx - side / 2, cx + side / 2)
+        ax.set_ylim(cy - side / 2, cy + side / 2)
 
-        altos = 100 * agebs.grado.isin(("Alto", "Muy alto")).mean()
+        high_share = 100 * agebs.grado.isin(("Alto", "Muy alto")).mean()
         ax.set_title(
-            f"{CITIES[clave].name}\n{len(agebs)} AGEB · {altos:.0f}% high · {lado / 1000:.0f} km",
+            f"{CITIES[key].name}\n{len(agebs)} AGEB · {high_share:.0f}% high"
+            f" · {side / 1000:.0f} km",
             color="#e6ebf1",
             fontsize=9.5,
             family="monospace",
             pad=8,
         )
 
-    figura.legend(
+    figure.legend(
         handles=[Patch(facecolor=_hex(c), label=GRADE_LABELS[g]) for g, c in GRADE_COLOUR.items()],
         loc="lower center",
         ncol=5,
@@ -420,11 +419,11 @@ def agebs_by_city_map(destino: Path, root: Path | None = None) -> Path:
         labelcolor="#a8b3c0",
         bbox_to_anchor=(0.5, 0.02),
     )
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
-    plt.close(figura)
-    log.info("mapa de AGEB por ciudad: %s", destino)
-    return destino
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(destination, facecolor=figure.get_facecolor(), bbox_inches="tight")
+    plt.close(figure)
+    log.info("mapa de AGEB por city: %s", destination)
+    return destination
 
 
 GRADE_LABELS = {
@@ -450,53 +449,53 @@ COMPOSITING_STATES = {
     "fallida": ("#f87171", "aborted on failed reads"),
     "pendiente": ("#9aa7b6", "not started"),
 }
-"""Color y glosa de cada estado en que puede estar la composición de una ciudad."""
+"""Color y gloss de cada estado en que puede estar la composición de una city."""
 
 
 def compositing_state(
-    claves: list[str], root: Path | None = None, logs: Path | None = None
+    keys: list[str], root: Path | None = None, logs: Path | None = None
 ) -> dict[str, str]:
-    """Clasifica cada ciudad según lo que hay en disco y lo que dicen los registros.
+    """Clasifica cada city según lo que hay en disco y lo que dicen los registros.
 
-    Una ciudad que abortó deja su nombre en una línea `FALLO` del registro y ningún archivo,
+    Una city que abortó deja su nombre en una línea `FALLO` del logfile y ningún archivo,
     lo cual la vuelve indistinguible de una que todavía no empieza. La distinción importa
-    porque una ciudad abortada no se reintenta sola: el barrido la salta y termina sin
+    porque una city abortada no se reintenta sola: el barrido la salta y termina sin
     señalarla. Solo se leen las líneas posteriores al último relanzamiento.
     """
     from satinsight.download import DATA_ROOT
 
     root = root or DATA_ROOT
-    compuestos = root / "compuestos"
-    fallidas: set[str] = set()
-    for registro in sorted((logs or root / "logs").glob("proceso_*.log")):
-        texto = registro.read_text(errors="ignore")
-        reciente = texto.rsplit("RELANZADO", 1)[-1]
-        for linea in reciente.splitlines():
-            if linea.startswith("FALLO "):
-                fallidas.add(linea.split()[1])
+    composites = root / "composites"
+    failed: set[str] = set()
+    for logfile in sorted((logs or root / "logs").glob("proceso_*.log")):
+        texto = logfile.read_text(errors="ignore")
+        recent = texto.rsplit("RELANZADO", 1)[-1]
+        for line in recent.splitlines():
+            if line.startswith("FALLO "):
+                failed.add(line.split()[1])
 
-    estados = {}
-    for clave in claves:
-        hechos = sum((compuestos / f"{clave}_{s}.tif").exists() for s in ("s1", "s2"))
-        if hechos == 2:
-            estados[clave] = "completa"
-        elif clave in fallidas:
-            # el fallo manda sobre el archivo suelto: una ciudad que abortó en la segunda
+    states = {}
+    for key in keys:
+        found = sum((composites / f"{key}_{s}.tif").exists() for s in ("s1", "s2"))
+        if found == 2:
+            states[key] = "completa"
+        elif key in failed:
+            # el fallo manda sobre el archivo suelto: una city que abortó en la segunda
             # modalidad deja la primera en disco y se vería como si solo fuera lenta
-            estados[clave] = "fallida"
-        elif hechos == 1:
-            estados[clave] = "a medias"
+            states[key] = "fallida"
+        elif found == 1:
+            states[key] = "a medias"
         else:
-            estados[clave] = "pendiente"
-    return estados
+            states[key] = "pendiente"
+    return states
 
 
 def national_cities_map(
-    destino: Path, root: Path | None = None, catalogue: dict | None = None
+    destination: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
     """Sitúa las cities del split nacional y colorea cada una según su composición.
 
-    El tamaño de la marca es el número de AGEB urbanas de la ciudad. Puestas sobre el país
+    El tamaño de la marca es el número de AGEB urbanas de la city. Puestas sobre el país
     se ve qué tanto cubre la muestra el territorio y dónde se concentra el trabajo hecho.
     """
     import matplotlib
@@ -511,68 +510,68 @@ def national_cities_map(
 
     root = root or DATA_ROOT
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
-    estados = estado_de_composicion(list(catalogue), root)
+    states = compositing_state(list(catalogue), root)
 
-    puntos = []
-    for clave, ciudad in catalogue.items():
+    points = []
+    for key, city in catalogue.items():
         try:
-            area, agebs = city_aoi(clave, root, catalogue=catalogue)
+            area, agebs = city_aoi(key, root, catalogue=catalogue)
         except Exception:
-            log.warning("sin geometría para %s", clave, exc_info=True)
+            log.warning("sin geometría para %s", key, exc_info=True)
             continue
-        puntos.append(
+        points.append(
             {
-                "clave": clave,
-                "nombre": ciudad.name,
+                "key": key,
+                "nombre": city.name,
                 "lon": (area.bbox[0] + area.bbox[2]) / 2,
                 "lat": (area.bbox[1] + area.bbox[3]) / 2,
                 "agebs": len(agebs),
-                "estado": estados[clave],
+                "estado": states[key],
             }
         )
 
     estados_lista = gpd.read_file(ensure_naturalearth(root))
     mexico = estados_lista[estados_lista["admin"] == "Mexico"]
 
-    figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
-    figura.patch.set_facecolor(_hex(FONDO))
+    figure, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
+    figure.patch.set_facecolor(_hex(FONDO))
     _dark_style(ax)
     mexico.plot(ax=ax, facecolor="#171d26", edgecolor="#333e4b", linewidth=0.5)
 
-    orden = ["pendiente", "a medias", "fallida", "completa"]
-    for estado in orden:
-        grupo = [p for p in puntos if p["estado"] == estado]
-        if not grupo:
+    order = ["pendiente", "a medias", "fallida", "completa"]
+    for estado in order:
+        group = [p for p in points if p["estado"] == estado]
+        if not group:
             continue
         ax.scatter(
-            [p["lon"] for p in grupo],
-            [p["lat"] for p in grupo],
-            s=[30 + p["agebs"] * 0.2 for p in grupo],
+            [p["lon"] for p in group],
+            [p["lat"] for p in group],
+            s=[30 + p["agebs"] * 0.2 for p in group],
             c=COMPOSITING_STATES[estado][0],
             edgecolor="#0f1319",
             linewidth=0.7,
             alpha=0.95,
-            zorder=3 + orden.index(estado),
+            zorder=3 + order.index(estado),
         )
 
     # solo se rotulan las cities ya compuestas y las que fallaron: rotular las 138
     # deja el mapa ilegible, y son esas dos las que interesa poder señalar por nombre
-    rotuladas = sorted(
-        (p for p in puntos if p["estado"] != "pendiente"),
+    labelled = sorted(
+        (p for p in points if p["estado"] != "pendiente"),
         key=lambda p: (-p["lat"], p["lon"]),
     )
     # las conurbaciones vecinas dejan sus rótulos uno encima de otro —Zapopan sobre
     # Guadalajara, Mexicali sobre Tijuana—, así que cada rótulo que caiga muy cerca del
     # anterior se empuja hacia abajo hasta despejarse
-    puestas: list[tuple[float, float]] = []
-    for p in rotuladas:
+    placed: list[tuple[float, float]] = []
+    for p in labelled:
         dx, dy = 6, 4
         while any(
             abs(p["lon"] - lon) < 1.7 and abs((p["lat"] + dy / 22) - lat) < 0.42
-            for lon, lat in puestas
+            for lon, lat in placed
         ):
             dy -= 11
-        puestas.append((p["lon"], p["lat"] + dy / 22))
+        placed.append((p["lon"], p["lat"] + dy / 22))
         ax.annotate(
             p["nombre"],
             (p["lon"], p["lat"]),
@@ -584,19 +583,19 @@ def national_cities_map(
             zorder=8,
         )
 
-    hechas = sum(1 for p in puntos if p["estado"] == "completa")
-    total_agebs = sum(p["agebs"] for p in puntos)
+    done = sum(1 for p in points if p["estado"] == "completa")
+    total_agebs = sum(p["agebs"] for p in points)
     ax.set_xlim(-118.5, -85.5)
     ax.set_ylim(13.5, 33.5)
     ax.set_title(
-        f"The {len(puntos)} cities of the national set · {total_agebs:,} urban AGEB\n"
-        f"{hechas} with compositing finished",
+        f"The {len(points)} cities of the national set · {total_agebs:,} urban AGEB\n"
+        f"{done} with compositing finished",
         color="#e6ebf1",
         fontsize=13,
         loc="left",
         pad=14,
     )
-    marcas = [
+    handles = [
         Line2D(
             [],
             [],
@@ -605,23 +604,23 @@ def national_cities_map(
             markersize=7,
             markerfacecolor=color,
             markeredgecolor="#0f1319",
-            label=f"{STATE_LABELS.get(estado, estado)} · {glosa}",
+            label=f"{STATE_LABELS.get(estado, estado)} · {gloss}",
         )
-        for estado, (color, glosa) in COMPOSITING_STATES.items()
+        for estado, (color, gloss) in COMPOSITING_STATES.items()
     ]
-    leyenda = ax.legend(
-        handles=marcas,
+    legend = ax.legend(
+        handles=handles,
         loc="lower left",
         fontsize=8,
         framealpha=0.85,
         facecolor="#141a22",
         edgecolor="#3b4653",
     )
-    for texto in leyenda.get_texts():
+    for texto in legend.get_texts():
         texto.set_color("#c9d3de")
 
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    figura.savefig(destino, facecolor=figura.get_facecolor(), bbox_inches="tight")
-    plt.close(figura)
-    log.info("mapa del split nacional: %s", destino)
-    return destino
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(destination, facecolor=figure.get_facecolor(), bbox_inches="tight")
+    plt.close(figure)
+    log.info("mapa del split nacional: %s", destination)
+    return destination
