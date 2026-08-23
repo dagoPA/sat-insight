@@ -27,7 +27,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
-from sklearn.metrics import cohen_kappa_score, f1_score
+from sklearn.metrics import cohen_kappa_score, f1_score, roc_auc_score
 
 from satinsight.agebs import GRADOS
 from satinsight.cobertura import CLASES
@@ -396,6 +396,71 @@ def intervalo_por_ciudades(
         "ic_alto": float(np.percentile(medias, 97.5)),
         "fraccion_positiva": float((medias > 0).mean()),
     }
+
+
+def _puntuaciones(nombre: str, x_entrena, y_entrena, x_prueba):
+    """Ajusta un modelo y devuelve sus predicciones duras junto con puntuaciones continuas.
+
+    Kappa necesita la clase predicha y el área bajo la curva necesita una puntuación que
+    ordene. Un clasificador da una probabilidad por clase; un regresor da un solo número,
+    que ordena igual de bien y es lo que hace falta para los umbrales acumulados.
+    """
+    if nombre == "clasificador":
+        modelo = HistGradientBoostingClassifier(random_state=SEMILLA, max_iter=300)
+        modelo.fit(x_entrena, y_entrena)
+        probabilidades = modelo.predict_proba(x_prueba)
+        return modelo.predict(x_prueba).astype(int), probabilidades
+    if nombre == "regresor":
+        modelo = HistGradientBoostingRegressor(random_state=SEMILLA, max_iter=300)
+        modelo.fit(x_entrena, y_entrena)
+        crudo = modelo.predict(x_prueba)
+        duras = np.clip(np.round(crudo), 0, len(GRADOS) - 1).astype(int)
+        return duras, crudo
+    duras = _predecir(nombre, x_entrena, y_entrena, x_prueba)
+    return duras, duras.astype(float)
+
+
+def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, float]:
+    """Área bajo la curva de cada clase contra todas las demás, y su promedio.
+
+    Se lee directo: 0.5 es azar y 1 es separación perfecta. Con un regresor, la puntuación
+    es su salida continua, así que la curva de la clase k mide qué tan arriba quedan sus
+    AGEB en ese único orden.
+
+    Las clases de en medio salen castigadas por construcción: sus negativos incluyen a la
+    vez lo que está por debajo y lo que está por encima, y separarlas exige recortar una
+    banda en el centro de una escala ordenada.
+    """
+    salida = {}
+    for k, grado in enumerate(GRADOS):
+        objetivo = (verdad == k).astype(int)
+        if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
+            continue
+        marca = puntuaciones[:, k] if puntuaciones.ndim == 2 else puntuaciones
+        salida[f"auroc_{grado.lower().replace(' ', '_')}"] = float(roc_auc_score(objetivo, marca))
+    if salida:
+        salida["auroc_macro"] = float(np.mean(list(salida.values())))
+    return salida
+
+
+def auroc_acumulada(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, float]:
+    """Área bajo la curva de cada umbral «grado mayor o igual que k».
+
+    Preserva el orden de la escala, cosa que una contra el resto no hace, y es la misma
+    descomposición que usa una pérdida ordinal.
+    """
+    orden = (
+        puntuaciones @ np.arange(puntuaciones.shape[1]) if puntuaciones.ndim == 2 else puntuaciones
+    )
+    salida = {}
+    for k in range(1, len(GRADOS)):
+        objetivo = (verdad >= k).astype(int)
+        if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
+            continue
+        salida[f"auroc_ge_{k}"] = float(roc_auc_score(objetivo, orden))
+    if salida:
+        salida["auroc_acumulada_media"] = float(np.mean(list(salida.values())))
+    return salida
 
 
 def evaluar_particion(
