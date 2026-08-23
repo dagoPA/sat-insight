@@ -88,3 +88,34 @@ def test_las_escenas_sin_proyeccion_se_ignoran_si_hay_otras():
 def test_sin_proyeccion_declarada_falla():
     with pytest.raises(ValueError, match="sistema de referencia"):
         malla_de_escenas(BBOX_TUXTLA, [ItemFalso(properties={})])
+
+
+def test_el_huso_se_elige_por_cobertura_y_no_por_numero():
+    """El caso de Guasave: el huso más numeroso ve la mitad del recuadro.
+
+    Ochenta y siete escenas del huso 13 alcanzan la mitad de la ciudad y sesenta y una
+    del huso 12 la cubren entera. Elegir por número dejaba la ciudad sin compuesto.
+    """
+    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
+    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
+    cobertura = {"EPSG:32613": 0.53, "EPSG:32612": 1.0}
+
+    def puntuar(grupo):
+        return cobertura[grupo[0].properties["proj:code"]]
+
+    elegido, seleccionadas = seleccionar_crs(muchas + pocas, puntuar)
+    assert elegido == "EPSG:32612"
+    assert len(seleccionadas) == 61
+
+
+def test_sin_puntuacion_sigue_mandando_el_numero():
+    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
+    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
+    assert seleccionar_crs(muchas + pocas)[0] == "EPSG:32613"
+
+
+def test_a_igual_cobertura_desempata_el_numero():
+    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
+    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
+    elegido, _ = seleccionar_crs(muchas + pocas, lambda grupo: 1.0)
+    assert elegido == "EPSG:32613"
