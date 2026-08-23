@@ -203,18 +203,18 @@ def instances(
     threshold are dropped afterwards, and the returned index says which output row each
     surviving token came from.
     """
-    conservados: list[Tile] = []
+    kept: list[Tile] = []
     indices: list[int] = []
     por_ventana = (windows[0].size // token_size) ** 2 if windows else 0
     for i, ventana in enumerate(windows):
         for j, token in enumerate(tokens(ventana, token_size)):
             if valid_fraction(bands, token) >= min_valid_fraction:
-                conservados.append(token)
+                kept.append(token)
                 indices.append(i * por_ventana + j)
     log.info(
         "%d tokens kept of %d, from %d windows",
-        len(conservados),
+        len(kept),
         len(windows) * por_ventana,
         len(windows),
     )
-    return conservados, np.array(indices, dtype="int64")
+    return kept, np.array(indices, dtype="int64")

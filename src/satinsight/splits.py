@@ -131,7 +131,7 @@ def cities_of(partition: pd.DataFrame, split: str) -> list[str]:
     return partition.loc[partition.split == split, "ciudad"].tolist()
 
 
-def check(partition: pd.DataFrame, instancias: pd.DataFrame | None = None) -> None:
+def check(partition: pd.DataFrame, instances: pd.DataFrame | None = None) -> None:
     """Fails loudly if a city, an AGEB or a bag ended up on both sides of the partition.
 
     Worth running even though `assign` cannot produce a leak by construction: the tables
@@ -142,21 +142,21 @@ def check(partition: pd.DataFrame, instancias: pd.DataFrame | None = None) -> No
     if len(repeated):
         raise ValueError(f"cities assigned more than once: {sorted(repeated)}")
 
-    if instancias is None:
+    if instances is None:
         return
-    por_ciudad = partition.set_index("ciudad").split
-    marcadas = instancias.assign(split=instancias.ciudad.map(por_ciudad))
-    sin_asignar = marcadas.split.isna().sum()
-    if sin_asignar:
-        raise ValueError(f"{sin_asignar} instances belong to a city outside the partition")
+    per_city = partition.set_index("ciudad").split
+    marked = instances.assign(split=instances.ciudad.map(per_city))
+    unassigned = marked.split.isna().sum()
+    if unassigned:
+        raise ValueError(f"{unassigned} instances belong to a city outside the partition")
     for column in ("cvegeo", "municipio"):
-        if column not in marcadas.columns:
+        if column not in marked.columns:
             continue
-        cruzados = marcadas.groupby(column, observed=True).split.nunique()
-        if (cruzados > 1).any():
-            culpables = cruzados[cruzados > 1].index.tolist()[:5]
-            raise ValueError(f"{column} spanning both sides of the partition: {culpables}")
-    log.info("partition clean over %d instances", len(instancias))
+        crossing = marked.groupby(column, observed=True).split.nunique()
+        if (crossing > 1).any():
+            offenders = crossing[crossing > 1].index.tolist()[:5]
+            raise ValueError(f"{column} spanning both sides of the partition: {offenders}")
+    log.info("partition clean over %d instances", len(instances))
 
 
 def municipality_owner(table: pd.DataFrame, catalogue: dict) -> dict[str, str]:

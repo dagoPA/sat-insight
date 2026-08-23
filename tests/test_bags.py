@@ -103,7 +103,7 @@ def test_build_returns_matching_instance_and_bag_tables():
     malla, tiles = malla_y_tiles()
     instancias, bolsas = build(tiles, malla, agebs_falsas(malla), "prueba")
     assert set(instancias.municipio) == set(bolsas.municipio)
-    assert bolsas.instancias.sum() == len(instancias)
+    assert bolsas.instances.sum() == len(instancias)
     assert (instancias.ciudad == "prueba").all()
 
 
