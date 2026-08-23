@@ -124,27 +124,27 @@ def _patron(proportions: tuple[float, float, float], steps: int = 10) -> list[st
     return pattern
 
 
-def cities_of(particion: pd.DataFrame, split: str) -> list[str]:
+def cities_of(partition: pd.DataFrame, split: str) -> list[str]:
     """Claves de ciudad de uno de los tres conjuntos."""
     if split not in SETS:
         raise KeyError(f"unknown set {split!r}, expected one of {SETS}")
-    return particion.loc[particion.split == split, "ciudad"].tolist()
+    return partition.loc[partition.split == split, "ciudad"].tolist()
 
 
-def check(particion: pd.DataFrame, instancias: pd.DataFrame | None = None) -> None:
+def check(partition: pd.DataFrame, instancias: pd.DataFrame | None = None) -> None:
     """Fails loudly if a city, an AGEB or a bag ended up on both sides of the partition.
 
     Worth running even though `assign` cannot produce a leak by construction: the tables
     get rebuilt, filtered and merged by hand along the way, and a leak found by the
     reviewer instead of by us costs the paper.
     """
-    repeated = particion.ciudad[particion.ciudad.duplicated()].unique()
+    repeated = partition.ciudad[partition.ciudad.duplicated()].unique()
     if len(repeated):
         raise ValueError(f"cities assigned more than once: {sorted(repeated)}")
 
     if instancias is None:
         return
-    por_ciudad = particion.set_index("ciudad").split
+    por_ciudad = partition.set_index("ciudad").split
     marcadas = instancias.assign(split=instancias.ciudad.map(por_ciudad))
     sin_asignar = marcadas.split.isna().sum()
     if sin_asignar:

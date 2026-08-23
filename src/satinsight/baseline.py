@@ -1,23 +1,24 @@
-"""Baseline de la fase 1 y la comparación que decide si el proyecto sigue.
+"""Phase one baseline and the comparison that decides whether the project goes on.
 
-La puerta de decisión se juega contra la densidad construida. El rezago correlaciona con lo
-rural y con lo poco construido, así que un modelo puede acertar leyendo cuánto hay edificado
-y quedarse sin haber aprendido nada sobre privación. Ganarle al azar deja esa duda intacta.
+The decision gate is played against built density. Deprivation correlates with the rural
+and with the sparsely built, so a model can get it right by reading how much is built and
+come away having learned nothing about deprivation. Beating chance leaves that doubt
+untouched.
 
-De ahí cuatro conjuntos de rasgos, en escalones que responden preguntas distintas:
+Hence four feature sets, in steps that answer different questions:
 
-- `cobertura`: fracciones de WorldCover. Cuánto hay construido según un producto ajeno a
-  estos compuestos. Es el escalón que de verdad pone a prueba el atajo por ruralidad.
-- `densidad`: estadísticos de primer orden de los compuestos. Cuánto y qué tan brillante.
-- `textura`: propiedades de Haralick. Cómo está arreglado, sin el nivel absoluto.
-- `completo`: los tres juntos.
+- `cobertura`: WorldCover fractions. How much is built according to a product foreign to
+  these composites. It is the step that really tests the rurality shortcut.
+- `densidad`: first order statistics of the composites. How much and how bright.
+- `textura`: Haralick properties. How it is arranged, without the absolute level.
+- `completo`: the three together.
 
-Si `completo` no le gana a `cobertura`, el modelo está leyendo densidad de construcción y
-nada más. Si no le gana a `densidad`, la textura no aporta sobre el brillo. Conviene saber
-ambas cosas antes de montar el MIL encima.
+If `completo` does not beat `cobertura`, the model is reading built density and nothing
+else. If it does not beat `densidad`, texture adds nothing over brightness. Both are worth
+knowing before mounting the MIL on top.
 
-La partición es por ciudad. Entrenar y evaluar sobre AGEB vecinas de la misma mancha urbana
-inflaría el resultado por autocorrelación espacial.
+The partition is by city. Training and evaluating over neighbouring AGEB of the same urban
+mass would inflate the result through spatial autocorrelation.
 """
 
 import logging
@@ -36,214 +37,217 @@ from satinsight.texture import feature_names
 
 log = logging.getLogger(__name__)
 
-SUFIJOS_DENSIDAD = ("media", "desv", "p10", "p50", "p90", "iqr")
-SUFIJOS_TEXTURA = tuple(feature_names())
-"""Las columnas de textura llevan propiedad y distancia, por ejemplo `contrast_d2`."""
+DENSITY_SUFFIXES = ("mean", "std", "p10", "p50", "p90", "iqr")
+TEXTURE_SUFFIXES = tuple(feature_names())
+"""Texture columns carry property and distance, for example `contrast_d2`."""
 
-SUFIJOS_COBERTURA = tuple(CLASSES.values())
-"""Fracciones de cobertura de WorldCover, la única fuente ajena a los compuestos."""
+COVER_SUFFIXES = tuple(CLASSES.values())
+"""WorldCover cover fractions, the only source foreign to the composites."""
 
 SETS = {
-    "cobertura": SUFIJOS_COBERTURA,
-    "densidad": SUFIJOS_DENSIDAD,
-    "textura": SUFIJOS_TEXTURA,
-    "completo": SUFIJOS_COBERTURA + SUFIJOS_DENSIDAD + SUFIJOS_TEXTURA,
+    "cobertura": COVER_SUFFIXES,
+    "densidad": DENSITY_SUFFIXES,
+    "textura": TEXTURE_SUFFIXES,
+    "completo": COVER_SUFFIXES + DENSITY_SUFFIXES + TEXTURE_SUFFIXES,
 }
-"""Los cuatro conjuntos, que responden preguntas distintas y en ese orden.
+"""The four sets, which answer different questions and in that order.
 
-`cobertura` pregunta si el rezago se explica por cuánto hay construido según un producto
-ajeno a estos compuestos. `densidad` pregunta si el brillo de la propia imagen agrega algo
-sobre eso. `textura` pregunta si el arreglo espacial agrega algo sobre el brillo. Ganarle a
-`cobertura` es lo que descarta el atajo por ruralidad.
+`cobertura` asks whether deprivation is explained by how much is built according to a
+product foreign to these composites. `densidad` asks whether the brightness of the image
+itself adds anything over that. `textura` asks whether the spatial arrangement adds
+anything over brightness. Beating `cobertura` is what rules out the rurality shortcut.
+
+The keys keep their Spanish because they name columns already written to disk and quoted
+in the results tables; renaming them would orphan every measurement taken so far.
 """
 
-SEMILLA = 0
+SEED = 0
 
 
-def columnas_de_conjunto(tabla: pd.DataFrame, split: str) -> list[str]:
-    """Selecciona las columnas de rasgos que pertenecen a un split.
+def columns_of_set(table: pd.DataFrame, split: str) -> list[str]:
+    """Selecciona las columns de rasgos que pertenecen a un split.
 
-    El nombre de cada columna es el canal y el sufijo del estadístico unidos por guion
-    bajo, así que basta con mirar el sufijo para clasificarla.
+    Each column name is the channel and the statistic suffix joined by an underscore, so
+    looking at the suffix is enough to classify it.
     """
     if split not in SETS:
-        raise KeyError(f"split desconocido: {split!r}. Válidos: {', '.join(SETS)}")
+        raise KeyError(f"unknown set: {split!r}. Valid: {', '.join(SETS)}")
     sufijos = SETS[split]
-    return sorted(c for c in tabla.columns if any(c.endswith(f"_{s}") for s in sufijos))
+    return sorted(c for c in table.columns if any(c.endswith(f"_{s}") for s in sufijos))
 
 
-def varianza_explicada(tabla: pd.DataFrame, columna: str, factor: str) -> float:
-    """Fracción de la varianza de un rasgo que explica un factor categórico.
+def explained_variance(table: pd.DataFrame, columna: str, factor: str) -> float:
+    """Fraction of a feature's variance explained by a categorical factor.
 
-    Comparar cuánto explica la ciudad contra cuánto explica el grado dice si un rasgo sirve
-    para transferir. Un rasgo cuya varianza depende sobre todo de en qué ciudad se midió
-    enseña al modelo a reconocer la ciudad, y ese conocimiento no vale nada en la ciudad
-    que se dejó fuera.
+    Comparing how much the city explains against how much the grade explains says whether a
+    feature transfers. A feature whose variance depends above all on which city it was
+    measured in teaches the model to recognise the city, and that knowledge is worth nothing
+    in the city held out.
     """
-    validos = tabla[columna].notna() & tabla[factor].notna()
-    valores, grupos = tabla.loc[validos, columna], tabla.loc[validos, factor]
-    if len(valores) < 2 or valores.nunique() < 2:
+    valid = table[columna].notna() & table[factor].notna()
+    values, grupos = table.loc[valid, columna], table.loc[valid, factor]
+    if len(values) < 2 or values.nunique() < 2:
         return np.nan
-    media = valores.mean()
-    entre = sum(len(g) * (g.mean() - media) ** 2 for _, g in valores.groupby(grupos))
-    total = ((valores - media) ** 2).sum()
+    mean = values.mean()
+    entre = sum(len(g) * (g.mean() - mean) ** 2 for _, g in values.groupby(grupos))
+    total = ((values - mean) ** 2).sum()
     return float(entre / total) if total > 0 else np.nan
 
 
 def transfer_diagnostics(
-    tabla: pd.DataFrame,
+    table: pd.DataFrame,
     split: str,
     *,
-    columna_grupo: str = "ciudad",
-    columna_objetivo: str = "grado",
+    group_column: str = "ciudad",
+    target_column: str = "grado",
 ) -> pd.DataFrame:
-    """Para cada rasgo, cuánta varianza explica la ciudad frente al grado.
+    """For each feature, how much variance the city explains against the grade.
 
-    La razón entre ambas es la que importa. Por encima de uno, el rasgo describe mejor
-    dónde se tomó la medición que qué se midió.
+    The ratio between the two is what matters. Above one, the feature describes where the
+    measurement was taken better than what was measured.
 
     Se lee junto con `split_half_reliability` y nunca sola. Un rasgo que es puro ruido sale
-    con razón baja —el ruido no correlaciona con la ciudad ni con nada—, así que una razón
-    buena solo significa algo en un rasgo que ya demostró reproducirse consigo mismo.
+    with a low ratio —noise correlates with the city no more than with anything else— so a
+    good ratio only means something in a feature that already proved it reproduces.
     """
-    filas = []
-    for columna in columnas_de_conjunto(tabla, split):
-        por_ciudad = varianza_explicada(tabla, columna, columna_grupo)
-        por_grado = varianza_explicada(tabla, columna, columna_objetivo)
-        filas.append(
+    rows = []
+    for columna in columns_of_set(table, split):
+        per_city = explained_variance(table, columna, group_column)
+        por_grado = explained_variance(table, columna, target_column)
+        rows.append(
             {
                 "feature": columna,
-                "por_ciudad": por_ciudad,
+                "per_city": per_city,
                 "por_grado": por_grado,
-                "razon": por_ciudad / por_grado if por_grado and por_grado > 0 else np.nan,
+                "ratio": per_city / por_grado if por_grado and por_grado > 0 else np.nan,
             }
         )
-    return pd.DataFrame(filas).sort_values("razon", ascending=False).reset_index(drop=True)
+    return pd.DataFrame(rows).sort_values("ratio", ascending=False).reset_index(drop=True)
 
 
-def estandarizar_por_grupo(
-    tabla: pd.DataFrame, columnas: list[str], columna_grupo: str = "ciudad"
+def standardise_by_group(
+    table: pd.DataFrame, columns: list[str], group_column: str = "ciudad"
 ) -> pd.DataFrame:
-    """Lleva cada rasgo a media cero y desviación uno dentro de cada ciudad.
+    """Takes each feature to zero mean and unit deviation within each city.
 
-    Es adaptación de dominio sin supervisión: usa la distribución de los rasgos de la ciudad
-    retenida, nunca sus etiquetas, así que no filtra información del objetivo. Lo que
-    elimina es la deriva radiométrica y morfológica entre cities.
+    This is unsupervised domain adaptation: it uses the distribution of the held-out city's
+    features, never its labels, so it leaks no information about the target. What it removes
+    is the radiometric and morphological drift between cities.
 
-    El precio es real y hay que declararlo: también borra cualquier diferencia de nivel
-    entre cities que sí fuera señal de rezago. Una ciudad entera más pobre que otra queda
-    centrada igual que la rica. Por eso se evalúa como ablación declarada.
+    The price is real and has to be declared: it also erases any level difference between
+    cities that was in fact a signal of deprivation. A whole city poorer than another ends
+    up centred just like the rich one. That is why it is evaluated as a declared ablation.
 
-    Un rasgo constante dentro de una ciudad queda centrado en cero. La distinción importa: varias
+    A feature constant within a city ends up centred at zero. The distinction matters: several
     clases de cobertura valen cero en todas las AGEB —nieve,
-    musgo, manglar tierra adentro— y convertirlas en columnas enteramente nulas rompe el
-    binning del modelo. Los nulos que sí son ausencia de dato, como la textura de una AGEB
-    demasiado pequeña, se conservan para que el modelo los trate como faltantes.
+    musgo, manglar tierra adentro— y convertirlas en columns enteramente nulas rompe el
+    model's binning. The nulls that really are absent data, such as the texture of an AGEB
+    too small, are kept so the model treats them as missing.
     """
-    salida = tabla.copy()
-    valores = salida[columnas]
-    agrupado = salida.groupby(columna_grupo, observed=True)[columnas]
-    media = agrupado.transform("mean")
-    scale = agrupado.transform("std").where(lambda d: d > 0)
+    output = table.copy()
+    values = output[columns]
+    grouped = output.groupby(group_column, observed=True)[columns]
+    mean = grouped.transform("mean")
+    scale = grouped.transform("std").where(lambda d: d > 0)
 
-    centrada = (valores - media) / scale
-    salida[columnas] = centrada.mask(scale.isna() & valores.notna(), 0.0)
-    return salida
+    centred = (values - mean) / scale
+    output[columns] = centred.mask(scale.isna() & values.notna(), 0.0)
+    return output
 
 
-def _metricas(verdad: np.ndarray, prediccion: np.ndarray) -> dict[str, float]:
-    """Métricas que respetan el orden de las cinco clases."""
-    correlacion = spearmanr(verdad, prediccion).statistic if len(set(prediccion)) > 1 else np.nan
+def _metrics(truth: np.ndarray, prediction: np.ndarray) -> dict[str, float]:
+    """Metrics that respect the order of the five classes."""
+    correlation = spearmanr(truth, prediction).statistic if len(set(prediction)) > 1 else np.nan
     return {
-        "kappa": float(cohen_kappa_score(verdad, prediccion, weights="quadratic")),
-        "exactitud": float(np.mean(verdad == prediccion)),
-        "f1_macro": float(f1_score(verdad, prediccion, average="macro", zero_division=0)),
-        "spearman": float(correlacion),
-        "mae_ordinal": float(np.mean(np.abs(verdad - prediccion))),
+        "kappa": float(cohen_kappa_score(truth, prediction, weights="quadratic")),
+        "exactitud": float(np.mean(truth == prediction)),
+        "f1_macro": float(f1_score(truth, prediction, average="macro", zero_division=0)),
+        "spearman": float(correlation),
+        "mae_ordinal": float(np.mean(np.abs(truth - prediction))),
     }
 
 
-def _predecir(nombre: str, x_entrena, y_entrena, x_prueba) -> np.ndarray:
+def _predict(name: str, x_entrena, y_entrena, x_prueba) -> np.ndarray:
     """Ajusta uno de los modelos comparados y devuelve predicciones ordinales enteras."""
-    if nombre == "azar":
-        modelo = DummyClassifier(strategy="stratified", random_state=SEMILLA)
-    elif nombre == "moda":
+    if name == "rng":
+        modelo = DummyClassifier(strategy="stratified", random_state=SEED)
+    elif name == "moda":
         modelo = DummyClassifier(strategy="most_frequent")
-    elif nombre == "clasificador":
-        modelo = HistGradientBoostingClassifier(random_state=SEMILLA, max_iter=300)
-    elif nombre == "regresor":
-        modelo = HistGradientBoostingRegressor(random_state=SEMILLA, max_iter=300)
+    elif name == "clasificador":
+        modelo = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
+    elif name == "regresor":
+        modelo = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
     else:
-        raise KeyError(f"modelo desconocido: {nombre!r}")
+        raise KeyError(f"modelo desconocido: {name!r}")
 
     modelo.fit(x_entrena, y_entrena)
-    crudo = modelo.predict(x_prueba)
-    if nombre == "regresor":
-        crudo = np.clip(np.round(crudo), 0, len(GRADES) - 1)
-    return crudo.astype(int)
+    raw = modelo.predict(x_prueba)
+    if name == "regresor":
+        raw = np.clip(np.round(raw), 0, len(GRADES) - 1)
+    return raw.astype(int)
 
 
-def evaluar(
-    tabla: pd.DataFrame,
+def evaluate(
+    table: pd.DataFrame,
     split: str,
     modelo: str,
     *,
-    columna_grupo: str = "ciudad",
-    columna_objetivo: str = "ordinal",
+    group_column: str = "ciudad",
+    target_column: str = "ordinal",
     estandarizar: bool = False,
 ) -> pd.DataFrame:
-    """Validación cruzada dejando una ciudad fuera en cada fold.
+    """Cross-validation leaving one city out on each fold.
 
-    Devuelve un renglón por fold, para poder ver si el resultado se sostiene en las
+    Returns one row per fold, so it can be seen whether the result holds across the
     cities o lo carga una sola.
 
     Con `estandarizar` cada rasgo se centra dentro de su ciudad antes de entrenar. Es una
-    ablación y no el modo normal: quita la deriva radiométrica entre cities, y de paso
-    cualquier diferencia de nivel entre ellas que sí fuera señal de rezago.
+    ablation and not the normal mode: it removes the radiometric drift between cities, and
+    with it any level difference between them that was in fact a signal of deprivation.
     """
-    columnas = columnas_de_conjunto(tabla, split)
-    if not columnas:
-        raise ValueError(f"la tabla no tiene columnas del split {split!r}")
+    columns = columns_of_set(table, split)
+    if not columns:
+        raise ValueError(f"la table no tiene columns del split {split!r}")
 
-    utilizable = tabla.dropna(subset=[columna_objetivo]).copy()
+    utilizable = table.dropna(subset=[target_column]).copy()
     if estandarizar:
-        utilizable = estandarizar_por_grupo(utilizable, columnas, columna_grupo)
-    renglones = []
+        utilizable = standardise_by_group(utilizable, columns, group_column)
+    rows_out = []
 
-    for ciudad in sorted(utilizable[columna_grupo].unique()):
-        prueba = utilizable[utilizable[columna_grupo] == ciudad]
-        entrena = utilizable[utilizable[columna_grupo] != ciudad]
-        if entrena.empty or prueba.empty:
+    for ciudad in sorted(utilizable[group_column].unique()):
+        prueba = utilizable[utilizable[group_column] == ciudad]
+        train = utilizable[utilizable[group_column] != ciudad]
+        if train.empty or prueba.empty:
             continue
 
-        y_entrena = entrena[columna_objetivo].astype(int).to_numpy()
-        y_prueba = prueba[columna_objetivo].astype(int).to_numpy()
-        prediccion = _predecir(
+        y_entrena = train[target_column].astype(int).to_numpy()
+        y_prueba = prueba[target_column].astype(int).to_numpy()
+        prediction = _predict(
             modelo,
-            entrena[columnas].to_numpy("float64"),
+            train[columns].to_numpy("float64"),
             y_entrena,
-            prueba[columnas].to_numpy("float64"),
+            prueba[columns].to_numpy("float64"),
         )
 
-        renglones.append(
+        rows_out.append(
             {
                 "split": split,
                 "modelo": modelo,
                 "ciudad_prueba": ciudad,
-                "n_entrena": len(entrena),
+                "n_entrena": len(train),
                 "n_prueba": len(prueba),
-                "n_rasgos": len(columnas),
-                **_metricas(y_prueba, prediccion),
+                "n_rasgos": len(columns),
+                **_metrics(y_prueba, prediction),
             }
         )
 
-    return pd.DataFrame(renglones)
+    return pd.DataFrame(rows_out)
 
 
 def compare(
-    tabla: pd.DataFrame,
+    table: pd.DataFrame,
     conjuntos: tuple[str, ...] = tuple(SETS),
-    modelos: tuple[str, ...] = ("azar", "moda", "clasificador", "regresor"),
+    modelos: tuple[str, ...] = ("rng", "moda", "clasificador", "regresor"),
     *,
     estandarizar: bool = False,
 ) -> pd.DataFrame:
@@ -251,22 +255,22 @@ def compare(
     partes = []
     for split in conjuntos:
         for modelo in modelos:
-            if modelo in ("azar", "moda"):
+            if modelo in ("rng", "moda"):
                 if split != conjuntos[0]:
                     continue  # ignoran los rasgos; correrlos una vez alcanza
-                ciego = evaluar(tabla, split, modelo, estandarizar=estandarizar)
+                ciego = evaluate(table, split, modelo, estandarizar=estandarizar)
                 ciego["split"] = "ninguno"
                 partes.append(ciego)
             else:
-                partes.append(evaluar(tabla, split, modelo, estandarizar=estandarizar))
+                partes.append(evaluate(table, split, modelo, estandarizar=estandarizar))
     return pd.concat(partes, ignore_index=True)
 
 
-def fold_summary(detalle: pd.DataFrame) -> pd.DataFrame:
-    """Promedia los pliegues y ordena por kappa, que es la métrica que decide."""
-    columnas = ["kappa", "exactitud", "f1_macro", "spearman", "mae_ordinal"]
+def fold_summary(detail: pd.DataFrame) -> pd.DataFrame:
+    """Averages the folds and sorts by kappa, which is the deciding metric."""
+    columns = ["kappa", "exactitud", "f1_macro", "spearman", "mae_ordinal"]
     agregado = (
-        detalle.groupby(["split", "modelo"], observed=True)[columnas]
+        detail.groupby(["split", "modelo"], observed=True)[columns]
         .mean()
         .round(3)
         .sort_values("kappa", ascending=False)
@@ -274,90 +278,92 @@ def fold_summary(detalle: pd.DataFrame) -> pd.DataFrame:
     return agregado.reset_index()
 
 
-UMBRAL_FIABILIDAD = 0.60
-"""Correlación mínima entre las dos mitades de un polígono para conservar un rasgo.
+RELIABILITY_THRESHOLD = 0.60
+"""Minimum correlation between the two halves of a polygon for a feature to be kept.
 
-Un rasgo que no se reproduce consigo mismo al partir la AGEB en dos mide ruido de muestreo.
-La prueba usa la mitad de los píxeles de cada lado, así que subestima la fiabilidad del
-polígono entero: el umbral es una cota conservadora.
+Un rasgo que no se reproduce consigo mismo al partir la AGEB en dos measured ruido de muestreo.
+The test uses half the pixels on each side, so it underestimates the reliability of the
+whole polygon: the threshold is a conservative bound.
 """
 
-UMBRAL_TAMANO = 0.30
-"""Correlación máxima admitida entre un rasgo y el tamaño del polígono que lo produjo.
+SIZE_THRESHOLD = 0.30
+"""Maximum correlation admitted between a feature and the size of the polygon behind it.
 
-El sesgo por submuestreo de la GLCM crece con el número de píxeles, y el tamaño de una AGEB
+The GLCM undersampling bias grows with the number of pixels, and the size of an AGEB
 correlaciona con la densidad urbana, que a su vez correlaciona con el rezago. Un rasgo muy
-atado al área apunta al objetivo por construcción.
+tied to area points at the target by construction.
 """
 
 
-def seleccionar_rasgos(
-    tabla: pd.DataFrame,
-    fiabilidad: pd.DataFrame,
+def select_features(
+    table: pd.DataFrame,
+    reliability: pd.DataFrame,
     *,
-    umbral_fiabilidad: float = UMBRAL_FIABILIDAD,
-    umbral_tamano: float = UMBRAL_TAMANO,
+    reliability_threshold: float = RELIABILITY_THRESHOLD,
+    size_threshold: float = SIZE_THRESHOLD,
 ) -> pd.DataFrame:
-    """Decide qué rasgos de textura entran al modelo, con dos criterios independientes.
+    """Decides which texture features enter the model, on two independent criteria.
 
     Los dos se aplican juntos porque cada uno solo es interpretable con el otro. Un rasgo
-    que es puro ruido pasa el criterio de tamaño con holgura, porque el ruido no correlaciona
-    con nada; y un rasgo muy reproducible puede estar midiendo el área del polígono. Exigir
-    ambos deja los que se reproducen y además no apuntan al tamaño.
+    that is pure noise passes the size criterion with room to spare, because noise
+    correlates with nothing; and a very reproducible feature may be measuring the area of
+    the polygon. Demanding both leaves those that reproduce and do not point at size.
 
-    Los umbrales se fijan antes de mirar desempeño, que es lo que evita elegir el corte que
+    The thresholds are set before looking at performance, which is what avoids picking the
     conviene al resultado.
 
-    `fiabilidad` viene de `textura.split_half_reliability` agregada sobre las cities, con
-    columnas `rasgo` y `r_median`.
+    `reliability` viene de `textura.split_half_reliability` agregada sobre las cities, con
+    columns `rasgo` y `r_median`.
     """
-    reproduce = dict(zip(fiabilidad["feature"], fiabilidad["r_median"], strict=True))
-    filas = []
-    for columna in columnas_de_conjunto(tabla, "textura"):
+    reproduce = dict(zip(reliability["feature"], reliability["r_median"], strict=True))
+    rows = []
+    for columna in columns_of_set(table, "textura"):
         canal = columna.rsplit("_", 2)[0]
-        columna_px = f"{canal}_n_px"
-        r_tamano = np.nan
-        if columna_px in tabla:
-            validos = tabla[columna].notna() & tabla[columna_px].notna()
-            if validos.sum() > 2 and tabla.loc[validos, columna].nunique() > 1:
-                r_tamano = float(
+        px_column = f"{canal}_n_px"
+        r_size = np.nan
+        if px_column in table:
+            valid = table[columna].notna() & table[px_column].notna()
+            if valid.sum() > 2 and table.loc[valid, columna].nunique() > 1:
+                r_size = float(
                     np.corrcoef(
-                        tabla.loc[validos, columna],
-                        np.log10(tabla.loc[validos, columna_px].clip(lower=1)),
+                        table.loc[valid, columna],
+                        np.log10(table.loc[valid, px_column].clip(lower=1)),
                     )[0, 1]
                 )
 
         r_mitades = reproduce.get(columna, np.nan)
-        pasa_fiabilidad = bool(r_mitades >= umbral_fiabilidad) if r_mitades == r_mitades else False
-        pasa_tamano = bool(abs(r_tamano) <= umbral_tamano) if r_tamano == r_tamano else False
-        motivo = "kept"
+        pasa_fiabilidad = (
+            bool(r_mitades >= reliability_threshold) if r_mitades == r_mitades else False
+        )
+        pasa_tamano = bool(abs(r_size) <= size_threshold) if r_size == r_size else False
+        reason = "kept"
         if not pasa_fiabilidad:
-            motivo = "no se reproduce"
+            reason = "does not reproduce"
         elif not pasa_tamano:
-            motivo = "atado al tamaño"
-        filas.append(
+            reason = "tied to size"
+        rows.append(
             {
                 "feature": columna,
                 "r_mitades": r_mitades,
-                "r_n_px": r_tamano,
+                "r_n_px": r_size,
                 "kept": pasa_fiabilidad and pasa_tamano,
-                "reason": motivo,
+                "reason": reason,
             }
         )
-    return pd.DataFrame(filas)
+    return pd.DataFrame(rows)
 
 
-def prueba_de_signos(diferencias: np.ndarray) -> dict[str, float]:
+def sign_test(diferencias: np.ndarray) -> dict[str, float]:
     """Prueba exacta de signos sobre las diferencias por fold.
 
     Con cinco cities hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
-    están correlacionadas espacialmente entre sí. Tratar cada AGEB como independiente
-    inflaría la significancia; la unidad independiente es la ciudad.
+    are spatially correlated with each other. Treating every AGEB as independent
+    would inflate significance; the independent unit is the city.
 
     Cinco pliegues dan 32 asignaciones de signo posibles. Con los cinco a favor, el valor p a
-    dos colas es 2/32 = 0.0625, que es el mínimo alcanzable con este tamaño de muestra: la
-    prueba **nunca** puede bajar de 0.05 con cinco cities. Eso es una propiedad del diseño
-    y conviene reportarla junto al resultado, porque invita a leer el tamaño del efecto y su
+    two-tailed is 2/32 = 0.0625, which is the minimum attainable at this sample size: the
+    test can **never** go below 0.05 with five cities. That is a property of the design and
+    worth reporting beside the result, because it invites reading the effect size and its
     intervalo antes que el valor p, y a sumar cities si se quiere evidencia concluyente.
     """
     diferencias = np.asarray(diferencias, dtype="float64")
@@ -374,195 +380,191 @@ def prueba_de_signos(diferencias: np.ndarray) -> dict[str, float]:
     return {"n": n, "a_favor": favor, "p": min(1.0, 2 * cola / 2**n)}
 
 
-def intervalo_por_ciudades(
-    por_ciudad: pd.DataFrame,
+def city_interval(
+    per_city: pd.DataFrame,
     columna: str,
     *,
     repeticiones: int = 10000,
-    semilla: int = SEMILLA,
+    semilla: int = SEED,
 ) -> dict[str, float]:
     """Intervalo de confianza de una diferencia, remuestreando cities enteras.
 
     El bootstrap por conglomerados respeta que la unidad independiente es la ciudad. Con
-    cinco conglomerados el intervalo sale ancho, que es la respuesta honesta al tamaño de
-    muestra y no un defecto del método.
+    five clusters the interval comes out wide, which is the honest answer to the sample
+    size and not a defect of the method.
     """
-    valores = por_ciudad[columna].to_numpy(dtype="float64")
+    values = per_city[columna].to_numpy(dtype="float64")
     rng = np.random.default_rng(semilla)
-    samples = valores[rng.integers(0, len(valores), size=(repeticiones, len(valores)))]
+    samples = values[rng.integers(0, len(values), size=(repeticiones, len(values)))]
     medias = samples.mean(axis=1)
     return {
-        "media": float(valores.mean()),
+        "mean": float(values.mean()),
         "ic_bajo": float(np.percentile(medias, 2.5)),
         "ic_alto": float(np.percentile(medias, 97.5)),
         "fraccion_positiva": float((medias > 0).mean()),
     }
 
 
-def _puntuaciones(nombre: str, x_entrena, y_entrena, x_prueba):
-    """Ajusta un modelo y devuelve sus predicciones duras junto con puntuaciones continuas.
+def _scores(name: str, x_entrena, y_entrena, x_prueba):
+    """Ajusta un modelo y devuelve sus predicciones hard junto con scores continuas.
 
-    Kappa necesita la clase predicha y el área bajo la curva necesita una puntuación que
-    ordene. Un clasificador da una probabilidad por clase; un regresor da un solo número,
+    Kappa needs the predicted class and the area under the curve needs a score that orders.
+    A classifier gives one probability per class; a regressor gives a single number,
     que ordena igual de bien y es lo que hace falta para los umbrales acumulados.
     """
-    if nombre == "clasificador":
-        modelo = HistGradientBoostingClassifier(random_state=SEMILLA, max_iter=300)
+    if name == "clasificador":
+        modelo = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
         modelo.fit(x_entrena, y_entrena)
-        probabilidades = modelo.predict_proba(x_prueba)
-        return modelo.predict(x_prueba).astype(int), probabilidades
-    if nombre == "regresor":
-        modelo = HistGradientBoostingRegressor(random_state=SEMILLA, max_iter=300)
+        probabilities = modelo.predict_proba(x_prueba)
+        return modelo.predict(x_prueba).astype(int), probabilities
+    if name == "regresor":
+        modelo = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
         modelo.fit(x_entrena, y_entrena)
-        crudo = modelo.predict(x_prueba)
-        duras = np.clip(np.round(crudo), 0, len(GRADES) - 1).astype(int)
-        return duras, crudo
-    duras = _predecir(nombre, x_entrena, y_entrena, x_prueba)
-    return duras, duras.astype(float)
+        raw = modelo.predict(x_prueba)
+        hard = np.clip(np.round(raw), 0, len(GRADES) - 1).astype(int)
+        return hard, raw
+    hard = _predict(name, x_entrena, y_entrena, x_prueba)
+    return hard, hard.astype(float)
 
 
-def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, float]:
-    """Área bajo la curva de cada clase contra todas las demás, y su promedio.
+def auroc_one_vs_rest(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]:
+    """Area under the curve of each class against all the others, and their average.
 
-    Se lee directo: 0.5 es azar y 1 es separación perfecta. Con un regresor, la puntuación
-    es su salida continua, así que la curva de la clase k mide qué tan arriba quedan sus
-    AGEB en ese único orden.
+    It reads directly: 0.5 is chance and 1 is perfect separation. With a regressor the score
+    is its continuous output, so the curve of class k measures how high its AGEB land in
+    that single ordering.
 
-    Las clases de en medio salen castigadas por construcción: sus negativos incluyen a la
-    vez lo que está por debajo y lo que está por encima, y separarlas exige recortar una
+    The middle classes are punished by construction: their negatives include at once what
+    lies below and what lies above, and separating them demands carving out a
     banda en el centro de una scale ordenada.
     """
-    salida = {}
+    output = {}
     for k, grado in enumerate(GRADES):
-        objetivo = (verdad == k).astype(int)
-        if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
+        target = (truth == k).astype(int)
+        if target.sum() == 0 or target.sum() == len(target):
             continue
-        # con una sola puntuación ordenada, la evidencia a favor de la clase k es la
-        # cercanía a k. Usar el orden crudo invierte las clases bajas —para ellas una
-        # puntuación alta significa lo contrario— y el promedio de las cinco sale en 0.5
-        # por cancelación, aparentando azar donde el modelo separa bien
-        marca = puntuaciones[:, k] if puntuaciones.ndim == 2 else -np.abs(puntuaciones - k)
-        salida[f"auroc_{grado.lower().replace(' ', '_')}"] = float(roc_auc_score(objetivo, marca))
-    if salida:
-        salida["auroc_macro"] = float(np.mean(list(salida.values())))
-    return salida
+        # with a single ordered score, the evidence for class k is closeness to k. Using the
+        # raw order inverts the low classes —for them a high score means the opposite— and
+        # the average of the five comes out at 0.5 by cancellation, looking like chance
+        # where the model separates well
+        mark = scores[:, k] if scores.ndim == 2 else -np.abs(scores - k)
+        output[f"auroc_{grado.lower().replace(' ', '_')}"] = float(roc_auc_score(target, mark))
+    if output:
+        output["auroc_macro"] = float(np.mean(list(output.values())))
+    return output
 
 
-def auroc_acumulada(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, float]:
-    """Área bajo la curva de cada umbral «grado mayor o igual que k».
+def auroc_cumulative(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]:
+    """Área bajo la curva de cada threshold «grado mayor o igual que k».
 
-    Preserva el orden de la scale, cosa que una contra el resto no hace, y es la misma
-    descomposición que usa una pérdida ordinal.
+        Preserva el order de la scale, cosa que una contra el resto no hace, y es la misma
+    decomposition an ordinal loss uses.
     """
-    orden = (
-        puntuaciones @ np.arange(puntuaciones.shape[1]) if puntuaciones.ndim == 2 else puntuaciones
-    )
-    salida = {}
+    order = scores @ np.arange(scores.shape[1]) if scores.ndim == 2 else scores
+    output = {}
     for k in range(1, len(GRADES)):
-        objetivo = (verdad >= k).astype(int)
-        if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
+        target = (truth >= k).astype(int)
+        if target.sum() == 0 or target.sum() == len(target):
             continue
-        salida[f"auroc_ge_{k}"] = float(roc_auc_score(objetivo, orden))
-    if salida:
-        salida["auroc_acumulada_media"] = float(np.mean(list(salida.values())))
-    return salida
+        output[f"auroc_ge_{k}"] = float(roc_auc_score(target, order))
+    if output:
+        output["auroc_acumulada_media"] = float(np.mean(list(output.values())))
+    return output
 
 
-def evaluar_particion(
-    tabla: pd.DataFrame,
+def evaluate_partition(
+    table: pd.DataFrame,
     split: str,
     modelo: str,
-    particion: pd.DataFrame,
+    partition: pd.DataFrame,
     *,
-    evaluar_en: str = "test",
-    columna_grupo: str = "ciudad",
-    columna_objetivo: str = "ordinal",
-    remuestreos: int = 400,
+    measure_on: str = "test",
+    group_column: str = "ciudad",
+    target_column: str = "ordinal",
+    resamples: int = 400,
 ) -> dict[str, float]:
-    """Entrena sobre las cities de entrenamiento y mide sobre las de validación o prueba.
+    """Trains on the training cities and measures on the validation or test ones.
 
-    Reemplaza a dejar una ciudad fuera por fold, que servía con cinco cities y con
-    ciento treinta y ocho daría otros tantos pliegues entrenados cada uno con el 99.3% de
-    los datos, donde la dispersión entre pliegues es casi toda ruido.
+    Replaces leaving one city out per fold, which served with five cities and with a hundred
+    and thirty-eight would give as many folds each trained on 99.3% of
+    the data, where the spread between folds is almost all noise.
 
     La incertidumbre sale de un remuestreo por cities dentro del split medido, porque
-    las AGEB vecinas están correlacionadas y tratarlas como independientes estrecha los
-    intervalos sin motivo.
+    neighbouring AGEB are correlated and treating them as independent narrows the
+    intervals sin reason.
     """
     from satinsight.splits import cities_of
 
-    if evaluar_en not in ("val", "test"):
-        raise KeyError(f"se mide sobre 'val' o 'test', no sobre {evaluar_en!r}")
-    columnas = columnas_de_conjunto(tabla, split)
-    entrena = tabla[tabla[columna_grupo].isin(cities_of(particion, "train"))]
-    mide = tabla[tabla[columna_grupo].isin(cities_of(particion, evaluar_en))]
-    if entrena.empty or mide.empty:
+    if measure_on not in ("val", "test"):
+        raise KeyError(f"se measured sobre 'val' o 'test', no sobre {measure_on!r}")
+    columns = columns_of_set(table, split)
+    train = table[table[group_column].isin(cities_of(partition, "train"))]
+    measured = table[table[group_column].isin(cities_of(partition, measure_on))]
+    if train.empty or measured.empty:
         raise ValueError(
-            f"la partición deja {len(entrena)} filas de entrenamiento y {len(mide)} de "
-            f"{evaluar_en}; ¿coinciden las claves de ciudad?"
+            f"the partition leaves {len(train)} training rows and {len(measured)} of "
+            f"{measure_on}; ¿coinciden las claves de ciudad?"
         )
 
-    prediccion, puntuaciones = _puntuaciones(
-        modelo, entrena[columnas], entrena[columna_objetivo], mide[columnas]
-    )
-    verdad = mide[columna_objetivo].to_numpy()
-    metricas = {
-        **_metricas(verdad, prediccion),
-        **auroc_una_contra_resto(verdad, puntuaciones),
-        **auroc_acumulada(verdad, puntuaciones),
+    prediction, scores = _scores(modelo, train[columns], train[target_column], measured[columns])
+    truth = measured[target_column].to_numpy()
+    metrics = {
+        **_metrics(truth, prediction),
+        **auroc_one_vs_rest(truth, scores),
+        **auroc_cumulative(truth, scores),
     }
 
-    # el intervalo remuestrea cities enteras y recalcula la métrica en cada réplica:
-    # las AGEB vecinas están correlacionadas, y remuestrearlas sueltas daría intervalos
-    # estrechos que no sobrevivirían a cambiar de ciudad, que es justo lo que se mide
-    cities = mide[columna_grupo].to_numpy()
-    azar = np.random.default_rng(SEMILLA)
-    unicas = np.unique(cities)
-    replicas: dict[str, list[float]] = defaultdict(list)
-    for _ in range(remuestreos):
-        elegidas = azar.choice(unicas, size=len(unicas), replace=True)
-        filas = np.concatenate([np.flatnonzero(cities == c) for c in elegidas])
-        v, pr, puntos = verdad[filas], prediccion[filas], puntuaciones[filas]
+    # the interval resamples whole cities and recomputes the metric on each replicate:
+    # neighbouring AGEB are correlated, and resampling them loose would give narrow intervals
+    # that would not survive changing city, which is exactly what is being measured
+    cities = measured[group_column].to_numpy()
+    rng = np.random.default_rng(SEED)
+    unique_cities = np.unique(cities)
+    replicates: dict[str, list[float]] = defaultdict(list)
+    for _ in range(resamples):
+        chosen = rng.choice(unique_cities, size=len(unique_cities), replace=True)
+        rows = np.concatenate([np.flatnonzero(cities == c) for c in chosen])
+        v, pr, scores_of = truth[rows], prediction[rows], scores[rows]
         if len(set(v)) < 2:
             continue
-        replicas["kappa"].append(float(cohen_kappa_score(v, pr, weights="quadratic")))
-        replicas["spearman"].append(float(spearmanr(v, pr).statistic))
-        # todas las áreas bajo la curva reciben intervalo, incluidas las de cada umbral:
-        # son las que más se citan y presentarlas desnudas invita a leer diferencias de
-        # centésimas como si significaran algo
-        for nombre, valor in {
-            **auroc_una_contra_resto(v, puntos),
-            **auroc_acumulada(v, puntos),
+        replicates["kappa"].append(float(cohen_kappa_score(v, pr, weights="quadratic")))
+        replicates["spearman"].append(float(spearmanr(v, pr).statistic))
+        # every area under the curve gets an interval, including the per-threshold ones:
+        # they are the most quoted and presenting them bare invites reading differences of
+        # hundredths as if they meant something
+        for name, valor in {
+            **auroc_one_vs_rest(v, scores_of),
+            **auroc_cumulative(v, scores_of),
         }.items():
-            replicas[nombre].append(valor)
+            replicates[name].append(valor)
 
-    intervalos = {}
-    for nombre, valores in replicas.items():
-        if valores:
-            intervalos[f"{nombre}_ic_bajo"] = float(np.percentile(valores, 2.5))
-            intervalos[f"{nombre}_ic_alto"] = float(np.percentile(valores, 97.5))
+    intervals = {}
+    for name, values in replicates.items():
+        if values:
+            intervals[f"{name}_ic_bajo"] = float(np.percentile(values, 2.5))
+            intervals[f"{name}_ic_alto"] = float(np.percentile(values, 97.5))
     return {
-        **metricas,
-        **intervalos,
-        "n_entrena": len(entrena),
-        "n_mide": len(mide),
-        "ciudades_mide": len(unicas),
+        **metrics,
+        **intervals,
+        "n_entrena": len(train),
+        "n_mide": len(measured),
+        "ciudades_mide": len(unique_cities),
     }
 
 
-def fusionar(optico: pd.DataFrame, radar: pd.DataFrame, *, clave: str = "cvegeo") -> pd.DataFrame:
+def fuse(optical: pd.DataFrame, radar: pd.DataFrame, *, key: str = "cvegeo") -> pd.DataFrame:
     """Une las tablas de las dos modalidades en una sola, por AGEB.
 
-    Las columnas de contexto —cobertura del suelo, población, ciudad, grado— vienen de la
-    misma fuente en ambas y se toman una vez. Las de imagen llevan el sensor en el nombre,
-    así que conviven sin chocar.
+        The context columns —land cover, population, city, grade— come from the
+        misma fuente en ambas y se toman una vez. Las de imagen llevan el sensor en el name,
+    so they coexist without clashing.
 
-    Se conservan solo las AGEB presentes en las dos. Comparar la fusión contra cada
-    modalidad por separado sobre samples distintas mezclaría la diferencia de sensor con
-    la de qué filas evalúa cada uno.
+        Only the AGEB present in both are kept. Comparing the fusion against each modality
+        separately over different samples would mix the difference of sensor with that of which
+        rows each one evaluates.
     """
-    solo_radar = [c for c in radar.columns if c.startswith("s1")]
-    faltantes = set(optico[clave]) ^ set(radar[clave])
-    if faltantes:
-        log.info("%d AGEB quedan fuera por faltar en una de las dos modalidades", len(faltantes))
-    return optico.merge(radar[[clave, *solo_radar]], on=clave, how="inner")
+    radar_only = [c for c in radar.columns if c.startswith("s1")]
+    missing = set(optical[key]) ^ set(radar[key])
+    if missing:
+        log.info("%d AGEB quedan fuera por faltar en una de las dos modalidades", len(missing))
+    return optical.merge(radar[[key, *radar_only]], on=key, how="inner")

@@ -35,7 +35,7 @@ def paths(root: Path = DATA_ROOT) -> dict[str, Path]:
         "instances": root / "instancias",
         "bags": root / "bolsas",
         "vectors": root / "vectores",
-        "partition": root / "particion.csv",
+        "partition": root / "partition.csv",
         "cities": root / "ciudades_nacional.csv",
     }
 
