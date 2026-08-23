@@ -31,7 +31,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostin
 from sklearn.metrics import cohen_kappa_score, f1_score, roc_auc_score
 
 from satinsight.agebs import GRADOS
-from satinsight.cobertura import CLASES
+from satinsight.landcover import CLASSES
 from satinsight.textura import nombres_de_rasgos
 
 log = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ SUFIJOS_DENSIDAD = ("media", "desv", "p10", "p50", "p90", "rango_intercuartil")
 SUFIJOS_TEXTURA = tuple(nombres_de_rasgos())
 """Las columnas de textura llevan propiedad y distancia, por ejemplo `contrast_d2`."""
 
-SUFIJOS_COBERTURA = tuple(CLASES.values())
+SUFIJOS_COBERTURA = tuple(CLASSES.values())
 """Fracciones de cobertura de WorldCover, la única fuente ajena a los compuestos."""
 
 CONJUNTOS = {

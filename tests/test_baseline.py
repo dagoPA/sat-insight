@@ -15,7 +15,7 @@ from satinsight.baseline import (
     seleccionar_rasgos,
     varianza_explicada,
 )
-from satinsight.cobertura import CLASES
+from satinsight.landcover import CLASSES
 from satinsight.textura import nombres_de_rasgos
 
 CIUDADES = ("tuxtla", "merida", "iztapalapa")
@@ -46,7 +46,7 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
         }
         # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
         # rompa la prueba, con lo que se evita que quede midiendo un conjunto vacío.
-        for clase in CLASES.values():
+        for clase in CLASSES.values():
             columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
         for sufijo in nombres_de_rasgos():
             lleva_senal = sufijo.startswith(("contrast_", "homogeneity_"))
@@ -81,7 +81,7 @@ def test_el_conjunto_completo_es_la_union_de_los_tres_escalones():
 def test_la_cobertura_no_se_mezcla_con_los_otros_escalones():
     tabla = tabla_sintetica(10)
     cobertura = set(columnas_de_conjunto(tabla, "cobertura"))
-    assert "wc_construido" in cobertura
+    assert "wc_built" in cobertura
     assert not cobertura & set(columnas_de_conjunto(tabla, "densidad"))
     assert not cobertura & set(columnas_de_conjunto(tabla, "textura"))
 
@@ -173,10 +173,10 @@ def test_un_rasgo_constante_queda_en_cero_y_no_en_nulo():
     caso degenerado tiene que quedar centrado en cero.
     """
     tabla = tabla_sintetica(40)
-    tabla["wc_nieve"] = 0.0
-    e = estandarizar_por_grupo(tabla, ["wc_nieve"])
-    assert e["wc_nieve"].notna().all()
-    assert (e["wc_nieve"] == 0.0).all()
+    tabla["wc_snow"] = 0.0
+    e = estandarizar_por_grupo(tabla, ["wc_snow"])
+    assert e["wc_snow"].notna().all()
+    assert (e["wc_snow"] == 0.0).all()
 
 
 def test_estandarizar_conserva_los_nulos_que_son_ausencia_de_dato():
