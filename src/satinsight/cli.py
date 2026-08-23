@@ -321,6 +321,20 @@ def cmd_vectores(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fiabilidad(args: argparse.Namespace) -> int:
+    """Mide sobre todas las ciudades si cada rasgo se reproduce al partir la AGEB en dos."""
+    from satinsight.pipeline import fiabilidad_de_ciudades
+
+    resumen = fiabilidad_de_ciudades(args.sensor, tuple(args.ciudades) or None)
+    destino = Path(args.salida or RAIZ_DATOS / f"fiabilidad_{args.sensor}.csv")
+    resumen.to_csv(destino, index=False)
+    print(f"{len(resumen)} rasgos sobre {int(resumen.ciudades.max())} ciudades → {destino}")
+    print(resumen.head(5).round(3).to_string(index=False))
+    print("  ...")
+    print(resumen.tail(5).round(3).to_string(index=False))
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -408,6 +422,12 @@ def construir_parser() -> argparse.ArgumentParser:
     vectores.add_argument("ciudades", nargs="*")
     vectores.add_argument("--forzar", action="store_true")
     vectores.set_defaults(func=cmd_vectores)
+
+    fiab = sub.add_parser("fiabilidad", help="mide si cada rasgo se reproduce entre mitades")
+    fiab.add_argument("sensor", choices=SENSORES)
+    fiab.add_argument("ciudades", nargs="*", help="claves; vacío corre todas las compuestas")
+    fiab.add_argument("--salida", help="ruta del csv de salida")
+    fiab.set_defaults(func=cmd_fiabilidad)
 
     return parser
 
