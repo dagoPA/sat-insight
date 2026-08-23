@@ -16,7 +16,7 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
-from satinsight.ingesta import RAIZ_DATOS, asegurar_coneval, asegurar_inegi, capa_ageb_urbana
+from satinsight.download import DATA_ROOT, ensure_coneval, ensure_inegi, urban_ageb_layer
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ en el conjunto, la puerta de decisión de la fase 1 no mide lo que pretende medi
 """
 
 
-def cargar_grs(raiz: Path = RAIZ_DATOS, *, usar_cache: bool = True) -> pd.DataFrame:
+def cargar_grs(raiz: Path = DATA_ROOT, *, usar_cache: bool = True) -> pd.DataFrame:
     """Lee el Grado de Rezago Social de las AGEB urbanas del país.
 
     Leer el libro de Excel completo cuesta cerca de medio minuto, así que el resultado se
@@ -116,7 +116,7 @@ def cargar_grs(raiz: Path = RAIZ_DATOS, *, usar_cache: bool = True) -> pd.DataFr
     if usar_cache and cache.exists():
         return pd.read_parquet(cache)
 
-    libro = asegurar_coneval(raiz)
+    libro = ensure_coneval(raiz)
     log.info("leyendo %s", libro.name)
     tabla = pd.read_excel(
         libro, skiprows=FILAS_ENCABEZADO, header=None, names=list(COLUMNAS_CONEVAL), dtype=str
@@ -138,9 +138,9 @@ def cargar_grs(raiz: Path = RAIZ_DATOS, *, usar_cache: bool = True) -> pd.DataFr
     return tabla
 
 
-def cargar_geometria(entidad: str, raiz: Path = RAIZ_DATOS) -> gpd.GeoDataFrame:
+def cargar_geometria(entidad: str, raiz: Path = DATA_ROOT) -> gpd.GeoDataFrame:
     """Lee los polígonos de AGEB urbana de una entidad, reproyectados a WGS84."""
-    capa = capa_ageb_urbana(asegurar_inegi(entidad, raiz))
+    capa = urban_ageb_layer(ensure_inegi(entidad, raiz))
     log.info("leyendo %s", capa.name)
     poligonos = gpd.read_file(capa)
     poligonos.columns = [c.lower() for c in poligonos.columns]
@@ -186,7 +186,7 @@ def _mancha_conectada(
 
 def agebs_de_ciudad(
     clave: str,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     *,
     minimo_poblacion: int = 0,
     conurbacion: bool = True,
@@ -297,7 +297,7 @@ La rama estratificada admite ciudades chicas con rezago alto concentrado. Son 62
 
 def ciudades_por_tamano(
     minimo_agebs: int = MINIMO_AGEBS_CIUDAD,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     *,
     estratificar: bool = False,
     minimo_rezagada: int = MINIMO_AGEBS_REZAGADA,

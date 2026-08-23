@@ -20,6 +20,7 @@ from satinsight.catalog import (
     search,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.download import DATA_ROOT
 from satinsight.figuras import (
     mapa_agebs_por_ciudad,
     mapa_nacional,
@@ -27,7 +28,6 @@ from satinsight.figuras import (
     panel_brazos,
     panel_contraste,
 )
-from satinsight.ingesta import RAIZ_DATOS
 from satinsight.pipeline import ESCALAS, SENSORES, rasgos_de_todas
 from satinsight.raster import percentiles, read_window, stretch, to_db
 from satinsight.render import save_rgb
@@ -146,7 +146,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
     catalogo = ciudades_por_tamano(estratificar=True)
     claves = args.ciudades or sorted(
         p.stem.replace(f"_{args.sensor}", "")
-        for p in (RAIZ_DATOS / "compuestos").glob(f"*_{args.sensor}.tif")
+        for p in (DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif")
     )
     tabla = rasgos_de_todas(
         args.sensor,
@@ -155,7 +155,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
         escala=args.escala,
         catalogo=catalogo,
     )
-    destino = Path(args.salida or RAIZ_DATOS / f"rasgos_{args.sensor}_{args.escala}.parquet")
+    destino = Path(args.salida or DATA_ROOT / f"rasgos_{args.sensor}_{args.escala}.parquet")
     destino.parent.mkdir(parents=True, exist_ok=True)
     tabla.to_parquet(destino, index=False)
     print(f"{len(tabla)} AGEB × {tabla.shape[1]} columnas → {destino}")
@@ -164,7 +164,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
 
 def cmd_baseline(args: argparse.Namespace) -> int:
     """Corre la comparación de la fase 1 sobre una tabla de rasgos ya extraída."""
-    origen = Path(args.features or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    origen = Path(args.features or DATA_ROOT / f"rasgos_{args.sensor}.parquet")
     if not origen.exists():
         print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
         return 1
@@ -185,7 +185,7 @@ def cmd_baseline(args: argparse.Namespace) -> int:
 
 def cmd_diagnostico(args: argparse.Namespace) -> int:
     """Reporta, por conjunto de rasgos, si describen la ciudad o el rezago."""
-    origen = Path(args.features or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    origen = Path(args.features or DATA_ROOT / f"rasgos_{args.sensor}.parquet")
     if not origen.exists():
         print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
         return 1
@@ -237,7 +237,7 @@ def cmd_avance(args: argparse.Namespace) -> int:
     from satinsight.cache import ruta_compuesto
 
     catalogo = ciudades_por_tamano(estratificar=not args.sin_estratificar)
-    raiz = RAIZ_DATOS / "compuestos"
+    raiz = DATA_ROOT / "compuestos"
     completas, a_medias, faltan = [], [], []
     for clave in catalogo:
         hechos = [s for s in SENSORES if ruta_compuesto(clave, s, raiz).exists()]
@@ -262,7 +262,7 @@ def cmd_bolsas(args: argparse.Namespace) -> int:
     catalogo = ciudades_por_tamano(estratificar=True)
     claves = args.ciudades or [
         p.stem.replace(f"_{args.sensor}", "")
-        for p in sorted((RAIZ_DATOS / "compuestos").glob(f"*_{args.sensor}.tif"))
+        for p in sorted((DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif"))
     ]
     hechas = 0
     for clave in claves:
@@ -306,7 +306,7 @@ def cmd_vectores(args: argparse.Namespace) -> int:
     catalogo = ciudades_por_tamano(estratificar=True)
     claves = args.ciudades or [
         p.stem.replace(f"_{args.sensor}", "")
-        for p in sorted((RAIZ_DATOS / "instancias").glob(f"*_{args.sensor}.parquet"))
+        for p in sorted((DATA_ROOT / "instancias").glob(f"*_{args.sensor}.parquet"))
     ]
     for clave in claves:
         try:
@@ -324,7 +324,7 @@ def cmd_fiabilidad(args: argparse.Namespace) -> int:
     from satinsight.pipeline import fiabilidad_de_ciudades
 
     resumen = fiabilidad_de_ciudades(args.sensor, tuple(args.ciudades) or None)
-    destino = Path(args.salida or RAIZ_DATOS / f"fiabilidad_{args.sensor}.csv")
+    destino = Path(args.salida or DATA_ROOT / f"fiabilidad_{args.sensor}.csv")
     resumen.to_csv(destino, index=False)
     print(f"{len(resumen)} rasgos sobre {int(resumen.ciudades.max())} ciudades → {destino}")
     print(resumen.head(5).round(3).to_string(index=False))

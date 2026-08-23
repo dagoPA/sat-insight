@@ -21,8 +21,8 @@ from satinsight.agebs import CIUDADES, agebs_de_ciudad
 from satinsight.aoi import AOI
 from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.download import DATA_ROOT
 from satinsight.grid import Grid, grid_from_scenes
-from satinsight.ingesta import RAIZ_DATOS
 from satinsight.landcover import fractions_per_ageb, mosaic
 from satinsight.raster import to_db
 from satinsight.texture import FIXED_RANGES, FIXED_RANGES_S1, features_per_ageb
@@ -113,7 +113,7 @@ def _exigir_profundidad(clave: str, sensor: str, profundidad: int, minimo: int) 
 
 def aoi_de_ciudad(
     clave: str,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     *,
     margen_m: float = MARGEN_M,
     catalogo: dict | None = None,
@@ -215,7 +215,7 @@ def asegurar_compuesto(
     sensor: str,
     *,
     area: AOI | None = None,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     **kwargs,
@@ -287,7 +287,7 @@ def rasgos_de_ciudad(
     clave: str,
     sensor: str,
     *,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     max_escenas: int | None = None,
@@ -344,7 +344,7 @@ def rasgos_de_todas(
     sensor: str,
     ciudades: tuple[str, ...] = tuple(CIUDADES),
     *,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     max_escenas: int | None = None,
     escala: str = "nativa",
     catalogo: dict | None = None,
@@ -374,7 +374,7 @@ def fiabilidad_de_ciudades(
     sensor: str,
     ciudades: tuple[str, ...] | None = None,
     *,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     escala: str = "fija",
     catalogo: dict | None = None,
 ) -> pd.DataFrame:

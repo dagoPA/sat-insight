@@ -17,7 +17,7 @@ import pandas as pd
 from satinsight import bags, encoders, tiling
 from satinsight.agebs import ciudades_por_tamano
 from satinsight.cache import cargar
-from satinsight.ingesta import RAIZ_DATOS
+from satinsight.download import DATA_ROOT
 from satinsight.pipeline import aoi_de_ciudad
 
 log = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ CANALES = {
 """Channels fed to the encoder per sensor, in the order their wavelengths are declared."""
 
 
-def rutas(raiz: Path = RAIZ_DATOS) -> dict[str, Path]:
+def rutas(raiz: Path = DATA_ROOT) -> dict[str, Path]:
     """Where each artefact of the stage lives."""
     return {
         "instancias": raiz / "instancias",
@@ -40,7 +40,7 @@ def rutas(raiz: Path = RAIZ_DATOS) -> dict[str, Path]:
     }
 
 
-def city_table(raiz: Path = RAIZ_DATOS, *, forzar: bool = False) -> pd.DataFrame:
+def city_table(raiz: Path = DATA_ROOT, *, forzar: bool = False) -> pd.DataFrame:
     """Size and deprivation of every city in the national set, which is what the split needs.
 
     Cached to disk because it walks the AGEB layer of all 32 states, and the partition has
@@ -78,7 +78,7 @@ def build_city(
     clave: str,
     sensor: str,
     *,
-    raiz: Path = RAIZ_DATOS,
+    raiz: Path = DATA_ROOT,
     encoder: encoders.PatchEncoder | None = None,
     size: int = tiling.WINDOW_SIZE,
     min_valid_fraction: float = tiling.MIN_VALID_FRACTION,
@@ -149,7 +149,7 @@ def build_city(
     return salidas
 
 
-def build_split(raiz: Path = RAIZ_DATOS, *, forzar: bool = False, **kwargs) -> pd.DataFrame:
+def build_split(raiz: Path = DATA_ROOT, *, forzar: bool = False, **kwargs) -> pd.DataFrame:
     """Writes the train and test partition of the national set.
 
     Built once and read from disk afterwards, because a partition that quietly changes
@@ -166,7 +166,7 @@ def build_split(raiz: Path = RAIZ_DATOS, *, forzar: bool = False, **kwargs) -> p
     return particion
 
 
-def collect(sensor: str, raiz: Path = RAIZ_DATOS) -> tuple[pd.DataFrame, pd.DataFrame]:
+def collect(sensor: str, raiz: Path = DATA_ROOT) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Gathers the per-city tables of every city already built into two national ones."""
     destino = rutas(raiz)
     instancias = sorted(destino["instancias"].glob(f"*_{sensor}.parquet"))

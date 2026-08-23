@@ -277,10 +277,10 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
     import matplotlib.pyplot as plt
 
     from satinsight.agebs import CIUDADES
-    from satinsight.ingesta import RAIZ_DATOS, asegurar_naturalearth
+    from satinsight.download import DATA_ROOT, ensure_naturalearth
 
-    raiz = raiz or RAIZ_DATOS
-    estados = gpd.read_file(asegurar_naturalearth(raiz))
+    raiz = raiz or DATA_ROOT
+    estados = gpd.read_file(ensure_naturalearth(raiz))
     mexico = estados[estados["admin"] == "Mexico"]
 
     puntos = []
@@ -460,9 +460,9 @@ def estado_de_composicion(
     porque una ciudad abortada no se reintenta sola: el barrido la salta y termina sin
     señalarla. Solo se leen las líneas posteriores al último relanzamiento.
     """
-    from satinsight.ingesta import RAIZ_DATOS
+    from satinsight.download import DATA_ROOT
 
-    raiz = raiz or RAIZ_DATOS
+    raiz = raiz or DATA_ROOT
     compuestos = raiz / "compuestos"
     fallidas: set[str] = set()
     for registro in sorted((logs or raiz / "logs").glob("proceso_*.log")):
@@ -504,9 +504,9 @@ def mapa_ciudades_nacionales(
     from matplotlib.lines import Line2D
 
     from satinsight.agebs import ciudades_por_tamano
-    from satinsight.ingesta import RAIZ_DATOS, asegurar_naturalearth
+    from satinsight.download import DATA_ROOT, ensure_naturalearth
 
-    raiz = raiz or RAIZ_DATOS
+    raiz = raiz or DATA_ROOT
     catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
     estados = estado_de_composicion(list(catalogo), raiz)
 
@@ -528,7 +528,7 @@ def mapa_ciudades_nacionales(
             }
         )
 
-    estados_lista = gpd.read_file(asegurar_naturalearth(raiz))
+    estados_lista = gpd.read_file(ensure_naturalearth(raiz))
     mexico = estados_lista[estados_lista["admin"] == "Mexico"]
 
     figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
