@@ -17,6 +17,7 @@ devuelve solo esas escenas, que es lo que hace la retícula reconstruible.
 """
 
 import logging
+from collections.abc import Callable
 from math import ceil
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -66,7 +67,9 @@ def _codigo_crs(item: "Item") -> str | None:
     return codigo if codigo.upper().startswith("EPSG:") else f"EPSG:{codigo}"
 
 
-def seleccionar_crs(items: list["Item"]) -> tuple[str, list["Item"]]:
+def seleccionar_crs(
+    items: list["Item"], puntuar: Callable[[list["Item"]], float] | None = None
+) -> tuple[str, list["Item"]]:
     """Elige un sistema de referencia y devuelve solo las escenas que lo declaran.
 
     Las teselas MGRS de Sentinel-2 cercanas al borde de un huso UTM se publican en los dos
@@ -75,12 +78,17 @@ def seleccionar_crs(items: list["Item"]) -> tuple[str, list["Item"]]:
     completo por su cuenta. Remuestrear ambos grupos a la misma forma y apilarlos los
     desalinea sin que nada falle.
 
-    Quedarse con el grupo más numeroso resuelve el caso sin perder cobertura, y de paso
-    mantiene los dos brazos de la ciudad sobre la misma retícula: en Mérida el radar trae
-    32 escenas en la zona 15 contra una sola en la 16, así que la mayoría coincide.
+    Quedarse con el grupo más numeroso resuelve ese caso, y falla cuando los dos husos no
+    cubren lo mismo. Sobre Guasave las 87 escenas del huso 13 alcanzan la mitad del
+    recuadro y las 61 del huso 12 lo cubren entero: elegir por número dejaba la ciudad sin
+    compuesto de radar por falta de cobertura, teniendo dos órbitas que la cubren completa.
 
-    Se lee de la extensión de proyección del STAC, que ahorra la petición de red por escena
-    que costaría abrir cada ráster.
+    Con `puntuar` la decisión pasa a la cobertura medida y el número solo desempata. La
+    función recibe las escenas de un huso y devuelve cuánto del recuadro alcanzan; vive
+    fuera de este módulo porque medirla exige leer píxeles.
+
+    El código se lee de la extensión de proyección del STAC, que ahorra la petición de red
+    por escena que costaría abrir cada ráster.
     """
     grupos: dict[str, list[Item]] = {}
     for item in items:
@@ -91,7 +99,15 @@ def seleccionar_crs(items: list["Item"]) -> tuple[str, list["Item"]]:
     if not grupos:
         raise ValueError("ninguna escena declara sistema de referencia en el STAC")
 
-    elegido = max(grupos, key=lambda c: len(grupos[c]))
+    if puntuar is None or len(grupos) == 1:
+        elegido = max(grupos, key=lambda c: len(grupos[c]))
+    else:
+        cobertura = {c: puntuar(v) for c, v in grupos.items()}
+        elegido = max(grupos, key=lambda c: (round(cobertura[c], 2), len(grupos[c])))
+        log.info(
+            "cobertura por huso: %s",
+            ", ".join(f"{c} {100 * v:.0f}%" for c, v in sorted(cobertura.items())),
+        )
     if len(grupos) > 1:
         descartados = ", ".join(
             f"{c}: {len(v)}" for c, v in sorted(grupos.items(), key=lambda kv: -len(kv[1]))
@@ -161,12 +177,15 @@ def recorte_de_poligono(transform, geometria, forma: tuple[int, int]):
 
 
 def malla_de_escenas(
-    bbox: Bbox, items: list["Item"], resolucion_m: int = RESOLUCION_M
+    bbox: Bbox,
+    items: list["Item"],
+    resolucion_m: int = RESOLUCION_M,
+    puntuar: Callable[[list["Item"]], float] | None = None,
 ) -> tuple[Malla, list["Item"]]:
     """Retícula de trabajo junto con las escenas que viven sobre ella.
 
     Devuelve las escenas filtradas además de la retícula: componer con las que quedaron
     fuera del sistema elegido produciría un apilado desalineado.
     """
-    crs, seleccionadas = seleccionar_crs(items)
+    crs, seleccionadas = seleccionar_crs(items, puntuar)
     return malla_de_bbox(bbox, crs, resolucion_m), seleccionadas

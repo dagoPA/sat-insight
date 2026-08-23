@@ -151,7 +151,19 @@ def construir_compuesto(
     if not escenas:
         raise RuntimeError(f"el catálogo no devolvió escenas de {sensor} para {clave}")
 
-    malla, escenas = malla_de_escenas(area.bbox, escenas)
+    # sobre radar el huso se elige por la cobertura que alcanza cada uno y no por cuántas
+    # escenas trae: los dos husos de una ciudad en el borde pueden ver mitades distintas
+    puntuar = None
+    if sensor == "s1":
+
+        def puntuar(grupo):
+            from satinsight.catalog import agrupar_por_orbita
+            from satinsight.composite import cobertura_util
+
+            orbitas = agrupar_por_orbita(grupo)
+            return max((cobertura_util(v, area.bbox) for v in orbitas.values()), default=0.0)
+
+    malla, escenas = malla_de_escenas(area.bbox, escenas, puntuar=puntuar)
     log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixeles)
 
     if sensor == "s2":
