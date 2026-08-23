@@ -76,7 +76,7 @@ def columns_of_set(table: pd.DataFrame, split: str) -> list[str]:
     return sorted(c for c in table.columns if any(c.endswith(f"_{s}") for s in sufijos))
 
 
-def explained_variance(table: pd.DataFrame, columna: str, factor: str) -> float:
+def explained_variance(table: pd.DataFrame, column: str, factor: str) -> float:
     """Fraction of a feature's variance explained by a categorical factor.
 
     Comparing how much the city explains against how much the grade explains says whether a
@@ -84,8 +84,8 @@ def explained_variance(table: pd.DataFrame, columna: str, factor: str) -> float:
     measured in teaches the model to recognise the city, and that knowledge is worth nothing
     in the city held out.
     """
-    valid = table[columna].notna() & table[factor].notna()
-    values, grupos = table.loc[valid, columna], table.loc[valid, factor]
+    valid = table[column].notna() & table[factor].notna()
+    values, grupos = table.loc[valid, column], table.loc[valid, factor]
     if len(values) < 2 or values.nunique() < 2:
         return np.nan
     mean = values.mean()
@@ -111,15 +111,15 @@ def transfer_diagnostics(
     good ratio only means something in a feature that already proved it reproduces.
     """
     rows = []
-    for columna in columns_of_set(table, split):
-        per_city = explained_variance(table, columna, group_column)
-        por_grado = explained_variance(table, columna, target_column)
+    for column in columns_of_set(table, split):
+        per_city = explained_variance(table, column, group_column)
+        per_grade = explained_variance(table, column, target_column)
         rows.append(
             {
-                "feature": columna,
+                "feature": column,
                 "per_city": per_city,
-                "por_grado": por_grado,
-                "ratio": per_city / por_grado if por_grado and por_grado > 0 else np.nan,
+                "per_grade": per_grade,
+                "ratio": per_city / per_grade if per_grade and per_grade > 0 else np.nan,
             }
         )
     return pd.DataFrame(rows).sort_values("ratio", ascending=False).reset_index(drop=True)
@@ -317,21 +317,21 @@ def select_features(
     """
     reproduce = dict(zip(reliability["feature"], reliability["r_median"], strict=True))
     rows = []
-    for columna in columns_of_set(table, "textura"):
-        canal = columna.rsplit("_", 2)[0]
+    for column in columns_of_set(table, "textura"):
+        canal = column.rsplit("_", 2)[0]
         px_column = f"{canal}_n_px"
         r_size = np.nan
         if px_column in table:
-            valid = table[columna].notna() & table[px_column].notna()
-            if valid.sum() > 2 and table.loc[valid, columna].nunique() > 1:
+            valid = table[column].notna() & table[px_column].notna()
+            if valid.sum() > 2 and table.loc[valid, column].nunique() > 1:
                 r_size = float(
                     np.corrcoef(
-                        table.loc[valid, columna],
+                        table.loc[valid, column],
                         np.log10(table.loc[valid, px_column].clip(lower=1)),
                     )[0, 1]
                 )
 
-        r_mitades = reproduce.get(columna, np.nan)
+        r_mitades = reproduce.get(column, np.nan)
         pasa_fiabilidad = (
             bool(r_mitades >= reliability_threshold) if r_mitades == r_mitades else False
         )
@@ -343,7 +343,7 @@ def select_features(
             reason = "tied to size"
         rows.append(
             {
-                "feature": columna,
+                "feature": column,
                 "r_mitades": r_mitades,
                 "r_n_px": r_size,
                 "kept": pasa_fiabilidad and pasa_tamano,
@@ -382,7 +382,7 @@ def sign_test(diferencias: np.ndarray) -> dict[str, float]:
 
 def city_interval(
     per_city: pd.DataFrame,
-    columna: str,
+    column: str,
     *,
     repeticiones: int = 10000,
     semilla: int = SEED,
@@ -393,7 +393,7 @@ def city_interval(
     five clusters the interval comes out wide, which is the honest answer to the sample
     size and not a defect of the method.
     """
-    values = per_city[columna].to_numpy(dtype="float64")
+    values = per_city[column].to_numpy(dtype="float64")
     rng = np.random.default_rng(semilla)
     samples = values[rng.integers(0, len(values), size=(repeticiones, len(values)))]
     medias = samples.mean(axis=1)
