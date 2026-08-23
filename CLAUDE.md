@@ -55,6 +55,40 @@ Sobre el AOI piloto en Tuxtla Gutiérrez (recuadro de 426×309 px a 10 m):
    *Puerta: si no correlaciona, la premisa de interpretabilidad cae.*
 4. **Ablaciones y transferencia** — barrido de los tres brazos, zero-shot en Brasil y Colombia.
 
+## Veredicto de la fase 1
+
+Cerrada el 23 de agosto de 2026 sobre 138 ciudades, con reparto 80/10/10 por ciudad y el
+conjunto de prueba abierto una sola vez.
+
+- **La puerta se pasa.** Kappa cuadrático de 0.544 en prueba con la fusión de ambas
+  modalidades, contra 0.318 de un producto externo de densidad construida. AUROC macro
+  0.790.
+- **La configuración es multimodal.** Elegida en validación, donde la fusión superaba a la
+  óptica sola por 0.024 con intervalos solapados; en prueba la ventaja crece a 0.052. La
+  decisión fue de diseño y hay que declararla como tal.
+- **Prueba coincide con validación** —0.544 contra 0.531— así que no hubo sobreajuste al
+  conjunto con el que se eligió.
+- **La escala de cuantización pesa más que el sensor.** Fijarla en unidades físicas aporta
+  +0.253 al radar y +0.209 al óptico.
+- **La textura aporta, y de forma acotada.** Sumarla a la intensidad lleva el kappa óptico
+  de 0.440 a 0.507. Pero en el umbral que separa el rezago severo del resto, las tres
+  modalidades quedan indistinguibles y la cobertura del suelo sola alcanza 0.828. Por
+  importancia de permutación, la fracción construida de WorldCover encabeza la lista por
+  delante de cualquier rasgo de imagen.
+
+La consecuencia para el paper: lo que justifica el MIL es el mapa de atención, no la
+calidad de la predicción. Si el objetivo fuera predecir el GRS, WorldCover y un percentil
+de NDVI ya hacen casi todo el trabajo.
+
+## Decisiones de la fase 2
+
+- **Instancia:** token de 16 px del modelo fundacional, 160 m de lado. Se mantiene.
+- **Etiqueta de la bolsa:** las cinco clases del GRS, redondeando la media ponderada por
+  población de las AGEB del municipio.
+- **Partición:** 110 ciudades de entrenamiento, 14 de validación, 14 de prueba,
+  estratificadas por tamaño y por proporción de rezago alto. Ninguna ciudad se divide.
+- **Filtro de rasgos:** medido solo sobre las 110 de entrenamiento.
+
 ## Riesgos abiertos
 
 - **Atajo por ruralidad.** El rezago correlaciona con lo rural; el modelo puede aprender
