@@ -21,6 +21,7 @@ inflaría el resultado por autocorrelación espacial.
 """
 
 import logging
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -517,19 +518,23 @@ def evaluar_particion(
     ciudades = mide[columna_grupo].to_numpy()
     azar = np.random.default_rng(SEMILLA)
     unicas = np.unique(ciudades)
-    replicas: dict[str, list[float]] = {"kappa": [], "auroc_macro": [], "spearman": []}
+    replicas: dict[str, list[float]] = defaultdict(list)
     for _ in range(remuestreos):
         elegidas = azar.choice(unicas, size=len(unicas), replace=True)
         filas = np.concatenate([np.flatnonzero(ciudades == c) for c in elegidas])
-        v, pr = verdad[filas], prediccion[filas]
+        v, pr, puntos = verdad[filas], prediccion[filas], puntuaciones[filas]
         if len(set(v)) < 2:
             continue
         replicas["kappa"].append(float(cohen_kappa_score(v, pr, weights="quadratic")))
         replicas["spearman"].append(float(spearmanr(v, pr).statistic))
-        puntos = puntuaciones[filas]
-        macro = auroc_una_contra_resto(v, puntos).get("auroc_macro")
-        if macro is not None:
-            replicas["auroc_macro"].append(macro)
+        # todas las áreas bajo la curva reciben intervalo, incluidas las de cada umbral:
+        # son las que más se citan y presentarlas desnudas invita a leer diferencias de
+        # centésimas como si significaran algo
+        for nombre, valor in {
+            **auroc_una_contra_resto(v, puntos),
+            **auroc_acumulada(v, puntos),
+        }.items():
+            replicas[nombre].append(valor)
 
     intervalos = {}
     for nombre, valores in replicas.items():
