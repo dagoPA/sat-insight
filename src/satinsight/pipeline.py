@@ -274,12 +274,13 @@ def rasgos_de_ciudad(
     forzar: bool = False,
     max_escenas: int | None = None,
     escala: str = "nativa",
+    catalogo: dict | None = None,
 ) -> pd.DataFrame:
     """Tabla de rasgos por AGEB para una ciudad y un sensor, con su etiqueta ordinal.
 
     `escala` elige cómo se cuantiza la textura; ver `ESCALAS`.
     """
-    area, agebs = aoi_de_ciudad(clave, raiz)
+    area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
     bandas, malla, _ = asegurar_compuesto(
         clave,
         sensor,
@@ -328,10 +329,24 @@ def rasgos_de_todas(
     raiz: Path = RAIZ_DATOS,
     max_escenas: int | None = None,
     escala: str = "nativa",
+    catalogo: dict | None = None,
 ) -> pd.DataFrame:
-    """Apila las tablas de rasgos de varias ciudades para un mismo sensor."""
-    partes = [
-        rasgos_de_ciudad(c, sensor, raiz=raiz, max_escenas=max_escenas, escala=escala)
-        for c in ciudades
-    ]
+    """Apila las tablas de rasgos de varias ciudades para un mismo sensor.
+
+    Una ciudad que falle no detiene al resto: con 138 ciudades, abortar por una sola
+    obliga a repetir horas de trabajo ya hecho, y qué faltó se ve en el registro.
+    """
+    partes = []
+    for c in ciudades:
+        try:
+            partes.append(
+                rasgos_de_ciudad(
+                    c, sensor, raiz=raiz, max_escenas=max_escenas, escala=escala, catalogo=catalogo
+                )
+            )
+        except Exception:
+            log.warning("sin rasgos para %s", c, exc_info=True)
+    if not partes:
+        raise RuntimeError(f"ninguna ciudad dio rasgos para {sensor}")
+    log.info("rasgos de %d de %d ciudades", len(partes), len(ciudades))
     return pd.concat(partes, ignore_index=True)
