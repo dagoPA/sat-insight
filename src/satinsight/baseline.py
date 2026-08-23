@@ -90,7 +90,7 @@ def varianza_explicada(tabla: pd.DataFrame, columna: str, factor: str) -> float:
     return float(entre / total) if total > 0 else np.nan
 
 
-def diagnostico_transferencia(
+def transfer_diagnostics(
     tabla: pd.DataFrame,
     split: str,
     *,
@@ -240,7 +240,7 @@ def evaluar(
     return pd.DataFrame(renglones)
 
 
-def comparar(
+def compare(
     tabla: pd.DataFrame,
     conjuntos: tuple[str, ...] = tuple(SETS),
     modelos: tuple[str, ...] = ("azar", "moda", "clasificador", "regresor"),
@@ -262,7 +262,7 @@ def comparar(
     return pd.concat(partes, ignore_index=True)
 
 
-def resumen(detalle: pd.DataFrame) -> pd.DataFrame:
+def fold_summary(detalle: pd.DataFrame) -> pd.DataFrame:
     """Promedia los pliegues y ordena por kappa, que es la métrica que decide."""
     columnas = ["kappa", "exactitud", "f1_macro", "spearman", "mae_ordinal"]
     agregado = (
