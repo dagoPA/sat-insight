@@ -14,8 +14,8 @@ if TYPE_CHECKING:
     from pystac import Item
 
 from satinsight.aoi import Bbox
-from satinsight.catalog import SCL_VALIDOS, agrupar_por_orbita, por_nubosidad
-from satinsight.raster import leer_ventana
+from satinsight.catalog import VALID_SCL, by_cloud_cover, group_by_orbit
+from satinsight.raster import read_window
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def teselas_utiles(
     aportan. Un recuadro repartido entre dos teselas conserva ambas, y la mediana por píxel
     las combina donde cada una tiene dato.
     """
-    leer = leer or leer_ventana
+    leer = leer or read_window
     grupos: dict[str, list] = defaultdict(list)
     for item in items:
         grupos[item.properties.get("s2:mgrs_tile", "?")].append(item)
@@ -90,7 +90,7 @@ def teselas_utiles(
     conservadas: list = []
     for tesela, escenas in sorted(grupos.items()):
         fracciones = []
-        for escena in por_nubosidad(escenas)[:muestras]:
+        for escena in by_cloud_cover(escenas)[:muestras]:
             try:
                 scl = leer(escena.assets["SCL"].href, bbox, FORMA_SONDA)
             except Exception:
@@ -139,16 +139,16 @@ def compuesto_s2(
     por_tesela: dict[str, list] = defaultdict(list)
     for item in utiles:
         por_tesela[item.properties.get("s2:mgrs_tile", "?")].append(item)
-    seleccion = [e for grupo in por_tesela.values() for e in por_nubosidad(grupo)[:max_escenas]]
+    seleccion = [e for grupo in por_tesela.values() for e in by_cloud_cover(grupo)[:max_escenas]]
 
     for item in seleccion:
         try:
-            scl = leer_ventana(item.assets["SCL"].href, bbox, forma)
-            mascara = np.isin(scl, list(SCL_VALIDOS))
+            scl = read_window(item.assets["SCL"].href, bbox, forma)
+            mascara = np.isin(scl, list(VALID_SCL))
             if mascara.mean() < COBERTURA_MINIMA:
                 continue
             for banda in bandas:
-                arreglo = leer_ventana(item.assets[banda].href, bbox, forma).astype("float32")
+                arreglo = read_window(item.assets[banda].href, bbox, forma).astype("float32")
                 arreglo[~mascara] = np.nan
                 pilas[banda].append(arreglo)
             usadas += 1
@@ -240,10 +240,10 @@ def cobertura_util(
     Se devuelve cero solo cuando ninguna lectura llegó, que sí es indistinguible de no
     tener cobertura y el guardia del compuesto atrapa después.
 
-    `leer` se resuelve al llamar y no al definir, para que sustituir `leer_ventana` en el
+    `leer` se resuelve al llamar y no al definir, para que sustituir `read_window` en el
     módulo baste para dejar las pruebas sin red.
     """
-    leer = leer or leer_ventana
+    leer = leer or read_window
     fracciones = []
     for item in items[:muestras]:
         try:
@@ -266,7 +266,7 @@ def orbita_util(
     Manda la cobertura medida y el número de escenas solo desempata, redondeando a
     centésimas para que una diferencia de nada no tire una órbita con muchas más pasadas.
     """
-    grupos = agrupar_por_orbita(items)
+    grupos = group_by_orbit(items)
     if not grupos:
         raise ValueError("no hay escenas SAR que agrupar")
     cobertura = {k: cobertura_util(v, bbox, muestras, leer) for k, v in grupos.items()}
@@ -305,7 +305,7 @@ def compuesto_s1(
         # de una y otra saldrían calculadas sobre conjuntos de escenas distintos.
         try:
             leidas = {
-                polarizacion: leer_ventana(item.assets[polarizacion].href, bbox, forma).astype(
+                polarizacion: read_window(item.assets[polarizacion].href, bbox, forma).astype(
                     "float32"
                 )
                 for polarizacion in pilas

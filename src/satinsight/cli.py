@@ -12,12 +12,12 @@ from satinsight import aoi as modulo_aoi
 from satinsight.agebs import CIUDADES, agebs_de_ciudad, resumen_grados
 from satinsight.baseline import comparar, diagnostico_transferencia, resumen
 from satinsight.catalog import (
-    COLECCION_S1,
-    COLECCION_S2,
-    abrir_catalogo,
-    buscar,
-    por_nubosidad,
-    resumen_nubes,
+    COLLECTION_S1,
+    COLLECTION_S2,
+    by_cloud_cover,
+    cloud_summary,
+    open_catalogue,
+    search,
 )
 from satinsight.composite import compuesto_s1, compuesto_s2
 from satinsight.figuras import (
@@ -29,8 +29,8 @@ from satinsight.figuras import (
 )
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.pipeline import ESCALAS, SENSORES, rasgos_de_todas
-from satinsight.raster import a_db, estirar, leer_ventana, percentiles
-from satinsight.render import guardar_rgb
+from satinsight.raster import percentiles, read_window, stretch, to_db
+from satinsight.render import save_rgb
 
 PERIODO_CENSO = "2020-01-01/2020-12-31"
 
@@ -39,8 +39,8 @@ log = logging.getLogger("satinsight")
 
 def cmd_aoi(_: argparse.Namespace) -> int:
     """Lista los recuadros piloto disponibles."""
-    for clave, area in sorted(modulo_aoi.PILOTO.items()):
-        alto, ancho = area.forma_aproximada()
+    for clave, area in sorted(modulo_aoi.PILOT.items()):
+        alto, ancho = area.approximate_shape()
         print(f"{clave:<12} {area.nombre:<22} {area.entidad:<18} ~{ancho}x{alto} px @10 m")
     return 0
 
@@ -48,17 +48,17 @@ def cmd_aoi(_: argparse.Namespace) -> int:
 def cmd_probe(args: argparse.Namespace) -> int:
     """Reporta cuántas escenas hay disponibles sobre un AOI."""
     area = modulo_aoi.obtener(args.aoi)
-    catalogo = abrir_catalogo()
+    catalogo = open_catalogue()
     print(f"{area.nombre} · {args.periodo}")
 
-    escenas_s2 = buscar(COLECCION_S2, area.bbox, args.periodo, catalogo)
-    resumen = resumen_nubes(escenas_s2)
+    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogo)
+    resumen = cloud_summary(escenas_s2)
     print(f"  Sentinel-2  {resumen['escenas']:>4} escenas")
     print(f"              nubes mediana {resumen['mediana']}%")
     print(f"              {resumen['pct_mayor_50']}% por encima del 50% de nubes")
     print(f"              {resumen['pct_mayor_80']}% por encima del 80%")
 
-    escenas_s1 = buscar(COLECCION_S1, area.bbox, args.periodo, catalogo)
+    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogo)
     print(f"  Sentinel-1  {len(escenas_s1):>4} escenas")
     return 0
 
@@ -67,7 +67,7 @@ def cmd_panels(args: argparse.Namespace) -> int:
     """Descarga una muestra y renderiza los cuatro paneles de inspección."""
     area = modulo_aoi.obtener(args.aoi)
     destino = Path(args.salida)
-    catalogo = abrir_catalogo()
+    catalogo = open_catalogue()
     stats: dict[str, object] = {
         "aoi_clave": area.clave,
         "aoi_nombre": area.nombre,
@@ -77,23 +77,23 @@ def cmd_panels(args: argparse.Namespace) -> int:
     }
 
     log.info("consultando Sentinel-2")
-    escenas_s2 = buscar(COLECCION_S2, area.bbox, args.periodo, catalogo)
-    stats["s2"] = resumen_nubes(escenas_s2)
-    ordenadas = por_nubosidad(escenas_s2)
+    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogo)
+    stats["s2"] = cloud_summary(escenas_s2)
+    ordenadas = by_cloud_cover(escenas_s2)
     despejada, nublada = ordenadas[0], ordenadas[-1]
 
     log.info("fecha despejada: %s", despejada.datetime.date())
-    bandas = [leer_ventana(despejada.assets[b].href, area.bbox) for b in ("B04", "B03", "B02")]
+    bandas = [read_window(despejada.assets[b].href, area.bbox) for b in ("B04", "B03", "B02")]
     forma = bandas[0].shape
-    guardar_rgb(*(estirar(b) for b in bandas), destino / "s2_despejada.png")
+    save_rgb(*(stretch(b) for b in bandas), destino / "s2_despejada.png")
     stats["s2_despejada"] = {
         "fecha": str(despejada.datetime.date()),
         "nubes": round(despejada.properties["eo:cloud_cover"], 1),
     }
 
     log.info("fecha nublada: %s", nublada.datetime.date())
-    bandas = [leer_ventana(nublada.assets[b].href, area.bbox, forma) for b in ("B04", "B03", "B02")]
-    guardar_rgb(*(estirar(b) for b in bandas), destino / "s2_nublada.png")
+    bandas = [read_window(nublada.assets[b].href, area.bbox, forma) for b in ("B04", "B03", "B02")]
+    save_rgb(*(stretch(b) for b in bandas), destino / "s2_nublada.png")
     stats["s2_nublada"] = {
         "fecha": str(nublada.datetime.date()),
         "nubes": round(nublada.properties["eo:cloud_cover"], 1),
@@ -101,19 +101,17 @@ def cmd_panels(args: argparse.Namespace) -> int:
 
     log.info("componiendo Sentinel-2")
     compuesto, usadas = compuesto_s2(escenas_s2, area.bbox, forma, max_escenas=args.max_s2)
-    guardar_rgb(
-        *(estirar(compuesto[b]) for b in ("B04", "B03", "B02")),
+    save_rgb(
+        *(stretch(compuesto[b]) for b in ("B04", "B03", "B02")),
         destino / "s2_compuesto.png",
     )
     stats["s2_compuesto"] = {"escenas_usadas": usadas}
 
     log.info("consultando y componiendo Sentinel-1")
-    escenas_s1 = buscar(COLECCION_S1, area.bbox, args.periodo, catalogo)
+    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogo)
     sar, meta = compuesto_s1(escenas_s1, area.bbox, forma, max_escenas=args.max_s1)
-    vv_db, vh_db = a_db(sar["vv"]), a_db(sar["vh"])
-    guardar_rgb(
-        estirar(vv_db), estirar(vh_db), estirar(vv_db - vh_db), destino / "s1_compuesto.png"
-    )
+    vv_db, vh_db = to_db(sar["vv"]), to_db(sar["vh"])
+    save_rgb(stretch(vv_db), stretch(vh_db), stretch(vv_db - vh_db), destino / "s1_compuesto.png")
     stats["s1"] = {
         "escenas_disponibles": meta["escenas_disponibles"],
         "escenas_usadas": meta["escenas_usadas"],

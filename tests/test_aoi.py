@@ -1,24 +1,24 @@
 import pytest
 
-from satinsight.aoi import AOI, PILOTO, obtener
+from satinsight.aoi import AOI, PILOT, get
 
 
 def test_todos_los_pilotos_son_validos():
-    for clave, area in PILOTO.items():
-        assert area.clave == clave
-        assert area.ancho_grados > 0
-        assert area.alto_grados > 0
+    for clave, area in PILOT.items():
+        assert area.key == clave
+        assert area.width_degrees > 0
+        assert area.height_degrees > 0
 
 
 def test_los_pilotos_comparten_tamano():
-    anchos = {round(a.ancho_grados, 6) for a in PILOTO.values()}
-    altos = {round(a.alto_grados, 6) for a in PILOTO.values()}
+    anchos = {round(a.width_degrees, 6) for a in PILOT.values()}
+    altos = {round(a.height_degrees, 6) for a in PILOT.values()}
     assert len(anchos) == 1, "los recuadros piloto deben ser comparables entre sí"
     assert len(altos) == 1
 
 
-def test_forma_aproximada_es_plausible():
-    alto, ancho = PILOTO["tuxtla"].forma_aproximada(resolucion_m=10)
+def test_approximate_shape_es_plausible():
+    alto, ancho = PILOT["tuxtla"].approximate_shape(resolution_m=10)
     assert 250 < alto < 350
     assert 350 < ancho < 480
 
@@ -34,9 +34,9 @@ def test_forma_aproximada_es_plausible():
 )
 def test_bbox_invalido_falla(bbox):
     with pytest.raises(ValueError):
-        AOI(clave="x", nombre="x", entidad="x", bbox=bbox)
+        AOI(key="x", name="x", state="x", bbox=bbox)
 
 
 def test_obtener_desconocido_sugiere_disponibles():
     with pytest.raises(KeyError, match="tuxtla"):
-        obtener("saltillo")
+        get("saltillo")

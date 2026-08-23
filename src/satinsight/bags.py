@@ -21,7 +21,7 @@ from satinsight.agebs import GRADOS, ORDINAL
 from satinsight.tiling import Tile, centers
 
 if TYPE_CHECKING:
-    from satinsight.malla import Malla
+    from satinsight.malla import Grid
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ LARGO_CLAVE_MUNICIPIO = 5
 """Characters of an AGEB key that name its municipality: two of state, three of county."""
 
 
-def locate(tiles: list[Tile], malla: Malla, agebs: gpd.GeoDataFrame) -> pd.DataFrame:
+def locate(tiles: list[Tile], malla: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     """Says which AGEB and which municipality each patch fell into.
 
     A patch is placed by its centre. Patches straddling a boundary therefore land in one
@@ -121,7 +121,7 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
 
 def build(
     tiles: list[Tile],
-    malla: Malla,
+    malla: Grid,
     agebs: gpd.GeoDataFrame,
     ciudad: str,
     *,

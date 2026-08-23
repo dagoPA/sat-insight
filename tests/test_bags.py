@@ -5,7 +5,7 @@ import pytest
 from shapely.geometry import box
 
 from satinsight.bags import build, locate, municipal_labels
-from satinsight.malla import malla_de_bbox
+from satinsight.malla import grid_from_bbox
 from satinsight.tiling import grid
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)
@@ -13,13 +13,13 @@ CRS = "EPSG:32615"
 
 
 def malla_y_tiles(size=64):
-    malla = malla_de_bbox(BBOX, CRS)
-    return malla, grid(malla.forma, size=size)
+    malla = grid_from_bbox(BBOX, CRS)
+    return malla, grid(malla.shape, size=size)
 
 
 def agebs_falsas(malla, cortes=2, municipios=("07101", "07102")):
     """Parte el recuadro en franjas verticales, una AGEB por franja."""
-    izq, abajo, der, arriba = malla.limites
+    izq, abajo, der, arriba = malla.bounds
     ancho = (der - izq) / cortes
     filas = []
     for i in range(cortes):
@@ -46,7 +46,7 @@ def test_every_patch_lands_in_exactly_one_ageb():
 
 def test_patches_outside_every_ageb_are_dropped():
     malla, tiles = malla_y_tiles()
-    izq, abajo, der, arriba = malla.limites
+    izq, abajo, der, arriba = malla.bounds
     # una sola AGEB que cubre la mitad izquierda
     solo_izquierda = gpd.GeoDataFrame(
         [{"cvegeo": "0710100010001", "geometry": box(izq, abajo, (izq + der) / 2, arriba)}],

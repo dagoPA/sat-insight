@@ -4,19 +4,19 @@ import numpy as np
 import pytest
 
 from satinsight.cache import cargar, existe, guardar, ruta_compuesto
-from satinsight.malla import malla_de_bbox
+from satinsight.malla import grid_from_bbox
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)
 
 
 @pytest.fixture
 def malla():
-    return malla_de_bbox(BBOX, "EPSG:32615", resolucion_m=100)
+    return grid_from_bbox(BBOX, "EPSG:32615", resolution_m=100)
 
 
 def bandas_de(malla, nombres=("vv", "vh")):
     rng = np.random.default_rng(0)
-    return {n: rng.random(malla.forma).astype("float32") for n in nombres}
+    return {n: rng.random(malla.shape).astype("float32") for n in nombres}
 
 
 def test_ida_y_vuelta_conserva_los_valores(tmp_path, malla):
@@ -33,7 +33,7 @@ def test_ida_y_vuelta_conserva_la_georreferencia(tmp_path, malla):
     guardar(bandas_de(malla), malla, tmp_path / "x.tif")
     _, recuperada, _ = cargar(tmp_path / "x.tif")
 
-    assert recuperada.forma == malla.forma
+    assert recuperada.shape == malla.shape
     assert recuperada.crs == malla.crs
     assert recuperada.transform == pytest.approx(malla.transform, abs=1e-6)
 

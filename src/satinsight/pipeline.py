@@ -19,12 +19,12 @@ import pandas as pd
 from satinsight import cache
 from satinsight.agebs import CIUDADES, agebs_de_ciudad
 from satinsight.aoi import AOI
-from satinsight.catalog import COLECCION_S1, COLECCION_S2, abrir_catalogo, buscar
+from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
 from satinsight.cobertura import fracciones_por_ageb, mosaico
 from satinsight.composite import compuesto_s1, compuesto_s2
 from satinsight.ingesta import RAIZ_DATOS
-from satinsight.malla import Malla, malla_de_escenas
-from satinsight.raster import a_db
+from satinsight.malla import Grid, grid_from_scenes
+from satinsight.raster import to_db
 from satinsight.textura import RANGOS_FIJOS, RANGOS_FIJOS_S1, rasgos_por_ageb
 
 log = logging.getLogger(__name__)
@@ -126,8 +126,8 @@ def aoi_de_ciudad(
     catalogo = catalogo or CIUDADES
     agebs = agebs_de_ciudad(clave, raiz, catalogo=catalogo)
     ciudad = catalogo[clave]
-    area = AOI.desde_poligonos(clave, ciudad.nombre, ciudad.entidad, agebs, margen_m=margen_m)
-    alto, ancho = area.forma_aproximada()
+    area = AOI.from_polygons(clave, ciudad.nombre, ciudad.entidad, agebs, margen_m=margen_m)
+    alto, ancho = area.approximate_shape()
     log.info("%s: %d AGEB, recuadro ~%dx%d px @10 m", ciudad.nombre, len(agebs), ancho, alto)
     return area, agebs
 
@@ -140,14 +140,14 @@ def construir_compuesto(
     periodo: str = PERIODO_CENSO,
     max_escenas: int | None = None,
     catalogo=None,
-) -> tuple[dict[str, np.ndarray], Malla, dict]:
+) -> tuple[dict[str, np.ndarray], Grid, dict]:
     """Compone una ciudad y un sensor desde el catálogo, sin consultar el disco."""
     if sensor not in SENSORES:
         raise ValueError(f"sensor desconocido: {sensor!r}. Válidos: {', '.join(SENSORES)}")
 
-    catalogo = catalogo or abrir_catalogo()
-    coleccion = COLECCION_S2 if sensor == "s2" else COLECCION_S1
-    escenas = buscar(coleccion, area.bbox, periodo, catalogo)
+    catalogo = catalogo or open_catalogue()
+    coleccion = COLLECTION_S2 if sensor == "s2" else COLLECTION_S1
+    escenas = search(coleccion, area.bbox, periodo, catalogo)
     if not escenas:
         raise RuntimeError(f"el catálogo no devolvió escenas de {sensor} para {clave}")
 
@@ -157,23 +157,23 @@ def construir_compuesto(
     if sensor == "s1":
 
         def puntuar(grupo):
-            from satinsight.catalog import agrupar_por_orbita
+            from satinsight.catalog import group_by_orbit
             from satinsight.composite import cobertura_util
 
-            orbitas = agrupar_por_orbita(grupo)
+            orbitas = group_by_orbit(grupo)
             return max((cobertura_util(v, area.bbox) for v in orbitas.values()), default=0.0)
 
-    malla, escenas = malla_de_escenas(area.bbox, escenas, puntuar=puntuar)
-    log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixeles)
+    malla, escenas = grid_from_scenes(area.bbox, escenas, puntuar=puntuar)
+    log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixels)
 
     if sensor == "s2":
         tope = max_escenas or TOPE_S2
-        bandas, meta = compuesto_s2(escenas, area.bbox, malla.forma, BANDAS_S2, tope)
+        bandas, meta = compuesto_s2(escenas, area.bbox, malla.shape, BANDAS_S2, tope)
         etiquetas = {"escenas_disponibles": len(escenas), **meta}
         profundidad = int(meta["profundidad_mediana"])
     else:
         tope = max_escenas or TOPE_S1
-        bandas, meta = compuesto_s1(escenas, area.bbox, malla.forma, tope)
+        bandas, meta = compuesto_s1(escenas, area.bbox, malla.shape, tope)
         etiquetas = dict(meta)
         profundidad = int(meta["escenas_usadas"])
 
@@ -219,7 +219,7 @@ def asegurar_compuesto(
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     **kwargs,
-) -> tuple[dict[str, np.ndarray], Malla, dict]:
+) -> tuple[dict[str, np.ndarray], Grid, dict]:
     """Devuelve el compuesto desde disco, construyéndolo la primera vez.
 
     Quien ya haya resuelto el recuadro puede pasarlo en `area` para ahorrarse una segunda
@@ -275,8 +275,8 @@ def canales_s1(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     La conversión ocurre aquí y nunca antes de guardar: el compuesto vive en potencia
     lineal porque promediar en decibeles sesga el resultado hacia los valores bajos.
     """
-    vv = a_db(bandas["vv"])
-    vh = a_db(bandas["vh"])
+    vv = to_db(bandas["vv"])
+    vh = to_db(bandas["vh"])
     return {"s1vv": vv, "s1vh": vh, "s1razon": vv - vh}
 
 

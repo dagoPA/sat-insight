@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import rasterio
 
-from satinsight.malla import Malla
+from satinsight.malla import Grid
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def ruta_compuesto(ciudad: str, sensor: str, raiz: Path = RAIZ_COMPUESTOS) -> Pa
     return raiz / f"{ciudad}_{sensor}.tif"
 
 
-def guardar(bandas: dict[str, np.ndarray], malla: Malla, destino: Path, **etiquetas) -> Path:
+def guardar(bandas: dict[str, np.ndarray], malla: Grid, destino: Path, **etiquetas) -> Path:
     """Escribe las bandas de un compuesto en un GeoTIFF con su georreferencia.
 
     Los nombres de banda se conservan en la descripción de cada una, y cualquier metadato
@@ -48,16 +48,16 @@ def guardar(bandas: dict[str, np.ndarray], malla: Malla, destino: Path, **etique
     if len(formas) > 1:
         raise ValueError(f"las bandas no comparten forma: {formas}")
     forma = formas.pop()
-    if forma != malla.forma:
+    if forma != malla.shape:
         raise ValueError(
-            f"la forma de las bandas {forma} no coincide con la retícula {malla.forma}"
+            f"la forma de las bandas {forma} no coincide con la retícula {malla.shape}"
         )
 
     destino.parent.mkdir(parents=True, exist_ok=True)
     perfil = {
         "driver": "GTiff",
-        "height": malla.alto,
-        "width": malla.ancho,
+        "height": malla.height,
+        "width": malla.width,
         "count": len(nombres),
         "dtype": "float32",
         "crs": malla.crs,
@@ -76,11 +76,11 @@ def guardar(bandas: dict[str, np.ndarray], malla: Malla, destino: Path, **etique
                 **{k: json.dumps(v, ensure_ascii=False) for k, v in etiquetas.items()}
             )
 
-    log.info("guardado %s (%s, %.1f MP)", destino.name, ", ".join(nombres), malla.megapixeles)
+    log.info("guardado %s (%s, %.1f MP)", destino.name, ", ".join(nombres), malla.megapixels)
     return destino
 
 
-def cargar(origen: Path) -> tuple[dict[str, np.ndarray], Malla, dict]:
+def cargar(origen: Path) -> tuple[dict[str, np.ndarray], Grid, dict]:
     """Recupera un compuesto y la retícula sobre la que fue escrito."""
     with rasterio.open(origen) as fuente:
         nombres = [
@@ -88,11 +88,11 @@ def cargar(origen: Path) -> tuple[dict[str, np.ndarray], Malla, dict]:
             for i, descripcion in enumerate(fuente.descriptions, start=1)
         ]
         bandas = {nombre: fuente.read(i) for i, nombre in enumerate(nombres, start=1)}
-        malla = Malla(
+        malla = Grid(
             transform=fuente.transform,
-            forma=(fuente.height, fuente.width),
+            shape=(fuente.height, fuente.width),
             crs=str(fuente.crs),
-            limites=tuple(fuente.bounds),
+            bounds=tuple(fuente.bounds),
         )
         etiquetas = {}
         for clave, valor in fuente.tags().items():

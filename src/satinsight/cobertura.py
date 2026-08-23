@@ -28,9 +28,9 @@ import numpy as np
 import pandas as pd
 
 from satinsight.aoi import AOI
-from satinsight.catalog import abrir_catalogo
-from satinsight.malla import Malla, recorte_de_poligono
-from satinsight.raster import leer_ventana
+from satinsight.catalog import open_catalogue
+from satinsight.malla import Grid, polygon_window
+from satinsight.raster import read_window
 
 log = logging.getLogger(__name__)
 
@@ -53,18 +53,18 @@ CLASES = {
 }
 
 SIN_DATO = 0
-"""WorldCover usa el cero como ausencia de dato, y `leer_ventana` rellena con cero fuera
+"""WorldCover usa el cero como ausencia de dato, y `read_window` rellena con cero fuera
 de la tesela. Las dos cosas coinciden, que es lo que permite mosaicar por superposición."""
 
 
-def mosaico(area: AOI, malla: Malla, catalogo=None) -> np.ndarray:
+def mosaico(area: AOI, malla: Grid, catalogo=None) -> np.ndarray:
     """Cobertura del suelo sobre la retícula de la ciudad, uniendo las teselas necesarias.
 
     WorldCover se publica en teselas de tres grados y una ciudad puede tocar varias. Cada
     tesela se lee sobre la retícula completa —lo que cae fuera llega en cero— y se
     superpone donde la anterior no tenía dato.
     """
-    catalogo = catalogo or abrir_catalogo()
+    catalogo = catalogo or open_catalogue()
     items = [
         item
         for item in catalogo.search(collections=[COLECCION], bbox=area.bbox).items()
@@ -74,9 +74,9 @@ def mosaico(area: AOI, malla: Malla, catalogo=None) -> np.ndarray:
         raise RuntimeError(f"WorldCover {VERSION} no cubre el recuadro de {area.clave}")
 
     log.info("%s: %d teselas de WorldCover %s", area.clave, len(items), VERSION)
-    salida = np.zeros(malla.forma, dtype="uint8")
+    salida = np.zeros(malla.shape, dtype="uint8")
     for item in items:
-        tesela = leer_ventana(item.assets["map"].href, area.bbox, malla.forma)
+        tesela = read_window(item.assets["map"].href, area.bbox, malla.shape)
         faltante = salida == SIN_DATO
         salida[faltante] = tesela.astype("uint8")[faltante]
 
@@ -115,7 +115,7 @@ def fracciones_por_ageb(
         base = {"cvegeo": clave, f"{prefijo}_n_px": 0}
         base.update(dict.fromkeys(columnas, np.nan))
 
-        ventana = recorte_de_poligono(transform, geometria, clases.shape)
+        ventana = polygon_window(transform, geometria, clases.shape)
         if ventana is not None:
             filas, cols, dentro = ventana
             valores = clases[filas, cols][dentro]
