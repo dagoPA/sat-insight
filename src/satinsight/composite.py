@@ -5,6 +5,7 @@ el radar. El objeto de análisis sigue siendo una imagen estática de un solo co
 """
 
 import logging
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -53,6 +54,60 @@ def _revisar_fallos(sensor: str, fallidas: int, intentadas: int, fraccion: float
         )
 
 
+COBERTURA_DE_TESELA = 0.02
+"""Fracción del recuadro que una tesela MGRS debe alcanzar para entrar al compuesto."""
+
+
+def teselas_utiles(
+    items: list["Item"],
+    bbox: Bbox,
+    muestras: int = 2,
+    minimo: float = COBERTURA_DE_TESELA,
+    leer=None,
+) -> list["Item"]:
+    """Descarta las escenas cuya tesela MGRS no llega al recuadro.
+
+    Sentinel-2 se entrega en teselas fijas, y el catálogo devuelve toda escena cuya tesela
+    intersecte el recuadro pedido, por poco que sea. Una ciudad que cae partida entre dos
+    teselas recibe entonces escenas que sobre su recuadro no traen un solo píxel: fuera de
+    su huella la lectura se rellena con ceros y el SCL en cero significa sin dato, de modo
+    que la máscara sale vacía y la escena se descarta ya dentro del bucle.
+
+    El costo no es descartarlas, es haberlas elegido: la selección se queda con las más
+    despejadas del año sin mirar dónde caen, y sobre San Pedro Tlaquepaque diecinueve de
+    las veinte mejores resultaron ser de la tesela que no toca la ciudad. Quedaba una sola
+    escena para toda la mediana.
+
+    Se sondea entonces cada tesela una vez, a baja resolución, y se conservan las que sí
+    aportan. Un recuadro repartido entre dos teselas conserva ambas, y la mediana por píxel
+    las combina donde cada una tiene dato.
+    """
+    leer = leer or leer_ventana
+    grupos: dict[str, list] = defaultdict(list)
+    for item in items:
+        grupos[item.properties.get("s2:mgrs_tile", "?")].append(item)
+
+    conservadas: list = []
+    for tesela, escenas in sorted(grupos.items()):
+        fracciones = []
+        for escena in por_nubosidad(escenas)[:muestras]:
+            try:
+                scl = leer(escena.assets["SCL"].href, bbox, FORMA_SONDA)
+            except Exception:
+                log.warning("sondeo fallido en %s", escena.id, exc_info=True)
+                continue
+            fracciones.append(float((scl > 0).mean()))
+        cobertura = max(fracciones) if fracciones else 0.0
+        if cobertura >= minimo:
+            conservadas.extend(escenas)
+        else:
+            log.info("tesela %s descartada: cubre %.0f%% del recuadro", tesela, 100 * cobertura)
+    if not conservadas:
+        raise RuntimeError(f"ninguna de las {len(grupos)} teselas Sentinel-2 alcanza el recuadro")
+    log.info("%d escenas en teselas útiles de %d", len(conservadas), len(items))
+    return conservadas
+
+
 def compuesto_s2(
     items: list["Item"],
     bbox: Bbox,
@@ -76,7 +131,7 @@ def compuesto_s2(
     pilas: dict[str, list[np.ndarray]] = {banda: [] for banda in bandas}
     usadas = 0
     fallidas = 0
-    seleccion = por_nubosidad(items)[:max_escenas]
+    seleccion = por_nubosidad(teselas_utiles(items, bbox))[:max_escenas]
 
     for item in seleccion:
         try:
