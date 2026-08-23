@@ -32,12 +32,12 @@ from sklearn.metrics import cohen_kappa_score, f1_score, roc_auc_score
 
 from satinsight.agebs import GRADOS
 from satinsight.landcover import CLASSES
-from satinsight.textura import nombres_de_rasgos
+from satinsight.texture import feature_names
 
 log = logging.getLogger(__name__)
 
-SUFIJOS_DENSIDAD = ("media", "desv", "p10", "p50", "p90", "rango_intercuartil")
-SUFIJOS_TEXTURA = tuple(nombres_de_rasgos())
+SUFIJOS_DENSIDAD = ("media", "desv", "p10", "p50", "p90", "iqr")
+SUFIJOS_TEXTURA = tuple(feature_names())
 """Las columnas de textura llevan propiedad y distancia, por ejemplo `contrast_d2`."""
 
 SUFIJOS_COBERTURA = tuple(CLASSES.values())
@@ -102,7 +102,7 @@ def diagnostico_transferencia(
     La razón entre ambas es la que importa. Por encima de uno, el rasgo describe mejor
     dónde se tomó la medición que qué se midió.
 
-    Se lee junto con `fiabilidad_por_mitades` y nunca sola. Un rasgo que es puro ruido sale
+    Se lee junto con `split_half_reliability` y nunca sola. Un rasgo que es puro ruido sale
     con razón baja —el ruido no correlaciona con la ciudad ni con nada—, así que una razón
     buena solo significa algo en un rasgo que ya demostró reproducirse consigo mismo.
     """
@@ -112,7 +112,7 @@ def diagnostico_transferencia(
         por_grado = varianza_explicada(tabla, columna, columna_objetivo)
         filas.append(
             {
-                "rasgo": columna,
+                "feature": columna,
                 "por_ciudad": por_ciudad,
                 "por_grado": por_grado,
                 "razon": por_ciudad / por_grado if por_grado and por_grado > 0 else np.nan,
@@ -308,10 +308,10 @@ def seleccionar_rasgos(
     Los umbrales se fijan antes de mirar desempeño, que es lo que evita elegir el corte que
     conviene al resultado.
 
-    `fiabilidad` viene de `textura.fiabilidad_por_mitades` agregada sobre las ciudades, con
+    `fiabilidad` viene de `textura.split_half_reliability` agregada sobre las ciudades, con
     columnas `rasgo` y `r_mediana`.
     """
-    reproduce = dict(zip(fiabilidad["rasgo"], fiabilidad["r_mediana"], strict=True))
+    reproduce = dict(zip(fiabilidad["feature"], fiabilidad["r_mediana"], strict=True))
     filas = []
     for columna in columnas_de_conjunto(tabla, "textura"):
         canal = columna.rsplit("_", 2)[0]
@@ -330,18 +330,18 @@ def seleccionar_rasgos(
         r_mitades = reproduce.get(columna, np.nan)
         pasa_fiabilidad = bool(r_mitades >= umbral_fiabilidad) if r_mitades == r_mitades else False
         pasa_tamano = bool(abs(r_tamano) <= umbral_tamano) if r_tamano == r_tamano else False
-        motivo = "conservado"
+        motivo = "kept"
         if not pasa_fiabilidad:
             motivo = "no se reproduce"
         elif not pasa_tamano:
             motivo = "atado al tamaño"
         filas.append(
             {
-                "rasgo": columna,
+                "feature": columna,
                 "r_mitades": r_mitades,
                 "r_n_px": r_tamano,
-                "conservado": pasa_fiabilidad and pasa_tamano,
-                "motivo": motivo,
+                "kept": pasa_fiabilidad and pasa_tamano,
+                "reason": motivo,
             }
         )
     return pd.DataFrame(filas)

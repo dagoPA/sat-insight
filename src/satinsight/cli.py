@@ -164,7 +164,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
 
 def cmd_baseline(args: argparse.Namespace) -> int:
     """Corre la comparación de la fase 1 sobre una tabla de rasgos ya extraída."""
-    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    origen = Path(args.features or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
     if not origen.exists():
         print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
         return 1
@@ -185,7 +185,7 @@ def cmd_baseline(args: argparse.Namespace) -> int:
 
 def cmd_diagnostico(args: argparse.Namespace) -> int:
     """Reporta, por conjunto de rasgos, si describen la ciudad o el rezago."""
-    origen = Path(args.rasgos or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
+    origen = Path(args.features or RAIZ_DATOS / f"rasgos_{args.sensor}.parquet")
     if not origen.exists():
         print(f"falta {origen}. Corre primero: satinsight rasgos {args.sensor}", file=sys.stderr)
         return 1
@@ -200,7 +200,7 @@ def cmd_diagnostico(args: argparse.Namespace) -> int:
         if detalle.empty:
             continue
         bajo, medio, alto = detalle["razon"].quantile([0.25, 0.5, 0.75])
-        peores = ", ".join(detalle.head(3)["rasgo"])
+        peores = ", ".join(detalle.head(3)["feature"])
         print(
             f"  {conjunto:<10} n={len(detalle):<3} "
             f"cuartiles {bajo:>6.1f} /{medio:>6.1f} /{alto:>6.1f}"

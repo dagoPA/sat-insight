@@ -25,7 +25,7 @@ from satinsight.grid import Grid, grid_from_scenes
 from satinsight.ingesta import RAIZ_DATOS
 from satinsight.landcover import fractions_per_ageb, mosaic
 from satinsight.raster import to_db
-from satinsight.textura import RANGOS_FIJOS, RANGOS_FIJOS_S1, rasgos_por_ageb
+from satinsight.texture import FIXED_RANGES, FIXED_RANGES_S1, features_per_ageb
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +66,9 @@ justo lo que la comparación tiene que descartar.
 def _rango_de_canal(nombre: str, escala: str) -> tuple[float, float] | None:
     """Rango de cuantización de un canal bajo la escala pedida, o `None` para estimarlo."""
     if escala == "nativa":
-        return RANGOS_FIJOS_S1.get(nombre)
+        return FIXED_RANGES_S1.get(nombre)
     if escala == "fija":
-        return RANGOS_FIJOS.get(nombre)
+        return FIXED_RANGES.get(nombre)
     if escala == "percentiles":
         return None
     raise ValueError(f"escala desconocida: {escala!r}. Válidas: {', '.join(ESCALAS)}")
@@ -262,7 +262,7 @@ def canales_s2(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     nir = bandas["B08"].astype("float32")
     swir = bandas["B11"].astype("float32")
     return {
-        "s2rojo": rojo,
+        "s2red": rojo,
         "s2nir": nir,
         "s2ndvi": _division_segura(nir - rojo, nir + rojo),
         "s2ndbi": _division_segura(swir - nir, swir + nir),
@@ -277,7 +277,7 @@ def canales_s1(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     """
     vv = to_db(bandas["vv"])
     vh = to_db(bandas["vh"])
-    return {"s1vv": vv, "s1vh": vh, "s1razon": vv - vh}
+    return {"s1vv": vv, "s1vh": vh, "s1ratio": vv - vh}
 
 
 CANALES = {"s2": canales_s2, "s1": canales_s1}
@@ -315,12 +315,12 @@ def rasgos_de_ciudad(
 
     tabla = pd.DataFrame({"cvegeo": claves})
     for nombre, canal in CANALES[sensor](bandas).items():
-        parcial = rasgos_por_ageb(
+        parcial = features_per_ageb(
             canal,
             malla.transform,
             geometrias,
             claves,
-            prefijo=nombre,
+            prefix=nombre,
             rango=_rango_de_canal(nombre, escala),
         )
         tabla = tabla.merge(parcial, on="cvegeo", how="left")
@@ -386,7 +386,7 @@ def fiabilidad_de_ciudades(
     en el norte, y el filtro lo dejaría pasar sin que nada avisara.
     """
     from satinsight.agebs import ciudades_por_tamano
-    from satinsight.textura import fiabilidad_por_mitades
+    from satinsight.texture import split_half_reliability
 
     catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
     claves = ciudades or tuple(
@@ -403,12 +403,12 @@ def fiabilidad_de_ciudades(
             canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
             for nombre, banda in canales.items():
                 partes.append(
-                    fiabilidad_por_mitades(
+                    split_half_reliability(
                         banda,
                         malla.transform,
                         list(agebs.geometry),
                         list(agebs.cvegeo),
-                        prefijo=nombre,
+                        prefix=nombre,
                         rango=_rango_de_canal(nombre, escala),
                     ).assign(ciudad=clave)
                 )
@@ -419,7 +419,7 @@ def fiabilidad_de_ciudades(
         raise RuntimeError(f"ninguna ciudad dio fiabilidad para {sensor}")
     juntas = pd.concat(partes, ignore_index=True)
     resumen = (
-        juntas.groupby("rasgo", observed=True)["r"]
+        juntas.groupby("feature", observed=True)["r"]
         .agg(r_mediana="median", r_min="min", ciudades="size")
         .reset_index()
         .sort_values("r_mediana", ascending=False)

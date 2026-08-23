@@ -16,7 +16,7 @@ from satinsight.baseline import (
     varianza_explicada,
 )
 from satinsight.landcover import CLASSES
-from satinsight.textura import nombres_de_rasgos
+from satinsight.texture import feature_names
 
 CIUDADES = ("tuxtla", "merida", "iztapalapa")
 
@@ -48,7 +48,7 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
         # rompa la prueba, con lo que se evita que quede midiendo un conjunto vacío.
         for clase in CLASSES.values():
             columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
-        for sufijo in nombres_de_rasgos():
+        for sufijo in feature_names():
             lleva_senal = sufijo.startswith(("contrast_", "homogeneity_"))
             signo = -1 if sufijo.startswith("homogeneity_") else 1
             señal = signo * fuerza * ordinal if lleva_senal else 0.0
@@ -152,7 +152,7 @@ def test_el_diagnostico_delata_el_rasgo_que_solo_conoce_la_ciudad():
     """Un rasgo que separa ciudades sin separar grados debe salir con razón alta."""
     tabla = tabla_sintetica(80, fuerza=1.5)
     tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CIUDADES)})
-    d = diagnostico_transferencia(tabla, "densidad").set_index("rasgo")
+    d = diagnostico_transferencia(tabla, "densidad").set_index("feature")
     assert d.loc["c_media", "razon"] > 10
     assert d.loc["c_desv", "razon"] < d.loc["c_media", "razon"]
 
@@ -202,18 +202,18 @@ def test_una_tabla_sin_rasgos_del_conjunto_falla():
 def fiabilidad_de(tabla, valor=0.9):
     """Tabla de fiabilidad sintética con el mismo valor para todos los rasgos."""
     rasgos = columnas_de_conjunto(tabla, "textura")
-    return pd.DataFrame({"rasgo": rasgos, "r_mediana": [valor] * len(rasgos)})
+    return pd.DataFrame({"feature": rasgos, "r_mediana": [valor] * len(rasgos)})
 
 
 def test_un_rasgo_que_no_se_reproduce_queda_fuera():
     tabla = tabla_sintetica(40)
     tabla["c_n_px"] = 1000
     fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.rasgo == "c_contrast_d1", "r_mediana"] = 0.2
+    fiab.loc[fiab.feature == "c_contrast_d1", "r_mediana"] = 0.2
 
-    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
-    assert not sel.loc["c_contrast_d1", "conservado"]
-    assert sel.loc["c_contrast_d1", "motivo"] == "no se reproduce"
+    sel = seleccionar_rasgos(tabla, fiab).set_index("feature")
+    assert not sel.loc["c_contrast_d1", "kept"]
+    assert sel.loc["c_contrast_d1", "reason"] == "no se reproduce"
 
 
 def test_un_rasgo_atado_al_tamano_queda_fuera():
@@ -223,9 +223,9 @@ def test_un_rasgo_atado_al_tamano_queda_fuera():
     tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
     tabla["c_contrast_d1"] = np.log10(tabla["c_n_px"]) * 5
 
-    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
-    assert not sel.loc["c_contrast_d1", "conservado"]
-    assert sel.loc["c_contrast_d1", "motivo"] == "atado al tamaño"
+    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("feature")
+    assert not sel.loc["c_contrast_d1", "kept"]
+    assert sel.loc["c_contrast_d1", "reason"] == "atado al tamaño"
 
 
 def test_un_rasgo_fiable_e_independiente_se_conserva():
@@ -234,9 +234,9 @@ def test_un_rasgo_fiable_e_independiente_se_conserva():
     tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
     tabla["c_homogeneity_d1"] = rng.normal(0, 1, len(tabla))
 
-    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
-    assert sel.loc["c_homogeneity_d1", "conservado"]
-    assert sel.loc["c_homogeneity_d1", "motivo"] == "conservado"
+    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("feature")
+    assert sel.loc["c_homogeneity_d1", "kept"]
+    assert sel.loc["c_homogeneity_d1", "reason"] == "kept"
 
 
 def test_el_ruido_puro_lo_atrapa_la_fiabilidad_y_no_el_tamano():
@@ -251,19 +251,19 @@ def test_el_ruido_puro_lo_atrapa_la_fiabilidad_y_no_el_tamano():
     tabla["c_energy_d4"] = rng.normal(0, 1, len(tabla))
 
     fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.rasgo == "c_energy_d4", "r_mediana"] = 0.05
-    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
+    fiab.loc[fiab.feature == "c_energy_d4", "r_mediana"] = 0.05
+    sel = seleccionar_rasgos(tabla, fiab).set_index("feature")
 
     assert abs(sel.loc["c_energy_d4", "r_n_px"]) < 0.30
-    assert not sel.loc["c_energy_d4", "conservado"]
+    assert not sel.loc["c_energy_d4", "kept"]
 
 
 def test_un_rasgo_sin_medicion_de_fiabilidad_queda_fuera():
     tabla = tabla_sintetica(40)
     tabla["c_n_px"] = 1000
     fiab = fiabilidad_de(tabla)
-    sel = seleccionar_rasgos(tabla, fiab[fiab.rasgo != "c_contrast_d2"]).set_index("rasgo")
-    assert not sel.loc["c_contrast_d2", "conservado"]
+    sel = seleccionar_rasgos(tabla, fiab[fiab.feature != "c_contrast_d2"]).set_index("feature")
+    assert not sel.loc["c_contrast_d2", "kept"]
 
 
 def test_el_auroc_de_las_clases_bajas_no_sale_invertido():
