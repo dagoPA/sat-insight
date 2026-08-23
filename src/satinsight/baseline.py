@@ -396,3 +396,54 @@ def intervalo_por_ciudades(
         "ic_alto": float(np.percentile(medias, 97.5)),
         "fraccion_positiva": float((medias > 0).mean()),
     }
+
+
+def evaluar_particion(
+    tabla: pd.DataFrame,
+    conjunto: str,
+    modelo: str,
+    particion: pd.DataFrame,
+    *,
+    evaluar_en: str = "test",
+    columna_grupo: str = "ciudad",
+    columna_objetivo: str = "ordinal",
+) -> dict[str, float]:
+    """Entrena sobre las ciudades de entrenamiento y mide sobre las de validación o prueba.
+
+    Reemplaza a dejar una ciudad fuera por pliegue, que servía con cinco ciudades y con
+    ciento treinta y ocho daría otros tantos pliegues entrenados cada uno con el 99.3% de
+    los datos, donde la dispersión entre pliegues es casi toda ruido.
+
+    La incertidumbre sale de un remuestreo por ciudades dentro del conjunto medido, porque
+    las AGEB vecinas están correlacionadas y tratarlas como independientes estrecha los
+    intervalos sin motivo.
+    """
+    from satinsight.splits import ciudades_de
+
+    if evaluar_en not in ("val", "test"):
+        raise KeyError(f"se mide sobre 'val' o 'test', no sobre {evaluar_en!r}")
+    columnas = columnas_de_conjunto(tabla, conjunto)
+    entrena = tabla[tabla[columna_grupo].isin(ciudades_de(particion, "train"))]
+    mide = tabla[tabla[columna_grupo].isin(ciudades_de(particion, evaluar_en))]
+    if entrena.empty or mide.empty:
+        raise ValueError(
+            f"la partición deja {len(entrena)} filas de entrenamiento y {len(mide)} de "
+            f"{evaluar_en}; ¿coinciden las claves de ciudad?"
+        )
+
+    prediccion = _predecir(modelo, entrena[columnas], entrena[columna_objetivo], mide[columnas])
+    verdad = mide[columna_objetivo].to_numpy()
+    metricas = _metricas(verdad, prediccion)
+
+    por_ciudad = pd.DataFrame(
+        {"ciudad": mide[columna_grupo].to_numpy(), "acierto": verdad == prediccion}
+    )
+    intervalo = intervalo_por_ciudades(por_ciudad, "acierto")
+    return {
+        **metricas,
+        "n_entrena": len(entrena),
+        "n_mide": len(mide),
+        "ciudades_mide": mide[columna_grupo].nunique(),
+        "exactitud_ic_bajo": intervalo["ic_bajo"],
+        "exactitud_ic_alto": intervalo["ic_alto"],
+    }
