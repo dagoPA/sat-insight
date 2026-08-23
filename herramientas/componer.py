@@ -43,6 +43,6 @@ for n, clave in enumerate(mias, start=1):
         print(f"FALLO {clave} ({n}/{len(mias)}): {type(e).__name__}: {e}", flush=True)
 
 print(f"FIN {etiqueta}: {len(fallidas)} fallidas {fallidas}", flush=True)
-# el código de salida distingue la corrida completa de la que dejó cities atrás, para
+# el código de output distingue la corrida completa de la que dejó cities atrás, para
 # que un bucle de reintento sepa si volver a llamarla
 sys.exit(1 if fallidas else 0)

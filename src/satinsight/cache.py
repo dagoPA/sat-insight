@@ -25,7 +25,7 @@ from satinsight.grid import Grid
 
 log = logging.getLogger(__name__)
 
-COMPOSITE_ROOT = Path("data") / "compuestos"
+COMPOSITE_ROOT = Path("data") / "composites"
 
 
 def composite_path(city: str, sensor: str, root: Path = COMPOSITE_ROOT) -> Path:

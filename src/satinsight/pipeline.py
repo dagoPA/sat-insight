@@ -220,7 +220,7 @@ def ensure_composite(
     Whoever already resolved the box can pass it in `area` to save a second read of the
     state shapefile, which for Mexico City runs to some eighty megabytes.
     """
-    destination = cache.composite_path(key, sensor, root / "compuestos")
+    destination = cache.composite_path(key, sensor, root / "composites")
     if destination.exists() and not force:
         stored = cache.load(destination)
         box_ok = area is None or _same_box(stored[2].get("bbox"), area.bbox)
@@ -391,7 +391,7 @@ def reliability_of_cities(
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
     keys = cities or tuple(
         p.stem.replace(f"_{sensor}", "")
-        for p in sorted((root / "compuestos").glob(f"*_{sensor}.tif"))
+        for p in sorted((root / "composites").glob(f"*_{sensor}.tif"))
     )
 
     parts = []

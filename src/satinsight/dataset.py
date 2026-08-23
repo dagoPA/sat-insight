@@ -32,9 +32,9 @@ CHANNELS = {
 def paths(root: Path = DATA_ROOT) -> dict[str, Path]:
     """Where each artefact of the stage lives."""
     return {
-        "instances": root / "instancias",
-        "bags": root / "bolsas",
-        "vectors": root / "vectores",
+        "instances": root / "instances",
+        "bags": root / "bags",
+        "vectors": root / "vectors",
         "partition": root / "partition.csv",
         "cities": root / "ciudades_nacional.csv",
     }
@@ -99,7 +99,7 @@ def build_city(
         "bags": where["bags"] / f"{key}.parquet",
     }
 
-    composite = root / "compuestos" / f"{key}_{sensor}.tif"
+    composite = root / "composites" / f"{key}_{sensor}.tif"
     if not composite.exists():
         raise FileNotFoundError(f"{key} has no {sensor} composite yet: {composite}")
 

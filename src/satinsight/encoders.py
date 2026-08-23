@@ -59,7 +59,7 @@ def normalize(patch: np.ndarray, names: list[str]) -> np.ndarray:
     """
     if len(names) != patch.shape[0]:
         raise ValueError(f"{len(names)} channel names for {patch.shape[0]} channels")
-    salida = np.empty_like(patch, dtype="float32")
+    output = np.empty_like(patch, dtype="float32")
     for i, nombre in enumerate(names):
         clave = {"B04": "s2red", "B08": "s2nir"}.get(nombre, nombre)
         rango = FIXED_RANGES.get(clave)
@@ -68,8 +68,8 @@ def normalize(patch: np.ndarray, names: list[str]) -> np.ndarray:
             rango = (float(canal.min()), float(canal.max())) if canal.size else (0.0, 1.0)
         bajo, alto = rango
         escalado = (patch[i] - bajo) / max(alto - bajo, 1e-9)
-        salida[i] = np.nan_to_num(np.clip(escalado, 0.0, 1.0), nan=0.5)
-    return salida
+        output[i] = np.nan_to_num(np.clip(escalado, 0.0, 1.0), nan=0.5)
+    return output
 
 
 @runtime_checkable
@@ -137,10 +137,10 @@ class DofaEncoder:
     def embed(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
         torch = self._torch
         with torch.inference_mode():
-            salida = self.model.forward_features(self._tensor(batch), wavelengths)
-            if salida.ndim == 3:
-                salida = salida[:, 0]
-        return salida.float().cpu().numpy()
+            output = self.model.forward_features(self._tensor(batch), wavelengths)
+            if output.ndim == 3:
+                output = output[:, 0]
+        return output.float().cpu().numpy()
 
     def embed_tokens(self, batch: np.ndarray, wavelengths: list[float]) -> np.ndarray:
         """Runs the transformer and hands back every token instead of their average.
@@ -156,9 +156,9 @@ class DofaEncoder:
         """
         torch = self._torch
         tensor = self._tensor(batch)
-        longitudes = torch.tensor(wavelengths, device=tensor.device, dtype=tensor.dtype)
+        wavelengths_list = torch.tensor(wavelengths, device=tensor.device, dtype=tensor.dtype)
         with torch.inference_mode():
-            tokens, _ = self.model.patch_embed(tensor, longitudes)
+            tokens, _ = self.model.patch_embed(tensor, wavelengths_list)
             tokens = tokens + self.model.pos_embed[:, 1:, :]
             resumen = (self.model.cls_token + self.model.pos_embed[:, :1, :]).expand(
                 tokens.shape[0], -1, -1
@@ -191,25 +191,25 @@ def extract(
     faltantes = [n for n in order if n not in WAVELENGTHS_UM]
     if faltantes:
         raise KeyError(f"no wavelength registered for {faltantes}")
-    longitudes = [WAVELENGTHS_UM[n] for n in order]
+    wavelengths_list = [WAVELENGTHS_UM[n] for n in order]
 
     tokens, indices = instances(windows, bands, token_size, min_valid_fraction)
     if not windows:
         return np.empty((0, encoder.dim), dtype="float32"), []
 
-    vectores = []
+    vectors = []
     for inicio in range(0, len(windows), batch):
-        lote = np.stack(
+        batch_in = np.stack(
             [normalize(stack(bands, w, order), order) for w in windows[inicio : inicio + batch]]
         )
-        salida = encoder.embed_tokens(lote, longitudes)
-        vectores.append(salida.reshape(-1, salida.shape[-1]))
-    matriz = np.concatenate(vectores)[indices]
-    log.info("%d instances encoded into %d dimensions", *matriz.shape)
-    return matriz, tokens
+        output = encoder.embed_tokens(batch_in, wavelengths_list)
+        vectors.append(output.reshape(-1, output.shape[-1]))
+    matrix = np.concatenate(vectors)[indices]
+    log.info("%d instances encoded into %d dimensions", *matrix.shape)
+    return matrix, tokens
 
 
-def save(embeddings: np.ndarray, destino: Path, **etiquetas) -> Path:
+def save(embeddings: np.ndarray, destino: Path, **labels) -> Path:
     """Writes the vectors as half precision, which halves the disk for no measurable loss.
 
     Label columns of strings arrive from pandas as arrays of objects, and numpy can only
@@ -218,11 +218,11 @@ def save(embeddings: np.ndarray, destino: Path, **etiquetas) -> Path:
     with pickling switched off.
     """
     destino.parent.mkdir(parents=True, exist_ok=True)
-    limpias = {}
-    for clave, valor in etiquetas.items():
-        arreglo = np.asarray(valor)
-        limpias[clave] = arreglo.astype("U") if arreglo.dtype == object else arreglo
-    np.savez_compressed(destino, embeddings=embeddings.astype("float16"), **limpias)
+    cleaned = {}
+    for clave, valor in labels.items():
+        array = np.asarray(valor)
+        cleaned[clave] = array.astype("U") if array.dtype == object else array
+    np.savez_compressed(destino, embeddings=embeddings.astype("float16"), **cleaned)
     log.info("%s (%.1f MB)", destino.name, destino.stat().st_size / 1e6)
     return destino
 
@@ -231,5 +231,5 @@ def load(origen: Path) -> tuple[np.ndarray, dict]:
     """Reads back what `save` wrote, restoring the vectors to single precision."""
     with np.load(origen, allow_pickle=False) as datos:
         embeddings = datos["embeddings"].astype("float32")
-        etiquetas = {k: datos[k] for k in datos.files if k != "embeddings"}
-    return embeddings, etiquetas
+        labels = {k: datos[k] for k in datos.files if k != "embeddings"}
+    return embeddings, labels

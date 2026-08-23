@@ -65,7 +65,7 @@ def modality_panel(city: str, destination: Path, side: int = 520) -> Path:
     root = Path("data") / "composites"
     paneles = []
     for sensor, title in (("s2", "Sentinel-2 · optical"), ("s1", "Sentinel-1 · radar")):
-        bands, _, etiquetas = cache.load(cache.composite_path(city, sensor, root))
+        bands, _, labels = cache.load(cache.composite_path(city, sensor, root))
         rgb = _rgb_from_composite(bands, sensor)
         alto, ancho = rgb.shape[:2]
         lado_px = min(alto, ancho)
@@ -76,7 +76,7 @@ def modality_panel(city: str, destination: Path, side: int = 520) -> Path:
         _text(
             image,
             (10, side - 22),
-            f"{etiquetas.get('scenes_used', '?')} scenes · mediana anual",
+            f"{labels.get('scenes_used', '?')} scenes · mediana anual",
             11,
         )
         paneles.append(image)
@@ -112,7 +112,7 @@ def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 
     proyectadas = agebs.to_crs(grid.crs)
 
     # una etiqueta por grado, para dibujar los bordes con su color
-    etiquetas = rasterize(
+    labels = rasterize(
         [
             (g, GRADES.index(t) + 1)
             for g, t in zip(proyectadas.geometry, proyectadas.grado, strict=True)
@@ -124,16 +124,16 @@ def ageb_panel(city: str, destination: Path, side: int = 760, ventana_px: int = 
     )
     border = np.zeros(grid.shape, dtype=bool)
     for eje in (0, 1):
-        d = np.diff(etiquetas, axis=eje) != 0
+        d = np.diff(labels, axis=eje) != 0
         border |= np.pad(d, [(0, 1) if i == eje else (0, 0) for i in range(2)])
 
     pintado = rgb.copy()
     for indice, grado in enumerate(GRADES, start=1):
-        mask = _thicken(border & (etiquetas == indice))
+        mask = _thicken(border & (labels == indice))
         pintado[mask] = GRADE_COLOUR[grado]
 
     # crop centred on the area with most AGEB, small so the border shows when enlarged
-    rows, columns = np.where(etiquetas > 0)
+    rows, columns = np.where(labels > 0)
     cf, cc = int(np.median(rows)), int(np.median(columns))
     half = min(ventana_px, rgb.shape[0], rgb.shape[1]) // 2
     f0 = max(0, min(cf - half, rgb.shape[0] - 2 * half))

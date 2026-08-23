@@ -148,7 +148,7 @@ def cmd_features(args: argparse.Namespace) -> int:
     catalogue = cities_by_size(stratify=True)
     keys = args.cities or sorted(
         p.stem.replace(f"_{args.sensor}", "")
-        for p in (DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif")
+        for p in (DATA_ROOT / "composites").glob(f"*_{args.sensor}.tif")
     )
     table = features_of_all(
         args.sensor,
@@ -235,21 +235,21 @@ def cmd_progress(args: argparse.Namespace) -> int:
     from satinsight.agebs import cities_by_size
     from satinsight.cache import composite_path
 
-    catalogue = cities_by_size(stratify=not args.sin_estratificar)
-    root = DATA_ROOT / "compuestos"
-    completas, a_medias, faltan = [], [], []
+    catalogue = cities_by_size(stratify=not args.no_stratify)
+    root = DATA_ROOT / "composites"
+    complete, partial, missing = [], [], []
     for key in catalogue:
         hechos = [s for s in SENSORS if composite_path(key, s, root).exists()]
-        destination = completas if len(hechos) == len(SENSORS) else a_medias if hechos else faltan
+        destination = complete if len(hechos) == len(SENSORS) else partial if hechos else missing
         destination.append(key)
 
     size = sum(p.stat().st_size for p in root.glob("*.tif")) / 1e9 if root.exists() else 0
-    print(f"\n{len(completas)} de {len(catalogue)} cities completas")
-    print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {size:.1f} GB en disco")
-    if a_medias:
-        print(f"\nen curso: {', '.join(a_medias[:8])}")
-    if args.detail and faltan:
-        print(f"\npendientes: {', '.join(faltan)}")
+    print(f"\n{len(complete)} of {len(catalogue)} cities complete")
+    print(f"{len(partial)} partial · {len(missing)} not started · {size:.1f} GB on disk")
+    if partial:
+        print(f"\nin progress: {', '.join(partial[:8])}")
+    if args.detail and missing:
+        print(f"\npending: {', '.join(missing)}")
     return 0
 
 
@@ -261,20 +261,20 @@ def cmd_bags(args: argparse.Namespace) -> int:
     catalogue = cities_by_size(stratify=True)
     keys = args.cities or [
         p.stem.replace(f"_{args.sensor}", "")
-        for p in sorted((DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif"))
+        for p in sorted((DATA_ROOT / "composites").glob(f"*_{args.sensor}.tif"))
     ]
     done = 0
     for key in keys:
         try:
-            salidas = build_city(
+            outputs = build_city(
                 key, args.sensor, encoder=None, size=args.size, catalogue=catalogue
             )
         except Exception as e:
             print(f"FALLO {key}: {type(e).__name__}: {e}")
             continue
-        bags = pd.read_parquet(salidas["bags"])
-        instancias = pd.read_parquet(salidas["instancias"])
-        print(f"{key}: {len(bags)} bags, {len(instancias)} instancias")
+        bags = pd.read_parquet(outputs["bags"])
+        instances = pd.read_parquet(outputs["instances"])
+        print(f"{key}: {len(bags)} bags, {len(instances)} instances")
         done += 1
     print(f"\n{done} de {len(keys)} cities")
     return 0
@@ -305,14 +305,14 @@ def cmd_vectors(args: argparse.Namespace) -> int:
     catalogue = cities_by_size(stratify=True)
     keys = args.cities or [
         p.stem.replace(f"_{args.sensor}", "")
-        for p in sorted((DATA_ROOT / "instancias").glob(f"*_{args.sensor}.parquet"))
+        for p in sorted((DATA_ROOT / "instances").glob(f"*_{args.sensor}.parquet"))
     ]
     for key in keys:
         try:
-            salidas = build_city(
+            outputs = build_city(
                 key, args.sensor, encoder=encoder, catalogue=catalogue, force=args.force
             )
-            print(f"{key}: {salidas['vectors'].name}")
+            print(f"{key}: {outputs['vectors'].name}")
         except Exception as e:
             print(f"FALLO {key}: {type(e).__name__}: {e}")
     return 0

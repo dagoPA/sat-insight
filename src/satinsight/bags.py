@@ -138,13 +138,13 @@ def build(
         raise ValueError(f"{city}: no patch landed inside an AGEB")
 
     bag_table = municipal_labels(agebs)
-    counts = instances.groupby("municipio", observed=True).size().rename("instancias")
+    counts = instances.groupby("municipio", observed=True).size().rename("instances")
     bag_table = bag_table.merge(counts, on="municipio", how="inner")
 
-    small = bag_table[bag_table.instancias < min_instances]
+    small = bag_table[bag_table.instances < min_instances]
     if not small.empty:
         log.info("%s: %d bags below %d instances dropped", city, len(small), min_instances)
-        bag_table = bag_table[bag_table.instancias >= min_instances]
+        bag_table = bag_table[bag_table.instances >= min_instances]
         instances = instances[instances.municipio.isin(bag_table.municipio)]
 
     instances.insert(0, "ciudad", city)
@@ -154,6 +154,6 @@ def build(
         city,
         len(bag_table),
         len(instances),
-        bag_table.instancias.median(),
+        bag_table.instances.median(),
     )
     return instances.reset_index(drop=True), bag_table.reset_index(drop=True)
