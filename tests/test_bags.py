@@ -5,7 +5,7 @@ import pytest
 from shapely.geometry import box
 
 from satinsight.bags import build, locate, municipal_labels
-from satinsight.malla import grid_from_bbox
+from satinsight.grid import grid_from_bbox
 from satinsight.tiling import grid
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)

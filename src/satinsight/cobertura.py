@@ -29,7 +29,7 @@ import pandas as pd
 
 from satinsight.aoi import AOI
 from satinsight.catalog import open_catalogue
-from satinsight.malla import Grid, polygon_window
+from satinsight.grid import Grid, polygon_window
 from satinsight.raster import read_window
 
 log = logging.getLogger(__name__)

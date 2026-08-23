@@ -25,7 +25,7 @@ import pandas as pd
 from shapely.ops import clip_by_rect
 from skimage.feature import graycomatrix, graycoprops
 
-from satinsight.malla import polygon_window
+from satinsight.grid import polygon_window
 
 log = logging.getLogger(__name__)
 

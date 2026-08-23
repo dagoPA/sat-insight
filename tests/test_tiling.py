@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from satinsight.malla import grid_from_bbox
+from satinsight.grid import grid_from_bbox
 from satinsight.tiling import Tile, centers, grid, select, stack, valid_fraction
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)

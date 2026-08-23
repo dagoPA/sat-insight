@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from satinsight.malla import grid_from_bbox, grid_from_scenes, select_crs
+from satinsight.grid import grid_from_bbox, grid_from_scenes, select_crs
 
 
 @dataclass

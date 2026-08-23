@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import numpy as np
 
 if TYPE_CHECKING:
-    from satinsight.malla import Grid
+    from satinsight.grid import Grid
 
 log = logging.getLogger(__name__)
 
