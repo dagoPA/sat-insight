@@ -92,7 +92,7 @@ PILOT: dict[str, AOI] = {
     "iztapalapa": AOI(
         key="iztapalapa",
         name="Iztapalapa, CDMX",
-        state="City de México",
+        state="Ciudad de México",
         bbox=(-99.100, 19.336, -99.060, 19.364),
     ),
 }
