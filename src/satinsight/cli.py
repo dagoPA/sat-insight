@@ -19,7 +19,7 @@ from satinsight.catalog import (
     open_catalogue,
     search,
 )
-from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.composite import composite_s1, composite_s2
 from satinsight.download import DATA_ROOT
 from satinsight.figuras import (
     mapa_agebs_por_ciudad,
@@ -100,22 +100,22 @@ def cmd_panels(args: argparse.Namespace) -> int:
     }
 
     log.info("componiendo Sentinel-2")
-    compuesto, usadas = compuesto_s2(escenas_s2, area.bbox, forma, max_escenas=args.max_s2)
+    compuesto, usadas = composite_s2(escenas_s2, area.bbox, forma, max_scenes=args.max_s2)
     save_rgb(
         *(stretch(compuesto[b]) for b in ("B04", "B03", "B02")),
         destino / "s2_compuesto.png",
     )
-    stats["s2_compuesto"] = {"escenas_usadas": usadas}
+    stats["s2_compuesto"] = {"scenes_used": usadas}
 
     log.info("consultando y componiendo Sentinel-1")
     escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogo)
-    sar, meta = compuesto_s1(escenas_s1, area.bbox, forma, max_escenas=args.max_s1)
+    sar, meta = composite_s1(escenas_s1, area.bbox, forma, max_scenes=args.max_s1)
     vv_db, vh_db = to_db(sar["vv"]), to_db(sar["vh"])
     save_rgb(stretch(vv_db), stretch(vh_db), stretch(vv_db - vh_db), destino / "s1_compuesto.png")
     stats["s1"] = {
-        "escenas_disponibles": meta["escenas_disponibles"],
-        "escenas_usadas": meta["escenas_usadas"],
-        "orbita": meta["orbita"],
+        "scenes_available": meta["scenes_available"],
+        "scenes_used": meta["scenes_used"],
+        "orbit": meta["orbit"],
         "vv_db_p5_p95": list(percentiles(vv_db)),
         "vh_db_p5_p95": list(percentiles(vh_db)),
     }
@@ -151,7 +151,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
     tabla = rasgos_de_todas(
         args.sensor,
         tuple(claves),
-        max_escenas=args.max_escenas,
+        max_scenes=args.max_scenes,
         escala=args.escala,
         catalogo=catalogo,
     )

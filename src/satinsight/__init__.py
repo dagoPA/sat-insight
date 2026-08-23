@@ -15,7 +15,7 @@ from satinsight.catalog import (
     open_catalogue,
     search,
 )
-from satinsight.composite import cobertura_util, compuesto_s1, compuesto_s2, orbita_util
+from satinsight.composite import composite_s1, composite_s2, useful_coverage, useful_orbit
 from satinsight.raster import read_window, stretch, to_db
 from satinsight.render import save_rgb, to_data_uri
 
@@ -27,17 +27,17 @@ __all__ = [
     "COLLECTION_S2",
     "PILOT",
     "cloud_summary",
-    "cobertura_util",
-    "compuesto_s1",
-    "compuesto_s2",
+    "composite_s1",
+    "composite_s2",
     "dominant_orbit",
     "group_by_orbit",
     "open_catalogue",
-    "orbita_util",
     "read_window",
     "save_rgb",
     "search",
     "stretch",
     "to_data_uri",
     "to_db",
+    "useful_coverage",
+    "useful_orbit",
 ]

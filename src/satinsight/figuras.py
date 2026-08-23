@@ -76,7 +76,7 @@ def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
         _texto(
             imagen,
             (10, lado - 22),
-            f"{etiquetas.get('escenas_usadas', '?')} escenas · mediana anual",
+            f"{etiquetas.get('scenes_used', '?')} escenas · mediana anual",
             11,
         )
         paneles.append(imagen)
