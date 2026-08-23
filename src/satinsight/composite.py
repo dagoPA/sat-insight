@@ -1,10 +1,11 @@
-"""Compuestos mediana anuales de Sentinel-1 y Sentinel-2.
+"""Annual median composites of Sentinel-1 and Sentinel-2.
 
-El compositing cumple aquí una única función: suprimir nubes en el óptico y speckle en
-el radar. El objeto de análisis sigue siendo una imagen estática de un solo corte anual.
+Compositing serves a single purpose here: suppressing cloud in the optical arm and speckle
+in the radar one. The object of analysis is still a static image of a single annual slice.
 """
 
 import logging
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -13,243 +14,320 @@ if TYPE_CHECKING:
     from pystac import Item
 
 from satinsight.aoi import Bbox
-from satinsight.catalog import SCL_VALIDOS, agrupar_por_orbita, por_nubosidad
-from satinsight.raster import leer_ventana
+from satinsight.catalog import VALID_SCL, by_cloud_cover, group_by_orbit
+from satinsight.raster import read_window
 
 log = logging.getLogger(__name__)
 
-BANDAS_RGB = ("B04", "B03", "B02")
-COBERTURA_MINIMA = 0.05
-"""Fracción de píxeles válidos por debajo de la cual una escena se descarta."""
+RGB_BANDS = ("B04", "B03", "B02")
+MIN_SCENE_COVERAGE = 0.05
+"""Fraction of valid pixels below which a scene is dropped."""
 
-FRACCION_FALLOS = 0.3
-"""Fracción de lecturas fallidas por encima de la cual el compuesto se da por roto.
+FAILURE_FRACTION = 0.3
+"""Fraction of failed reads above which the composite is taken as broken.
 
-Descartar la escena que no se puede leer y seguir es lo correcto frente a una escena rota,
-y es la ruina frente a una avería general: si la firma de acceso caduca a media corrida
-fallan casi todas, y el compuesto se devuelve armado con un puñado de escenas sin que nada
-avise. Así se guardó una vez un compuesto de Acapulco con cuatro escenas de treinta.
+Dropping the scene that cannot be read and carrying on is right in the face of one broken
+scene, and ruinous in the face of a general outage: if the access signature expires
+mid-run nearly all of them fail, and the composite comes back built from a handful of
+scenes with nothing to warn about it. That is how an Acapulco composite once got saved
+with four scenes out of thirty.
 
-El umbral cuenta lecturas fallidas y no escenas usadas, porque son cosas distintas. Una
-escena descartada por nubosidad es un dato sobre el cielo de esa ciudad; una descartada por
-error de lectura es un síntoma de avería. Mezclarlas haría abortar a Tapachula, que es de
-las ciudades más nubladas del país, por una razón que no tiene nada de anómala.
+The threshold counts failed reads and not used scenes, because they are different things.
+A scene dropped for cloud is a fact about that city's sky; one dropped on a read error is a
+symptom of an outage. Mixing them would abort Tapachula, among the cloudiest cities in the
+country, for a reason that is in no way anomalous.
 """
 
 
-def _revisar_fallos(sensor: str, fallidas: int, intentadas: int, fraccion: float | None) -> None:
-    """Levanta excepción cuando demasiadas lecturas fallaron para confiar en el resultado.
+def _check_failures(sensor: str, failed: int, attempted: int, fraction: float | None) -> None:
+    """Raises when too many reads failed for the result to be trusted.
 
-    `None` desactiva la comprobación. Cero es su opuesto y significa lo que aparenta: no se
-    tolera ni una lectura fallida.
+    `None` turns the check off. Zero is its opposite and means what it looks like: not one
+    failed read is tolerated.
     """
-    if fraccion is None or not intentadas:
+    if fraction is None or not attempted:
         return
-    if fallidas > fraccion * intentadas:
+    if failed > fraction * attempted:
         raise RuntimeError(
-            f"{fallidas} de {intentadas} escenas {sensor} fallaron al leerse. "
-            "Un compuesto armado con las que quedan no es representativo; suele indicar "
-            "que la firma de acceso caducó a media corrida o que el servicio no responde."
+            f"{failed} of {attempted} {sensor} scenes failed to read. "
+            "A composite built from what remains is not representative; it usually means "
+            "the access signature expired mid-run or the service is not answering."
         )
 
 
-def compuesto_s2(
+TILE_COVERAGE = 0.02
+"""Fraction of the box an MGRS tile has to reach to enter the composite."""
+
+
+def useful_tiles(
     items: list["Item"],
     bbox: Bbox,
-    forma: tuple[int, int] | None = None,
-    bandas: tuple[str, ...] = BANDAS_RGB,
-    max_escenas: int = 36,
-    fraccion_fallos: float | None = FRACCION_FALLOS,
-) -> tuple[dict[str, np.ndarray], int]:
-    """Mediana por píxel de las escenas Sentinel-2 más despejadas, con máscara SCL.
+    samples: int = 2,
+    minimum: float = TILE_COVERAGE,
+    read=None,
+) -> list["Item"]:
+    """Drops the scenes whose MGRS tile does not reach the box.
 
-    Devuelve las bandas compuestas y el número de escenas que aportaron píxeles.
-    Las escenas se recorren de la más despejada a la más nublada.
+    Sentinel-2 is delivered in fixed tiles, and the catalogue returns every scene whose
+    tile intersects the box asked for, however little. A city that falls split between two
+    tiles then receives scenes that carry not one pixel over its box: outside their
+    footprint the read is filled with zeros and an SCL of zero means no data, so the mask
+    comes out empty and the scene is dropped inside the loop anyway.
 
-    Aborta si demasiadas lecturas fallan. `fraccion_fallos` en `None` desactiva esa
-    comprobación para quien quiera un compuesto parcial a propósito; en cero no tolera ni
-    una lectura fallida.
+    The cost is not dropping them, it is having chosen them: the selection keeps the
+    clearest of the year without looking at where they fall, and over San Pedro Tlaquepaque
+    nineteen of the twenty best turned out to be from the tile that does not touch the
+    city. One scene was left for the whole median.
+
+    Each tile is therefore probed once, at low resolution, and those that do contribute are
+    kept. A box split between two tiles keeps both, and the per-pixel median combines them
+    wherever each one has data.
     """
-    if not items:
-        raise ValueError("no hay escenas Sentinel-2 para componer")
+    read = read or read_window
+    groups: dict[str, list] = defaultdict(list)
+    for item in items:
+        groups[item.properties.get("s2:mgrs_tile", "?")].append(item)
 
-    pilas: dict[str, list[np.ndarray]] = {banda: [] for banda in bandas}
-    usadas = 0
-    fallidas = 0
-    seleccion = por_nubosidad(items)[:max_escenas]
-
-    for item in seleccion:
-        try:
-            scl = leer_ventana(item.assets["SCL"].href, bbox, forma)
-            mascara = np.isin(scl, list(SCL_VALIDOS))
-            if mascara.mean() < COBERTURA_MINIMA:
+    kept: list = []
+    for tile, scenes in sorted(groups.items()):
+        fractions = []
+        for scene in by_cloud_cover(scenes)[:samples]:
+            try:
+                scl = read(scene.assets["SCL"].href, bbox, PROBE_SHAPE)
+            except Exception:
+                log.warning("probe failed on %s", scene.id, exc_info=True)
                 continue
-            for banda in bandas:
-                arreglo = leer_ventana(item.assets[banda].href, bbox, forma).astype("float32")
-                arreglo[~mascara] = np.nan
-                pilas[banda].append(arreglo)
-            usadas += 1
-        except Exception:
-            fallidas += 1
-            log.warning("escena S2 omitida: %s", item.id, exc_info=True)
-
-    _revisar_fallos("Sentinel-2", fallidas, len(seleccion), fraccion_fallos)
-    if usadas == 0:
-        raise RuntimeError("ninguna escena Sentinel-2 aportó píxeles válidos")
-
-    compuesto = {banda: np.nanmedian(np.dstack(capas), axis=2) for banda, capas in pilas.items()}
-    return compuesto, usadas
+            fractions.append(float((scl > 0).mean()))
+        coverage = max(fractions) if fractions else 0.0
+        if coverage >= minimum:
+            kept.extend(scenes)
+        else:
+            log.info("tile %s dropped: covers %.0f%% of the box", tile, 100 * coverage)
+    if not kept:
+        raise RuntimeError(f"none of the {len(groups)} Sentinel-2 tiles reaches the box")
+    log.info("%d scenes in useful tiles of %d", len(kept), len(items))
+    return kept
 
 
-FRACCION_VALIDA = 0.80
-"""Fracción mínima de píxeles observados que se le exige a un compuesto de radar."""
-
-
-def _revisar_compuesto_s1(
-    compuesto: dict[str, np.ndarray], minimo: float = FRACCION_VALIDA
-) -> float:
-    """Rechaza un compuesto de radar que salga sin observar o con valores imposibles.
-
-    Gamma0 en potencia lineal es estrictamente positiva. Un píxel en cero o negativo solo
-    puede venir de que el sin-dato de la escena entrara a la mediana, y ese defecto no se
-    delata solo: con un número par de escenas la mediana promedia el centinela con un valor
-    bueno y devuelve un número intermedio que parece dato. La única forma de verlo es
-    contar signos.
-
-    Una fracción alta de NaN significa que la órbita elegida no pasa por la ciudad. Es
-    preferible que la ciudad falle a que entre al conjunto con un compuesto hueco.
-    """
-    for polarizacion, arreglo in compuesto.items():
-        finitos = np.isfinite(arreglo)
-        fraccion = float(finitos.mean())
-        if fraccion < minimo:
-            raise RuntimeError(
-                f"el compuesto Sentinel-1 solo observó el {100 * fraccion:.0f}% del recuadro "
-                f"en {polarizacion}; ninguna órbita cubre la ciudad"
-            )
-        impropios = float((arreglo[finitos] <= 0).mean())
-        if impropios > 0:
-            raise RuntimeError(
-                f"el {100 * impropios:.1f}% de {polarizacion} salió en cero o negativo, "
-                "que gamma0 lineal no admite: el sin-dato de la escena entró a la mediana"
-            )
-    return min(float(np.isfinite(a).mean()) for a in compuesto.values())
-
-
-MUESTRAS_DE_ORBITA = 4
-"""Escenas que se sondean por órbita para estimar cuánto dato deja sobre el recuadro."""
-
-FORMA_SONDA = (64, 64)
-"""Rejilla del sondeo. Basta para medir qué fracción del recuadro cae dentro de la franja."""
-
-
-def cobertura_util(
+def composite_s2(
     items: list["Item"],
     bbox: Bbox,
-    muestras: int = MUESTRAS_DE_ORBITA,
-    leer=None,
-) -> float:
-    """Fracción media de píxeles observados que unas escenas dejan sobre el recuadro.
-
-    La huella que declara el catálogo no responde esta pregunta. Sobre Mexicali, la órbita
-    cuya huella cubre el 99% del recuadro entrega escenas que alternan entre 1% y 99% de
-    píxeles con dato, porque la ciudad cae en el filo de la franja. Se sondean unas pocas
-    escenas a baja resolución y se promedia lo que de verdad llega.
-
-    Una lectura que falle cuenta como cero, que es como la vería el compuesto.
-
-    `leer` se resuelve al llamar y no al definir, para que sustituir `leer_ventana` en el
-    módulo baste para dejar las pruebas sin red.
-    """
-    leer = leer or leer_ventana
-    fracciones = []
-    for item in items[:muestras]:
-        try:
-            leida = leer(item.assets["vv"].href, bbox, FORMA_SONDA).astype("float32")
-        except Exception:
-            log.warning("sondeo fallido en %s", item.id, exc_info=True)
-            fracciones.append(0.0)
-            continue
-        fracciones.append(float(np.isfinite(leida).mean()))
-    return float(np.mean(fracciones)) if fracciones else 0.0
-
-
-def orbita_util(
-    items: list["Item"],
-    bbox: Bbox,
-    muestras: int = MUESTRAS_DE_ORBITA,
-    leer=None,
-) -> tuple[tuple[str, int], list["Item"], float]:
-    """Geometría de adquisición que más píxeles observados deja sobre el recuadro.
-
-    Manda la cobertura medida y el número de escenas solo desempata, redondeando a
-    centésimas para que una diferencia de nada no tire una órbita con muchas más pasadas.
-    """
-    grupos = agrupar_por_orbita(items)
-    if not grupos:
-        raise ValueError("no hay escenas SAR que agrupar")
-    cobertura = {k: cobertura_util(v, bbox, muestras, leer) for k, v in grupos.items()}
-    clave = max(grupos, key=lambda k: (round(cobertura[k], 2), len(grupos[k])))
-    return clave, grupos[clave], cobertura[clave]
-
-
-def compuesto_s1(
-    items: list["Item"],
-    bbox: Bbox,
-    forma: tuple[int, int] | None = None,
-    max_escenas: int = 24,
-    fraccion_fallos: float | None = FRACCION_FALLOS,
+    shape: tuple[int, int] | None = None,
+    bands: tuple[str, ...] = RGB_BANDS,
+    max_scenes: int = 36,
+    failure_fraction: float | None = FAILURE_FRACTION,
 ) -> tuple[dict[str, np.ndarray], dict[str, object]]:
-    """Mediana por píxel de escenas Sentinel-1 RTC de una sola geometría de órbita.
+    """Per-pixel median of the clearest Sentinel-2 scenes, with the SCL mask applied.
 
-    Devuelve las polarizaciones compuestas en potencia lineal junto con los metadatos
-    de la adquisición elegida.
+    Returns the composited bands together with the metadata of the run, among it how many
+    observations went into the median of the typical pixel. Scenes are walked from the
+    clearest to the cloudiest.
 
-    Aborta si demasiadas lecturas fallan. `fraccion_fallos` en `None` desactiva esa
-    comprobación para quien quiera un compuesto parcial a propósito; en cero no tolera ni
-    una lectura fallida.
+    Aborts when too many reads fail. `failure_fraction` at `None` turns that check off for
+    whoever wants a partial composite on purpose; at zero it tolerates not one failed read.
     """
     if not items:
-        raise ValueError("no hay escenas Sentinel-1 para componer")
+        raise ValueError("there are no Sentinel-2 scenes to composite")
 
-    (estado, relativa), disponibles, cobertura = orbita_util(items, bbox)
-    log.info("S1 órbita %s relativa %d: cubre %.0f%%", estado, relativa, 100 * cobertura)
-    seleccion = disponibles[:max_escenas]
+    stacks: dict[str, list[np.ndarray]] = {band: [] for band in bands}
+    used = 0
+    failed = 0
+    # the cap applies within each tile and not over the mixture: a box split between two
+    # tiles needs a full stack on each side, because every scene contributes pixels only in
+    # its half and the median of the other would be built from whatever is left over
+    useful = useful_tiles(items, bbox)
+    per_tile: dict[str, list] = defaultdict(list)
+    for item in useful:
+        per_tile[item.properties.get("s2:mgrs_tile", "?")].append(item)
+    selection = [s for group in per_tile.values() for s in by_cloud_cover(group)[:max_scenes]]
 
-    pilas: dict[str, list[np.ndarray]] = {"vv": [], "vh": []}
-    fallidas = 0
-    for item in seleccion:
-        # Las dos polarizaciones se leen antes de guardar ninguna: agregarlas dentro del
-        # bucle dejaría VV apilado y VH no cuando la segunda lectura falla, y las medianas
-        # de una y otra saldrían calculadas sobre conjuntos de escenas distintos.
+    for item in selection:
         try:
-            leidas = {
-                polarizacion: leer_ventana(item.assets[polarizacion].href, bbox, forma).astype(
+            scl = read_window(item.assets["SCL"].href, bbox, shape)
+            mask = np.isin(scl, list(VALID_SCL))
+            if mask.mean() < MIN_SCENE_COVERAGE:
+                continue
+            for band in bands:
+                array = read_window(item.assets[band].href, bbox, shape).astype("float32")
+                array[~mask] = np.nan
+                stacks[band].append(array)
+            used += 1
+        except Exception:
+            failed += 1
+            log.warning("S2 scene skipped: %s", item.id, exc_info=True)
+
+    _check_failures("Sentinel-2", failed, len(selection), failure_fraction)
+    if used == 0:
+        raise RuntimeError("no Sentinel-2 scene contributed valid pixels")
+
+    stack = np.dstack(stacks[bands[0]])
+    depth = np.isfinite(stack).sum(axis=2)
+    composite = {band: np.nanmedian(np.dstack(layers), axis=2) for band, layers in stacks.items()}
+    meta = {
+        "scenes_used": used,
+        "scenes_selected": len(selection),
+        "tiles": len(per_tile),
+        # how many observations went into the median of the typical pixel: this is what
+        # fixes the residual noise, and unlike the scene count it is not fooled by a box
+        # split between tiles, where every scene covers only its half
+        "median_depth": int(np.median(depth)),
+        "minimum_depth": int(np.percentile(depth, 5)),
+    }
+    return composite, meta
+
+
+VALID_FRACTION = 0.80
+"""Minimum fraction of observed pixels demanded of a radar composite."""
+
+
+def _check_composite_s1(composite: dict[str, np.ndarray], minimum: float = VALID_FRACTION) -> float:
+    """Rejects a radar composite that comes out unobserved or with impossible values.
+
+    Gamma0 in linear power is strictly positive. A pixel at zero or negative can only come
+    from the scene's no-data entering the median, and that defect does not announce itself:
+    with an even number of scenes the median averages the sentinel with a good value and
+    returns an intermediate number that looks like data. The only way to see it is to count
+    signs.
+
+    A high fraction of NaN means the chosen orbit does not pass over the city. Better that
+    the city fail than that it enter the set with a hollow composite.
+    """
+    for polarisation, array in composite.items():
+        finite = np.isfinite(array)
+        fraction = float(finite.mean())
+        if fraction < minimum:
+            raise RuntimeError(
+                f"the Sentinel-1 composite observed only {100 * fraction:.0f}% of the box "
+                f"in {polarisation}; no orbit covers the city"
+            )
+        improper = float((array[finite] <= 0).mean())
+        if improper > 0:
+            raise RuntimeError(
+                f"{100 * improper:.1f}% of {polarisation} came out zero or negative, "
+                "which linear gamma0 does not admit: the scene's no-data entered the median"
+            )
+    return min(float(np.isfinite(a).mean()) for a in composite.values())
+
+
+ORBIT_SAMPLES = 4
+"""Scenes probed per orbit to estimate how much data it leaves over the box."""
+
+PROBE_SHAPE = (64, 64)
+"""Probe grid. Enough to measure what fraction of the box falls inside the swath."""
+
+
+def useful_coverage(
+    items: list["Item"],
+    bbox: Bbox,
+    samples: int = ORBIT_SAMPLES,
+    read=None,
+) -> float:
+    """Mean fraction of observed pixels that some scenes leave over the box.
+
+    The footprint the catalogue declares does not answer this question. Over Mexicali, the
+    orbit whose footprint covers 99% of the box delivers scenes that alternate between 1%
+    and 99% of pixels with data, because the city falls on the edge of the swath. A few
+    scenes are probed at low resolution and what actually arrives is averaged.
+
+    A read that fails stays out of the average rather than counting as zero. Counting it
+    confuses "this orbit does not see the city" with "this request was cut", and under a
+    congested link the second is common: over Guasave one lost read out of four was enough
+    to push an orbit covering the whole box below one covering half of it, and the city was
+    left with no radar composite over a network problem.
+
+    Zero is returned only when no read arrived, which really is indistinguishable from
+    having no coverage, and the composite's guard catches it afterwards.
+
+    `read` resolves at call time rather than at definition, so replacing `read_window` in
+    the module is enough to leave the tests without network.
+    """
+    read = read or read_window
+    fractions = []
+    for item in items[:samples]:
+        try:
+            got = read(item.assets["vv"].href, bbox, PROBE_SHAPE).astype("float32")
+        except Exception:
+            log.warning("probe failed on %s, left out of the average", item.id, exc_info=True)
+            continue
+        fractions.append(float(np.isfinite(got).mean()))
+    return float(np.mean(fractions)) if fractions else 0.0
+
+
+def useful_orbit(
+    items: list["Item"],
+    bbox: Bbox,
+    samples: int = ORBIT_SAMPLES,
+    read=None,
+) -> tuple[tuple[str, int], list["Item"], float]:
+    """Acquisition geometry that leaves the most observed pixels over the box.
+
+    Measured coverage decides and the scene count only breaks ties, rounding to hundredths
+    so a difference of nothing does not topple an orbit with many more passes.
+    """
+    groups = group_by_orbit(items)
+    if not groups:
+        raise ValueError("there are no SAR scenes to group")
+    coverage = {k: useful_coverage(v, bbox, samples, read) for k, v in groups.items()}
+    key = max(groups, key=lambda k: (round(coverage[k], 2), len(groups[k])))
+    return key, groups[key], coverage[key]
+
+
+def composite_s1(
+    items: list["Item"],
+    bbox: Bbox,
+    shape: tuple[int, int] | None = None,
+    max_scenes: int = 24,
+    failure_fraction: float | None = FAILURE_FRACTION,
+) -> tuple[dict[str, np.ndarray], dict[str, object]]:
+    """Per-pixel median of Sentinel-1 RTC scenes from a single orbit geometry.
+
+    Returns the composited polarisations in linear power together with the metadata of the
+    chosen acquisition.
+
+    Aborts when too many reads fail. `failure_fraction` at `None` turns that check off for
+    whoever wants a partial composite on purpose; at zero it tolerates not one failed read.
+    """
+    if not items:
+        raise ValueError("there are no Sentinel-1 scenes to composite")
+
+    (state, relative), available, coverage = useful_orbit(items, bbox)
+    log.info("S1 orbit %s relative %d: covers %.0f%%", state, relative, 100 * coverage)
+    selection = available[:max_scenes]
+
+    stacks: dict[str, list[np.ndarray]] = {"vv": [], "vh": []}
+    failed = 0
+    for item in selection:
+        # Both polarisations are read before either is stored: appending inside the loop
+        # would leave VV stacked and VH not when the second read fails, and the medians of
+        # one and the other would come out computed over different sets of scenes.
+        try:
+            got = {
+                polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
                     "float32"
                 )
-                for polarizacion in pilas
+                for polarisation in stacks
             }
         except Exception:
-            fallidas += 1
-            log.warning("escena S1 omitida: %s", item.id, exc_info=True)
+            failed += 1
+            log.warning("S1 scene skipped: %s", item.id, exc_info=True)
             continue
-        for polarizacion, arreglo in leidas.items():
-            pilas[polarizacion].append(arreglo)
+        for polarisation, array in got.items():
+            stacks[polarisation].append(array)
 
-    _revisar_fallos("Sentinel-1", fallidas, len(seleccion), fraccion_fallos)
-    if not pilas["vv"]:
-        raise RuntimeError("ninguna escena Sentinel-1 aportó píxeles válidos")
+    _check_failures("Sentinel-1", failed, len(selection), failure_fraction)
+    if not stacks["vv"]:
+        raise RuntimeError("no Sentinel-1 scene contributed valid pixels")
 
-    compuesto = {
-        polarizacion: np.nanmedian(np.dstack(capas), axis=2)
-        for polarizacion, capas in pilas.items()
+    composite = {
+        polarisation: np.nanmedian(np.dstack(layers), axis=2)
+        for polarisation, layers in stacks.items()
     }
-    valida = _revisar_compuesto_s1(compuesto)
+    valid = _check_composite_s1(composite)
     meta = {
-        "fraccion_observada": round(valida, 3),
-        "orbita": f"{estado} · relativa {relativa}",
-        "escenas_usadas": len(pilas["vv"]),
-        "escenas_disponibles": len(disponibles),
-        "cobertura_orbita": round(cobertura, 3),
+        "observed_fraction": round(valid, 3),
+        "orbit": f"{state} · relative {relative}",
+        "scenes_used": len(stacks["vv"]),
+        "scenes_available": len(available),
+        "orbit_coverage": round(coverage, 3),
     }
-    return compuesto, meta
+    return composite, meta

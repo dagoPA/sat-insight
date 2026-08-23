@@ -1,11 +1,11 @@
-"""Unión de las AGEB urbanas con su Grado de Rezago Social.
+"""Join of the urban AGEB with their Grado de Rezago Social.
 
-CONEVAL publica la etiqueta en un libro de Excel sin geometría; INEGI publica la geometría
-sin la etiqueta. La clave de trece caracteres —entidad, municipio, localidad y AGEB
-concatenados— es la llave que las une.
+CONEVAL publishes the label in an Excel workbook with no geometry; INEGI publishes the
+geometry with no label. The thirteen character key —state, municipality, locality and AGEB
+concatenated— is what joins them.
 
-El resultado de ese cruce es la unidad de análisis de la fase 1: un polígono con una clase
-ordinal y diecisiete indicadores de privación.
+The result of that join is the unit of analysis of phase one: a polygon with an ordinal
+class and seventeen deprivation indicators.
 """
 
 import logging
@@ -16,16 +16,19 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
-from satinsight.ingesta import RAIZ_DATOS, asegurar_coneval, asegurar_inegi, capa_ageb_urbana
+from satinsight.download import DATA_ROOT, ensure_coneval, ensure_inegi, urban_ageb_layer
 
 log = logging.getLogger(__name__)
 
-GRADOS = ("Muy bajo", "Bajo", "Medio", "Alto", "Muy alto")
-"""Las cinco clases del Grado de Rezago Social, en su orden natural."""
+GRADES = ("Muy bajo", "Bajo", "Medio", "Alto", "Muy alto")
+"""The five classes of the Grado de Rezago Social, in their natural order.
 
-ORDINAL = {grado: i for i, grado in enumerate(GRADOS)}
+The labels keep the Spanish CONEVAL publishes them in: they are the values of a published
+dataset, not text of ours, and translating them would break the join with the workbook."""
 
-INDICADORES = (
+ORDINAL = {grade: i for i, grade in enumerate(GRADES)}
+
+INDICATORS = (
     "analfabeta",
     "sin_escuela_6_14",
     "sin_escuela_15_24",
@@ -44,9 +47,9 @@ INDICADORES = (
     "sin_computadora",
     "sin_internet",
 )
-"""Los diecisiete indicadores de rezago, en el orden en que vienen en el libro."""
+"""The seventeen deprivation indicators, in the order the workbook brings them."""
 
-COLUMNAS_CONEVAL = (
+CONEVAL_COLUMNS = (
     "cve_ent",
     "entidad",
     "cve_mun",
@@ -57,291 +60,291 @@ COLUMNAS_CONEVAL = (
     "cvegeo",
     "poblacion",
     "viviendas",
-    *INDICADORES,
+    *INDICATORS,
     "grado",
 )
 
-FILAS_ENCABEZADO = 6
-"""El libro trae título, encabezado en dos niveles y una fila en blanco antes de los datos."""
+HEADER_ROWS = 6
+"""The workbook carries a title, a two-level header and a blank row before the data."""
 
-CRS_TRABAJO = "EPSG:4326"
-"""Los recuadros y las consultas al STAC van en coordenadas geográficas."""
+WORKING_CRS = "EPSG:4326"
+"""Boxes and STAC queries travel in geographic coordinates."""
 
-CRS_METRICO = "EPSG:6372"
-"""Cónica conforme de Lambert para México. Las distancias del conurbado se miden aquí."""
+METRIC_CRS = "EPSG:6372"
+"""Lambert conformal conic for Mexico. Conurbation distances are measured here."""
 
-VECINDAD_M = 5000.0
-"""Distancia al núcleo dentro de la cual un municipio vecino se considera conurbado."""
+NEIGHBOURHOOD_M = 5000.0
+"""Distance to the core within which a neighbouring municipality counts as conurbated."""
 
-PEGADO_M = 2500.0
-"""Separación máxima entre AGEB para tratarlas como parte de la misma mancha urbana."""
+BRIDGE_M = 2500.0
+"""Maximum gap between AGEB for them to count as part of the same urban mass."""
 
 
 @dataclass(frozen=True)
-class Ciudad:
-    """Ciudad piloto, identificada por el municipio que la contiene."""
+class City:
+    """City, identified by the municipality that holds it."""
 
-    clave: str
-    nombre: str
-    entidad: str
-    municipio: str
+    key: str
+    name: str
+    state: str
+    municipality: str
 
 
-CIUDADES: dict[str, Ciudad] = {
-    "tuxtla": Ciudad("tuxtla", "Tuxtla Gutiérrez", "07", "07101"),
-    "merida": Ciudad("merida", "Mérida", "31", "31050"),
-    "iztapalapa": Ciudad("iztapalapa", "Iztapalapa", "09", "09007"),
-    "tapachula": Ciudad("tapachula", "Tapachula", "07", "07089"),
-    "acapulco": Ciudad("acapulco", "Acapulco de Juárez", "12", "12001"),
+CITIES: dict[str, City] = {
+    "tuxtla": City("tuxtla", "Tuxtla Gutiérrez", "07", "07101"),
+    "merida": City("merida", "Mérida", "31", "31050"),
+    "iztapalapa": City("iztapalapa", "Iztapalapa", "09", "09007"),
+    "tapachula": City("tapachula", "Tapachula", "07", "07089"),
+    "acapulco": City("acapulco", "Acapulco de Juárez", "12", "12001"),
 }
-"""Las cinco ciudades de la fase 1.
+"""The five cities of phase one.
 
-Las tres primeras vienen de la fase 0, escogidas por contraste de forma urbana y de
-nubosidad. Entre ellas cubren mal el extremo alto del rezago: suman 1,199 AGEB de las que
-69 son de grado alto, un 5.8% contra el 23% nacional, y en Iztapalapa apenas 3 de 454.
+The first three come from phase zero, chosen for their contrast in urban form and cloud
+cover. Between them they cover the high end of deprivation badly: they add up to 1,199
+AGEB of which 69 are high grade, 5.8% against the national 23%, and in Iztapalapa barely 3
+of 454.
 
-Tapachula y Acapulco entran para corregir ese sesgo. Tienen 48.6% y 36.5% de AGEB en grado
-alto, y con ellas la muestra piloto se acerca a la composición del país. Sin AGEB rezagadas
-en el conjunto, la puerta de decisión de la fase 1 no mide lo que pretende medir.
+Tapachula and Acapulco enter to correct that bias. They have 48.6% and 36.5% of AGEB at
+high grade, and with them the pilot sample approaches the composition of the country.
+Without deprived AGEB in the set, the decision gate of phase one does not measure what it
+claims to.
 """
 
 
-def cargar_grs(raiz: Path = RAIZ_DATOS, *, usar_cache: bool = True) -> pd.DataFrame:
-    """Lee el Grado de Rezago Social de las AGEB urbanas del país.
+def load_grs(root: Path = DATA_ROOT, *, use_cache: bool = True) -> pd.DataFrame:
+    """Reads the Grado de Rezago Social of the country's urban AGEB.
 
-    Leer el libro de Excel completo cuesta cerca de medio minuto, así que el resultado se
-    guarda en parquet la primera vez.
+    Reading the whole Excel workbook costs about half a minute, so the result is stored as
+    parquet the first time.
     """
-    cache = raiz / "grs_ageb_2020.parquet"
-    if usar_cache and cache.exists():
+    cache = root / "grs_ageb_2020.parquet"
+    if use_cache and cache.exists():
         return pd.read_parquet(cache)
 
-    libro = asegurar_coneval(raiz)
-    log.info("leyendo %s", libro.name)
-    tabla = pd.read_excel(
-        libro, skiprows=FILAS_ENCABEZADO, header=None, names=list(COLUMNAS_CONEVAL), dtype=str
+    workbook = ensure_coneval(root)
+    log.info("reading %s", workbook.name)
+    table = pd.read_excel(
+        workbook, skiprows=HEADER_ROWS, header=None, names=list(CONEVAL_COLUMNS), dtype=str
     )
 
-    numericas = ["poblacion", "viviendas", *INDICADORES]
-    tabla[numericas] = tabla[numericas].apply(pd.to_numeric, errors="coerce")
-    tabla["grado"] = tabla["grado"].str.strip()
+    numeric = ["poblacion", "viviendas", *INDICATORS]
+    table[numeric] = table[numeric].apply(pd.to_numeric, errors="coerce")
+    table["grado"] = table["grado"].str.strip()
 
-    desconocidos = set(tabla["grado"].dropna().unique()) - set(GRADOS)
-    if desconocidos:
-        raise ValueError(f"grados inesperados en el libro de CONEVAL: {sorted(desconocidos)}")
-    tabla["ordinal"] = tabla["grado"].map(ORDINAL).astype("Int8")
+    unknown = set(table["grado"].dropna().unique()) - set(GRADES)
+    if unknown:
+        raise ValueError(f"unexpected grades in the CONEVAL workbook: {sorted(unknown)}")
+    table["ordinal"] = table["grado"].map(ORDINAL).astype("Int8")
 
-    tabla = tabla.dropna(subset=["cvegeo", "grado"])
+    table = table.dropna(subset=["cvegeo", "grado"])
     cache.parent.mkdir(parents=True, exist_ok=True)
-    tabla.to_parquet(cache, index=False)
-    log.info("%d AGEB urbanas con grado", len(tabla))
-    return tabla
+    table.to_parquet(cache, index=False)
+    log.info("%d urban AGEB with a grade", len(table))
+    return table
 
 
-def cargar_geometria(entidad: str, raiz: Path = RAIZ_DATOS) -> gpd.GeoDataFrame:
-    """Lee los polígonos de AGEB urbana de una entidad, reproyectados a WGS84."""
-    capa = capa_ageb_urbana(asegurar_inegi(entidad, raiz))
-    log.info("leyendo %s", capa.name)
-    poligonos = gpd.read_file(capa)
-    poligonos.columns = [c.lower() for c in poligonos.columns]
-    if poligonos.crs is None:
-        raise ValueError(f"la capa {capa} viene sin sistema de referencia")
-    return poligonos.to_crs(CRS_TRABAJO)
+def load_geometry(state: str, root: Path = DATA_ROOT) -> gpd.GeoDataFrame:
+    """Reads the urban AGEB polygons of one state, reprojected to WGS84."""
+    layer = urban_ageb_layer(ensure_inegi(state, root))
+    log.info("reading %s", layer.name)
+    polygons = gpd.read_file(layer)
+    polygons.columns = [c.lower() for c in polygons.columns]
+    if polygons.crs is None:
+        raise ValueError(f"layer {layer} arrives with no reference system")
+    return polygons.to_crs(WORKING_CRS)
 
 
-def _mancha_conectada(
-    agebs: gpd.GeoDataFrame, municipio_nucleo: str, pegado_m: float
+def _connected_mass(
+    agebs: gpd.GeoDataFrame, core_municipality: str, bridge_m: float
 ) -> gpd.GeoDataFrame:
-    """Se queda con la componente urbana continua que contiene al municipio núcleo.
+    """Keeps the continuous urban component holding the core municipality.
 
-    Un municipio mexicano suele incluir localidades urbanas separadas de su cabecera por
-    decenas de kilómetros. Tapachula arrastra el puerto de la costa, y con él el recuadro
-    envolvente crece cuatro veces para cubrir un espacio que está casi todo vacío.
+    A Mexican municipality usually includes urban localities separated from its seat by
+    tens of kilometres. Tapachula drags in the coastal port, and with it the enclosing box
+    grows fourfold to cover space that is almost all empty.
 
-    Dilatar cada AGEB y unir lo que se toca reconstruye las manchas urbanas; quedarse con
-    la que contiene la cabecera descarta esos satélites. En Tapachula eso baja el recuadro
-    de 12.4 a 1.0 megapíxeles conservando 162 de 207 AGEB.
+    Dilating every AGEB and joining what touches rebuilds the urban masses; keeping the one
+    that holds the seat drops those satellites. In Tapachula that takes the box from 12.4
+    to 1.0 megapixels while keeping 162 of 207 AGEB.
     """
-    union = agebs.geometry.buffer(pegado_m).union_all()
-    partes = list(getattr(union, "geoms", [union]))
-    if len(partes) <= 1:
+    union = agebs.geometry.buffer(bridge_m).union_all()
+    parts = list(getattr(union, "geoms", [union]))
+    if len(parts) <= 1:
         return agebs
 
-    puntos = agebs.geometry.representative_point()
-    mejor, mejor_n = agebs, -1
-    for parte in partes:
-        dentro = agebs[puntos.within(parte)]
-        propias = int((dentro["cvegeo"].str[:5] == municipio_nucleo).sum())
-        if propias > mejor_n:
-            mejor, mejor_n = dentro, propias
+    points = agebs.geometry.representative_point()
+    best, best_n = agebs, -1
+    for part in parts:
+        inside = agebs[points.within(part)]
+        own = int((inside["cvegeo"].str[:5] == core_municipality).sum())
+        if own > best_n:
+            best, best_n = inside, own
 
     log.info(
-        "mancha conectada: %d de %d AGEB, %d satélites descartados",
-        len(mejor),
+        "connected mass: %d of %d AGEB, %d satellites dropped",
+        len(best),
         len(agebs),
-        len(agebs) - len(mejor),
+        len(agebs) - len(best),
     )
-    return mejor
+    return best
 
 
-def agebs_de_ciudad(
-    clave: str,
-    raiz: Path = RAIZ_DATOS,
+def agebs_of_city(
+    key: str,
+    root: Path = DATA_ROOT,
     *,
-    minimo_poblacion: int = 0,
-    conurbacion: bool = True,
-    vecindad_m: float = VECINDAD_M,
-    pegado_m: float = PEGADO_M,
-    catalogo: dict[str, "Ciudad"] | None = None,
+    min_population: int = 0,
+    conurbation: bool = True,
+    neighbourhood_m: float = NEIGHBOURHOOD_M,
+    bridge_m: float = BRIDGE_M,
+    catalogue: dict[str, "City"] | None = None,
 ) -> gpd.GeoDataFrame:
-    """Devuelve las AGEB de una ciudad piloto con geometría y etiqueta ordinal.
+    """Returns the AGEB of a city with geometry and ordinal label.
 
-    Con `conurbacion` la unidad de análisis es la mancha urbana continua: se admiten las
-    AGEB de cualquier municipio de la entidad a menos de `vecindad_m` del núcleo, y el
-    resultado se recorta a la componente conectada.
-    Una ciudad rara vez termina donde termina su municipio, y la periferia conurbada es
-    justo donde el rezago varía.
+    With `conurbation` the unit of analysis is the continuous urban mass: AGEB of any
+    municipality of the state within `neighbourhood_m` of the core are admitted, and the
+    result is cut to the connected component. A city rarely ends where its municipality
+    ends, and the conurbated periphery is exactly where deprivation varies.
 
-    El cruce con las etiquetas es interno a propósito: una AGEB sin polígono o sin etiqueta
-    queda fuera del conjunto, y la cuenta de descartes se registra para poder auditarla.
+    The join with the labels is inner on purpose: an AGEB with no polygon or no label stays
+    out of the set, and the count of what was dropped is logged so it can be audited.
     """
-    catalogo = catalogo or CIUDADES
-    ciudad = catalogo.get(clave)
-    if ciudad is None:
-        conocidas = ", ".join(sorted(catalogo)[:8])
-        raise KeyError(f"ciudad desconocida: {clave!r}. Entre las conocidas: {conocidas}…")
+    catalogue = catalogue or CITIES
+    city = catalogue.get(key)
+    if city is None:
+        known = ", ".join(sorted(catalogue)[:8])
+        raise KeyError(f"unknown city: {key!r}. Among the known ones: {known}…")
 
-    geometria = cargar_geometria(ciudad.entidad, raiz)
-    nucleo = geometria[geometria["cvegeo"].str[:5] == ciudad.municipio]
-    if nucleo.empty:
-        raise ValueError(
-            f"la entidad {ciudad.entidad} no trae AGEB del municipio {ciudad.municipio}"
-        )
+    geometry = load_geometry(city.state, root)
+    core = geometry[geometry["cvegeo"].str[:5] == city.municipality]
+    if core.empty:
+        raise ValueError(f"state {city.state} carries no AGEB of municipality {city.municipality}")
 
-    if conurbacion:
-        metrico = geometria.to_crs(CRS_METRICO)
-        envolvente = metrico[metrico["cvegeo"].isin(nucleo["cvegeo"])].geometry.union_all()
-        cerca = metrico[metrico.geometry.intersects(envolvente.buffer(vecindad_m))]
-        geometria = _mancha_conectada(cerca, ciudad.municipio, pegado_m).to_crs(CRS_TRABAJO)
+    if conurbation:
+        metric = geometry.to_crs(METRIC_CRS)
+        envelope = metric[metric["cvegeo"].isin(core["cvegeo"])].geometry.union_all()
+        near = metric[metric.geometry.intersects(envelope.buffer(neighbourhood_m))]
+        geometry = _connected_mass(near, city.municipality, bridge_m).to_crs(WORKING_CRS)
     else:
-        geometria = nucleo
+        geometry = core
 
-    etiquetas = cargar_grs(raiz)
+    labels = load_grs(root)
 
-    unidas = geometria.merge(
-        etiquetas.drop(columns=["cve_ent", "cve_mun", "cve_loc", "folio"]),
+    joined = geometry.merge(
+        labels.drop(columns=["cve_ent", "cve_mun", "cve_loc", "folio"]),
         on="cvegeo",
         how="inner",
     )
     log.info(
-        "%s: %d polígonos, %d cruzan con etiqueta, %d municipios",
-        ciudad.nombre,
-        len(geometria),
-        len(unidas),
-        unidas["cve_mun"].nunique() if len(unidas) else 0,
+        "%s: %d polygons, %d join with a label, %d municipalities",
+        city.name,
+        len(geometry),
+        len(joined),
+        joined["cve_mun"].nunique() if len(joined) else 0,
     )
 
-    if minimo_poblacion:
-        antes = len(unidas)
-        unidas = unidas[unidas["poblacion"] >= minimo_poblacion]
+    if min_population:
+        before = len(joined)
+        joined = joined[joined["poblacion"] >= min_population]
         log.info(
-            "descartadas %d AGEB con menos de %d habitantes", antes - len(unidas), minimo_poblacion
+            "dropped %d AGEB with fewer than %d inhabitants", before - len(joined), min_population
         )
 
-    unidas["ciudad"] = ciudad.clave
-    return unidas.reset_index(drop=True)
+    joined["ciudad"] = city.key
+    return joined.reset_index(drop=True)
 
 
-def resumen_grados(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
-    """Cuenta AGEB y población por grado, en el orden ordinal de las clases."""
-    conteo = (
+def grade_summary(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Counts AGEB and population per grade, in the ordinal order of the classes."""
+    counts = (
         agebs.groupby("grado", observed=True)
         .agg(agebs=("cvegeo", "size"), poblacion=("poblacion", "sum"))
-        .reindex(GRADOS)
+        .reindex(GRADES)
         .fillna(0)
         .astype(int)
     )
-    conteo["pct_agebs"] = (100 * conteo["agebs"] / max(conteo["agebs"].sum(), 1)).round(1)
-    return conteo
+    counts["pct_agebs"] = (100 * counts["agebs"] / max(counts["agebs"].sum(), 1)).round(1)
+    return counts
 
 
-MINIMO_AGEBS_CIUDAD = 150
-"""Tamaño mínimo de bolsa para que una ciudad entre al conjunto nacional.
+MIN_AGEBS_PER_CITY = 150
+"""Minimum bag size for a city to enter the national set.
 
-Ciento cincuenta AGEB dejan 81 ciudades y 24,080 AGEB, dieciséis veces la muestra piloto.
-Bajar el umbral suma ciudades cada vez más chicas: con 100 son 132 ciudades y con 50 son
-256, y una bolsa de cincuenta instancias aporta poco al MIL frente a lo que cuesta componer
-su ciudad entera.
+A hundred and fifty AGEB leave 81 cities and 24,080 AGEB, sixteen times the pilot sample.
+Lowering the threshold adds ever smaller cities: at 100 they are 132 and at 50 they are
+256, and a bag of fifty instances contributes little to the MIL against what compositing
+its whole city costs.
 """
 
 
-def _clave_de_municipio(nombre: str) -> str:
-    """Identificador corto y estable a partir del nombre del municipio."""
-    plano = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
-    return "".join(c for c in plano if c.isalnum())
+def _municipality_key(name: str) -> str:
+    """Short, stable identifier built from the name of the municipality."""
+    flat = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    return "".join(c for c in flat if c.isalnum())
 
 
-MINIMO_AGEBS_REZAGADA = 50
-PROPORCION_REZAGADA = 0.25
-"""Umbrales de la rama estratificada de la selección.
+MIN_AGEBS_DEPRIVED = 50
+DEPRIVED_SHARE = 0.25
+"""Thresholds of the stratified branch of the selection.
 
-Escoger ciudades solo por tamaño produce una muestra sistemáticamente acomodada: las 81
-mayores tienen 9.8% de AGEB en grado alto contra 23.1% del país, porque las ciudades grandes
-son menos rezagadas y la conurbación añade periferia acomodada. Ampliar así empeoraría lo
-mismo que Tapachula y Acapulco vinieron a corregir en la etapa 1.
+Choosing cities by size alone produces a systematically well-off sample: the largest 81
+have 9.8% of AGEB at high grade against 23.1% for the country, because large cities are
+less deprived and conurbation adds well-off periphery. Widening that way would worsen the
+very thing Tapachula and Acapulco came to correct in phase one.
 
-La rama estratificada admite ciudades chicas con rezago alto concentrado. Son 62 y suman
-5,302 AGEB, entre ellas Ocosingo con 96.6% de su territorio en grado alto.
+The stratified branch admits small cities with concentrated high deprivation. There are 62
+of them adding 5,302 AGEB, among them Ocosingo with 96.6% of its territory at high grade.
 """
 
 
-def ciudades_por_tamano(
-    minimo_agebs: int = MINIMO_AGEBS_CIUDAD,
-    raiz: Path = RAIZ_DATOS,
+def cities_by_size(
+    min_agebs: int = MIN_AGEBS_PER_CITY,
+    root: Path = DATA_ROOT,
     *,
-    estratificar: bool = False,
-    minimo_rezagada: int = MINIMO_AGEBS_REZAGADA,
-    proporcion_rezagada: float = PROPORCION_REZAGADA,
-) -> dict[str, Ciudad]:
-    """Deriva del censo la lista de ciudades que superan un tamaño mínimo.
+    stratify: bool = False,
+    min_deprived: int = MIN_AGEBS_DEPRIVED,
+    deprived_share: float = DEPRIVED_SHARE,
+) -> dict[str, City]:
+    """Derives from the census the list of cities above a minimum size.
 
-    Escribir a mano cinco ciudades era razonable; escribir ochenta y una invita a erratas en
-    claves de municipio que nadie detectaría hasta que un cruce saliera vacío. La lista se
-    calcula de la misma tabla que aporta las etiquetas.
+    Writing five cities by hand was reasonable; writing eighty-one invites typos in
+    municipality keys that nobody would catch until a join came out empty. The list is
+    computed from the same table that supplies the labels.
 
-    Las cinco ciudades piloto conservan la clave con la que ya se nombraron sus compuestos en
-    disco. Cambiársela obligaría a recomponerlas, que son varias horas de descarga.
+    The five pilot cities keep the key their composites were already named with on disk.
+    Changing it would force recompositing them, which is several hours of downloading.
 
-    Los homónimos entre entidades se desambiguan con la clave del municipio, porque el nombre
-    solo no identifica: hay más de un Guadalupe y más de un Zaragoza en el país.
+    Homonyms across states are disambiguated with the municipality key, because the name
+    alone does not identify: there is more than one Guadalupe and more than one Zaragoza in
+    the country.
     """
-    tabla = cargar_grs(raiz)
-    conteo = (
-        tabla.assign(alto=tabla["grado"].isin(GRADOS[3:]))
+    table = load_grs(root)
+    counts = (
+        table.assign(high=table["grado"].isin(GRADES[3:]))
         .groupby(["cve_ent", "cve_mun", "municipio"], observed=True)
-        .agg(agebs=("cvegeo", "size"), altos=("alto", "sum"))
+        .agg(agebs=("cvegeo", "size"), altos=("high", "sum"))
         .reset_index()
     )
-    grandes = conteo["agebs"] >= minimo_agebs
-    if estratificar:
-        rezagadas = (conteo["agebs"] >= minimo_rezagada) & (
-            conteo["altos"] / conteo["agebs"] >= proporcion_rezagada
+    large = counts["agebs"] >= min_agebs
+    if stratify:
+        deprived = (counts["agebs"] >= min_deprived) & (
+            counts["altos"] / counts["agebs"] >= deprived_share
         )
-        conteo = conteo[grandes | rezagadas]
+        counts = counts[large | deprived]
     else:
-        conteo = conteo[grandes]
-    conteo = conteo.sort_values("agebs", ascending=False)
+        counts = counts[large]
+    counts = counts.sort_values("agebs", ascending=False)
 
-    heredadas = {c.municipio: clave for clave, c in CIUDADES.items()}
-    propuestas = [_clave_de_municipio(n) for n in conteo["municipio"]]
-    repetidas = {c for c in propuestas if propuestas.count(c) > 1}
+    inherited = {c.municipality: key for key, c in CITIES.items()}
+    proposed = [_municipality_key(n) for n in counts["municipio"]]
+    repeated = {c for c in proposed if proposed.count(c) > 1}
 
-    ciudades: dict[str, Ciudad] = {}
-    for (_, fila), propuesta in zip(conteo.iterrows(), propuestas, strict=True):
-        clave = heredadas.get(fila.cve_mun)
-        if clave is None:
-            clave = f"{propuesta}{fila.cve_mun}" if propuesta in repetidas else propuesta
-        ciudades[clave] = Ciudad(clave, fila.municipio, fila.cve_ent, fila.cve_mun)
+    cities: dict[str, City] = {}
+    for (_, row), proposal in zip(counts.iterrows(), proposed, strict=True):
+        key = inherited.get(row.cve_mun)
+        if key is None:
+            key = f"{proposal}{row.cve_mun}" if proposal in repeated else proposal
+        cities[key] = City(key, row.municipio, row.cve_ent, row.cve_mun)
 
-    log.info("%d ciudades con al menos %d AGEB", len(ciudades), minimo_agebs)
-    return ciudades
+    log.info("%d cities with at least %d AGEB", len(cities), min_agebs)
+    return cities
