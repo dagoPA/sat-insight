@@ -170,6 +170,6 @@ def test_desduplicar_deja_la_particion_sin_fuga():
 
     catalogue = {"guadalajara": _City("14039"), "zapopan": _City("14120")}
     d = deduplicate(_tabla_conurbada(), catalogue)
-    particion = pd.DataFrame({"ciudad": ["guadalajara", "zapopan"], "split": ["train", "val"]})
+    partition = pd.DataFrame({"ciudad": ["guadalajara", "zapopan"], "split": ["train", "val"]})
     d["municipio"] = d.cvegeo.str[:5]
-    check(particion, d[["ciudad", "cvegeo", "municipio"]])
+    check(partition, d[["ciudad", "cvegeo", "municipio"]])

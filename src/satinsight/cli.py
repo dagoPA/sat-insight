@@ -198,16 +198,16 @@ def cmd_diagnostics(args: argparse.Namespace) -> int:
     print("Above one, the feature describes where it was measured more than what.\n")
 
     for split in ("cobertura", "densidad", "textura"):
-        detail = transfer_diagnostics(table, split).dropna(subset=["razon"])
+        detail = transfer_diagnostics(table, split).dropna(subset=["ratio"])
         if detail.empty:
             continue
-        low, mid, high = detail["razon"].quantile([0.25, 0.5, 0.75])
+        low, mid, high = detail["ratio"].quantile([0.25, 0.5, 0.75])
         worst = ", ".join(detail.head(3)["feature"])
         print(f"  {split:<10} n={len(detail):<3} quartiles {low:>6.1f} /{mid:>6.1f} /{high:>6.1f}")
         print(f"  {'':<10} worst: {worst}")
 
     print(
-        "\nSe lee junto con la fiabilidad por mitades, nunca solo: un rasgo que es ruido "
+        "\nSe lee junto con la reliability por mitades, nunca solo: un rasgo que es ruido "
         "comes out with a low ratio\nbecause noise correlates with nothing."
     )
     return 0
