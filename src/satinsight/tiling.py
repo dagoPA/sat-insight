@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import numpy as np
 
 if TYPE_CHECKING:
-    from satinsight.malla import Malla
+    from satinsight.malla import Grid
 
 log = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def select(
     return kept
 
 
-def centers(tiles: list[Tile], malla: Malla) -> np.ndarray:
+def centers(tiles: list[Tile], malla: Grid) -> np.ndarray:
     """Ground coordinates of each patch centre, in the grid's own reference system.
 
     Returns an array of (x, y) rows, ready to be handed to shapely or geopandas.

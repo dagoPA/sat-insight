@@ -19,7 +19,7 @@ class ActivoFalso:
 
 @dataclass
 class ItemFalso:
-    """Doble de una escena SAR, con lo mínimo que mira `orbita_dominante`."""
+    """Doble de una escena SAR, con lo mínimo que mira `dominant_orbit`."""
 
     id: str
     assets: dict = field(default_factory=dict)
@@ -69,7 +69,7 @@ def test_una_lectura_rota_no_desincroniza_las_polarizaciones(monkeypatch):
             raise OSError("lectura rota")
         return np.ones(FORMA, dtype="float32")
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     escenas = [escena_sar(nombre) for nombre in "abcde"]  # una sola falla, bajo el umbral
     bandas, meta = compuesto_s1(escenas, BBOX, FORMA)
 
@@ -81,7 +81,7 @@ def test_si_fallan_casi_todas_aborta(monkeypatch):
     def leer(href, bbox, forma=None):
         raise OSError("HTTP response code: 403")
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     escenas = [escena_sar(nombre) for nombre in "abcde"]
     with pytest.raises(RuntimeError, match="fallaron al leerse"):
         compuesto_s1(escenas, BBOX, FORMA)
@@ -109,7 +109,7 @@ def test_la_orbita_se_elige_por_cobertura_medida(monkeypatch):
             arreglo[0, 0] = 1.0
         return arreglo
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     clave, seleccion, cobertura = composite.orbita_util(escenas, BBOX)
     assert clave == ("ascending", 173)
     assert len(seleccion) == 2
@@ -119,7 +119,7 @@ def test_la_orbita_se_elige_por_cobertura_medida(monkeypatch):
 def test_a_igual_cobertura_gana_la_orbita_con_mas_escenas(monkeypatch):
     escenas = [escena_sar(f"a{i}", orbita=10) for i in range(2)]
     escenas += [escena_sar(f"b{i}", orbita=20) for i in range(6)]
-    monkeypatch.setattr(composite, "leer_ventana", lambda h, b, f: np.ones(f, dtype="float32"))
+    monkeypatch.setattr(composite, "read_window", lambda h, b, f: np.ones(f, dtype="float32"))
     clave, seleccion, _ = composite.orbita_util(escenas, BBOX)
     assert clave == ("ascending", 20)
     assert len(seleccion) == 6
@@ -129,7 +129,7 @@ def test_una_orbita_ilegible_por_completo_cuenta_como_sin_cobertura(monkeypatch)
     def leer(href, bbox, forma):
         raise OSError("403")
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     assert composite.cobertura_util([escena_sar("x")], BBOX) == 0.0
 
 
@@ -146,7 +146,7 @@ def test_una_lectura_cortada_no_hunde_a_su_orbita(monkeypatch):
             raise OSError("conexión cortada")
         return np.ones(forma, dtype="float32")
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     assert composite.cobertura_util(escenas, BBOX) == pytest.approx(1.0)
 
 
@@ -198,7 +198,7 @@ def test_se_descarta_la_tesela_que_no_toca_el_recuadro(monkeypatch):
     def leer(href, bbox, forma):
         return np.full(forma, 0 if href.startswith("lejos") else 4, dtype="uint8")
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     utiles = composite.teselas_utiles(escenas, BBOX)
     assert [e.id for e in utiles] == ["encima"]
 
@@ -215,11 +215,11 @@ def test_un_recuadro_partido_conserva_las_dos_teselas(monkeypatch):
             arreglo[:, forma[1] // 2 :] = 5
         return arreglo
 
-    monkeypatch.setattr(composite, "leer_ventana", leer)
+    monkeypatch.setattr(composite, "read_window", leer)
     assert len(composite.teselas_utiles(escenas, BBOX)) == 6
 
 
 def test_sin_ninguna_tesela_util_falla(monkeypatch):
-    monkeypatch.setattr(composite, "leer_ventana", lambda h, b, f: np.zeros(f, dtype="uint8"))
+    monkeypatch.setattr(composite, "read_window", lambda h, b, f: np.zeros(f, dtype="uint8"))
     with pytest.raises(RuntimeError, match="ninguna de las"):
         composite.teselas_utiles([escena_optica("x", "14QKH")], BBOX)

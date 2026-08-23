@@ -17,7 +17,7 @@ from rasterio.features import rasterize
 from satinsight import cache
 from satinsight.agebs import GRADOS
 from satinsight.pipeline import aoi_de_ciudad, canales_s1, canales_s2
-from satinsight.raster import a_db, estirar
+from satinsight.raster import stretch, to_db
 from satinsight.textura import MINIMO_PIXELES, RANGOS_FIJOS_S1, cuantizar, rasgos_de_recorte
 
 log = logging.getLogger(__name__)
@@ -38,9 +38,9 @@ FONDO = (20, 24, 31)
 def _rgb_desde_compuesto(bandas: dict, sensor: str) -> np.ndarray:
     """Arreglo RGB de 8 bits listo para mostrar, según el sensor."""
     if sensor == "s2":
-        return np.dstack([estirar(bandas[b]) for b in ("B04", "B03", "B02")])
-    vv, vh = a_db(bandas["vv"]), a_db(bandas["vh"])
-    return np.dstack([estirar(vv), estirar(vh), estirar(vv - vh)])
+        return np.dstack([stretch(bandas[b]) for b in ("B04", "B03", "B02")])
+    vv, vh = to_db(bandas["vv"]), to_db(bandas["vh"])
+    return np.dstack([stretch(vv), stretch(vh), stretch(vv - vh)])
 
 
 def _texto(imagen: Image.Image, xy, texto: str, tamano: int = 13, color=TINTA) -> None:
@@ -118,12 +118,12 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
             (g, GRADOS.index(t) + 1)
             for g, t in zip(proyectadas.geometry, proyectadas.grado, strict=True)
         ],
-        out_shape=malla.forma,
+        out_shape=malla.shape,
         transform=malla.transform,
         fill=0,
         dtype="uint8",
     )
-    borde = np.zeros(malla.forma, dtype=bool)
+    borde = np.zeros(malla.shape, dtype=bool)
     for eje in (0, 1):
         d = np.diff(etiquetas, axis=eje) != 0
         borde |= np.pad(d, [(0, 1) if i == eje else (0, 0) for i in range(2)])
@@ -162,9 +162,9 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
 
 def _recorte_de_ageb(rgb: np.ndarray, canal: np.ndarray, malla, geometria, margen: int = 6):
     """Recorta una AGEB de la imagen y del canal, con un poco de aire alrededor."""
-    from satinsight.malla import recorte_de_poligono
+    from satinsight.malla import polygon_window
 
-    ventana = recorte_de_poligono(malla.transform, geometria, canal.shape)
+    ventana = polygon_window(malla.transform, geometria, canal.shape)
     if ventana is None:
         return None
     filas, columnas, dentro = ventana
@@ -198,7 +198,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
 
     # Elegir por área del polígono no basta: una AGEB costera puede ser grande y no tener
     # un solo píxel de radar utilizable, porque sobre agua la retrodispersión cae a cero y
-    # `a_db` la vuelve nula. La candidata se mide por píxeles válidos del canal.
+    # `to_db` la vuelve nula. La candidata se mide por píxeles válidos del canal.
     def utilizables(geometria) -> int:
         partes = _recorte_de_ageb(rgb, cuantizada, malla, geometria)
         if partes is None:

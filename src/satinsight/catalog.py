@@ -1,6 +1,6 @@
-"""Acceso al catálogo STAC de Microsoft Planetary Computer.
+"""Access to the STAC catalogue of Microsoft Planetary Computer.
 
-Las escenas se consultan y se firman aquí; la lectura de píxeles vive en `raster`.
+Scenes are queried and signed here; reading pixels lives in `raster`.
 """
 
 from collections import defaultdict
@@ -16,105 +16,103 @@ from satinsight.aoi import Bbox
 
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 
-COLECCION_S1 = "sentinel-1-rtc"
-COLECCION_S2 = "sentinel-2-l2a"
+COLLECTION_S1 = "sentinel-1-rtc"
+COLLECTION_S2 = "sentinel-2-l2a"
 
-SCL_VALIDOS = frozenset({4, 5, 6, 7})
-"""Clases de la máscara SCL que cuentan como píxel utilizable: vegetación, suelo
-desnudo, agua y no clasificado. El resto es nube, sombra, nieve o saturación."""
-
-
-DOMINIO_FIRMABLE = "blob.core.windows.net"
+VALID_SCL = frozenset({4, 5, 6, 7})
+"""SCL mask classes that count as usable pixels: vegetation, bare soil, water and
+unclassified. The rest is cloud, shadow, snow or saturation."""
 
 
-def abrir_catalogo() -> pystac_client.Client:
-    """Cliente STAC con firma automática de los enlaces a los COG."""
+SIGNABLE_DOMAIN = "blob.core.windows.net"
+
+
+def open_catalogue() -> pystac_client.Client:
+    """STAC client that signs links to the COGs automatically."""
     return pystac_client.Client.open(STAC_URL, modifier=pc.sign_inplace)
 
 
-def firmar(href: str) -> str:
-    """Renueva la firma de un enlace justo antes de leerlo.
+def sign(href: str) -> str:
+    """Renews a link's signature just before it is read.
 
-    Firmar al consultar el catálogo alcanza para una lectura inmediata y falla para un
-    compuesto: los tokens de Planetary Computer caducan cerca de la hora, y componer una
-    ciudad toma más que eso. Las lecturas tardías reciben 403, y como el compositing
-    descarta la escena que falla, el resultado es un compuesto construido con una
-    fracción de las escenas pedidas y sin ningún error a la vista.
+    Signing when the catalogue is queried is enough for an immediate read and fails for a
+    composite: Planetary Computer tokens expire in about an hour, and compositing a city
+    takes longer than that. Late reads get a 403, and since compositing drops the scene
+    that fails, the result is a composite built from a fraction of the scenes asked for
+    with no error in sight.
 
-    `planetary_computer` guarda el token en memoria por contenedor y solo vuelve a pedirlo
-    cuando expira, así que renovar en cada lectura no cuesta una petición extra.
+    `planetary_computer` caches the token in memory per container and only asks again when
+    it expires, so renewing on every read costs no extra request.
 
-    Lo que no apunta a un contenedor de Azure se devuelve intacto, para que las pruebas
-    puedan leer archivos locales por esta misma ruta.
+    Anything not pointing at an Azure container comes back untouched, so tests can read
+    local files through this same path.
     """
-    if DOMINIO_FIRMABLE not in href:
+    if SIGNABLE_DOMAIN not in href:
         return href
     return pc.sign(href.split("?", 1)[0])
 
 
-def buscar(
-    coleccion: str,
+def search(
+    collection: str,
     bbox: Bbox,
-    periodo: str,
-    catalogo: pystac_client.Client | None = None,
+    period: str,
+    catalogue: pystac_client.Client | None = None,
 ) -> list["Item"]:
-    """Escenas de una colección que intersectan el recuadro en el periodo dado.
+    """Scenes of a collection intersecting the box over the given period.
 
-    El periodo usa la sintaxis de intervalo de STAC, por ejemplo
-    ``"2020-01-01/2020-12-31"``.
+    The period uses STAC interval syntax, for example ``"2020-01-01/2020-12-31"``.
     """
-    catalogo = catalogo or abrir_catalogo()
-    busqueda = catalogo.search(collections=[coleccion], bbox=bbox, datetime=periodo)
-    return list(busqueda.items())
+    catalogue = catalogue or open_catalogue()
+    found = catalogue.search(collections=[collection], bbox=bbox, datetime=period)
+    return list(found.items())
 
 
-def resumen_nubes(items: list["Item"]) -> dict[str, float | int]:
-    """Estadísticas de nubosidad de un conjunto de escenas Sentinel-2."""
+def cloud_summary(items: list["Item"]) -> dict[str, float | int]:
+    """Cloud cover statistics of a set of Sentinel-2 scenes."""
     if not items:
-        raise ValueError("no hay escenas que resumir")
-    nubes = sorted(item.properties["eo:cloud_cover"] for item in items)
-    total = len(nubes)
+        raise ValueError("there are no scenes to summarise")
+    clouds = sorted(item.properties["eo:cloud_cover"] for item in items)
+    total = len(clouds)
     return {
-        "escenas": total,
-        "minimo": round(nubes[0], 1),
-        "maximo": round(nubes[-1], 1),
-        "mediana": round(nubes[total // 2], 1),
-        "pct_mayor_50": round(100 * sum(n > 50 for n in nubes) / total),
-        "pct_mayor_80": round(100 * sum(n > 80 for n in nubes) / total),
+        "scenes": total,
+        "minimum": round(clouds[0], 1),
+        "maximum": round(clouds[-1], 1),
+        "median": round(clouds[total // 2], 1),
+        "pct_over_50": round(100 * sum(c > 50 for c in clouds) / total),
+        "pct_over_80": round(100 * sum(c > 80 for c in clouds) / total),
     }
 
 
-def por_nubosidad(items: list["Item"]) -> list["Item"]:
-    """Escenas Sentinel-2 ordenadas de la más despejada a la más nublada."""
+def by_cloud_cover(items: list["Item"]) -> list["Item"]:
+    """Sentinel-2 scenes ordered from the clearest to the cloudiest."""
     return sorted(items, key=lambda item: item.properties["eo:cloud_cover"])
 
 
-def agrupar_por_orbita(items: list["Item"]) -> dict[tuple[str, int], list["Item"]]:
-    """Agrupa escenas SAR por estado de órbita y número de órbita relativa.
+def group_by_orbit(items: list["Item"]) -> dict[tuple[str, int], list["Item"]]:
+    """Groups SAR scenes by orbit state and relative orbit number.
 
-    Un compuesto SAR solo es coherente dentro de una misma geometría de adquisición:
-    mezclar ascendente con descendente cambia el ángulo de incidencia y la dirección
-    de las sombras de radar.
+    A SAR composite is only coherent within one acquisition geometry: mixing ascending
+    with descending changes the incidence angle and the direction of the radar shadows.
     """
-    grupos: dict[tuple[str, int], list[Item]] = defaultdict(list)
+    groups: dict[tuple[str, int], list[Item]] = defaultdict(list)
     for item in items:
-        clave = (
+        key = (
             item.properties.get("sat:orbit_state"),
             item.properties.get("sat:relative_orbit"),
         )
-        grupos[clave].append(item)
-    return dict(grupos)
+        groups[key].append(item)
+    return dict(groups)
 
 
-def orbita_dominante(items: list["Item"]) -> tuple[tuple[str, int], list["Item"]]:
-    """Geometría de adquisición con más escenas disponibles, con sus escenas.
+def dominant_orbit(items: list["Item"]) -> tuple[tuple[str, int], list["Item"]]:
+    """Acquisition geometry with the most scenes available, with its scenes.
 
-    Elegir por número a secas sirve cuando cualquier órbita cubre el recuadro. Sobre una
-    ciudad de frontera o de costa hace falta medir cuánto dato llega de verdad, y de eso se
-    encarga `composite.orbita_util`, que sí puede leer píxeles.
+    Choosing by count alone works when any orbit covers the box. Over a border or coastal
+    city the data that actually arrives has to be measured, and `composite.useful_orbit`
+    takes care of that, since it can read pixels.
     """
-    grupos = agrupar_por_orbita(items)
-    if not grupos:
-        raise ValueError("no hay escenas SAR que agrupar")
-    clave = max(grupos, key=lambda k: len(grupos[k]))
-    return clave, grupos[clave]
+    groups = group_by_orbit(items)
+    if not groups:
+        raise ValueError("there are no SAR scenes to group")
+    key = max(groups, key=lambda k: len(groups[k]))
+    return key, groups[key]

@@ -25,7 +25,7 @@ import pandas as pd
 from shapely.ops import clip_by_rect
 from skimage.feature import graycomatrix, graycoprops
 
-from satinsight.malla import recorte_de_poligono
+from satinsight.malla import polygon_window
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ def cuantizar(banda: np.ndarray, rango: tuple, niveles: int = NIVELES) -> np.nda
     Los no finitos se llevan a cero antes de convertir a entero. `np.clip` no toca los NaN,
     y convertir un NaN a entero sin signo da un resultado que la especificación no define y
     que depende de la plataforma. El `np.where` final pisa esas posiciones de todos modos,
-    pero el valor intermedio no debe quedar al azar: `a_db` produce NaN en cada píxel sin
+    pero el valor intermedio no debe quedar al azar: `to_db` produce NaN en cada píxel sin
     retorno medible, así que el brazo de radar pasa por aquí constantemente.
     """
     bajo, alto = rango
@@ -351,7 +351,7 @@ def rasgos_por_ageb(
 
     for clave, geometria in zip(claves, geometrias, strict=True):
         base = {"cvegeo": clave, f"{prefijo}_n_px": 0}
-        ventana = recorte_de_poligono(transform, geometria, banda.shape)
+        ventana = polygon_window(transform, geometria, banda.shape)
         if ventana is None:
             renglones.append(base)
             continue

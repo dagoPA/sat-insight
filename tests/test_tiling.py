@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from satinsight.malla import malla_de_bbox
+from satinsight.malla import grid_from_bbox
 from satinsight.tiling import Tile, centers, grid, select, stack, valid_fraction
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)
@@ -54,10 +54,10 @@ def test_select_rejects_bands_of_different_shape():
 
 
 def test_centers_land_inside_the_grid_bounds():
-    malla = malla_de_bbox(BBOX, "EPSG:32615")
-    tiles = grid(malla.forma, size=64)
+    malla = grid_from_bbox(BBOX, "EPSG:32615")
+    tiles = grid(malla.shape, size=64)
     xy = centers(tiles, malla)
-    izq, abajo, der, arriba = malla.limites
+    izq, abajo, der, arriba = malla.bounds
     assert xy.shape == (len(tiles), 2)
     assert (xy[:, 0] > izq).all() and (xy[:, 0] < der).all()
     assert (xy[:, 1] > abajo).all() and (xy[:, 1] < arriba).all()
