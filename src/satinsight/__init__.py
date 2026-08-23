@@ -1,43 +1,42 @@
-"""Desagregación del rezago social a partir de imágenes satelitales.
+"""Spatial disaggregation of social deprivation from satellite imagery.
 
-Herramientas reutilizables para consultar el catálogo STAC de Planetary Computer,
-construir compuestos anuales de Sentinel-1 y Sentinel-2 sobre un área de interés, y
-renderizar paneles de inspección visual.
+Reusable tools to query the Planetary Computer STAC catalogue, build annual Sentinel-1 and
+Sentinel-2 composites over an area of interest, and render visual inspection panels.
 """
 
-from satinsight.aoi import AOI, PILOTO
+from satinsight.aoi import AOI, PILOT
 from satinsight.catalog import (
-    COLECCION_S1,
-    COLECCION_S2,
-    abrir_catalogo,
-    agrupar_por_orbita,
-    buscar,
-    orbita_dominante,
-    resumen_nubes,
+    COLLECTION_S1,
+    COLLECTION_S2,
+    cloud_summary,
+    dominant_orbit,
+    group_by_orbit,
+    open_catalogue,
+    search,
 )
-from satinsight.composite import cobertura_util, compuesto_s1, compuesto_s2, orbita_util
-from satinsight.raster import a_db, estirar, leer_ventana
-from satinsight.render import a_data_uri, guardar_rgb
+from satinsight.composite import composite_s1, composite_s2, useful_coverage, useful_orbit
+from satinsight.raster import read_window, stretch, to_db
+from satinsight.render import save_rgb, to_data_uri
 
 __version__ = "0.1.0"
 
 __all__ = [
     "AOI",
-    "COLECCION_S1",
-    "COLECCION_S2",
-    "PILOTO",
-    "a_data_uri",
-    "a_db",
-    "abrir_catalogo",
-    "agrupar_por_orbita",
-    "buscar",
-    "cobertura_util",
-    "compuesto_s1",
-    "compuesto_s2",
-    "estirar",
-    "guardar_rgb",
-    "leer_ventana",
-    "orbita_dominante",
-    "orbita_util",
-    "resumen_nubes",
+    "COLLECTION_S1",
+    "COLLECTION_S2",
+    "PILOT",
+    "cloud_summary",
+    "composite_s1",
+    "composite_s2",
+    "dominant_orbit",
+    "group_by_orbit",
+    "open_catalogue",
+    "read_window",
+    "save_rgb",
+    "search",
+    "stretch",
+    "to_data_uri",
+    "to_db",
+    "useful_coverage",
+    "useful_orbit",
 ]

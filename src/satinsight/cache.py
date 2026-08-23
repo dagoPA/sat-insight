@@ -1,17 +1,17 @@
-"""Persistencia de los compuestos anuales como GeoTIFF.
+"""Persistence of the annual composites as GeoTIFF.
 
-Componer una ciudad cuesta cerca de una hora por sensor, y el costo lo domina el sobrecosto
-de abrir cada COG remoto, muy por encima de los bytes transferidos. Guardar el resultado en disco
-convierte ese gasto en algo que se paga una sola vez.
+Compositing a city costs about an hour per sensor, and the cost is dominated by the
+overhead of opening each remote COG, far above the bytes transferred. Saving the result to
+disk turns that expense into something paid once.
 
-El compuesto de Sentinel-1 se guarda en potencia lineal, que es como lo entrega
-`compuesto_s1`. La conversión a decibeles ocurre al leer, nunca antes de escribir: promediar
-en decibeles y promediar en potencia dan resultados distintos, y el promedio en decibeles
-está sesgado hacia los valores bajos.
+The Sentinel-1 composite is saved in linear power, which is how `composite_s1` delivers it.
+Conversion to decibels happens on reading, never before writing: averaging in decibels and
+averaging in power give different results, and the decibel average is biased towards the
+low values.
 
-El archivo lleva la retícula consigo —transformación afín, sistema de referencia y nombre de
-cada banda— de modo que al recargarlo se recupera todo lo necesario para cruzarlo con
-polígonos sin volver a consultar el catálogo.
+The file carries the grid with it —affine transform, reference system and the name of each
+band— so that reloading it recovers everything needed to cross it with polygons without
+querying the catalogue again.
 """
 
 import json
@@ -21,88 +21,82 @@ from pathlib import Path
 import numpy as np
 import rasterio
 
-from satinsight.malla import Malla
+from satinsight.grid import Grid
 
 log = logging.getLogger(__name__)
 
-RAIZ_COMPUESTOS = Path("data") / "compuestos"
+COMPOSITE_ROOT = Path("data") / "compuestos"
 
 
-def ruta_compuesto(ciudad: str, sensor: str, raiz: Path = RAIZ_COMPUESTOS) -> Path:
-    """Ubicación canónica del compuesto de una ciudad y un sensor."""
-    return raiz / f"{ciudad}_{sensor}.tif"
+def composite_path(city: str, sensor: str, root: Path = COMPOSITE_ROOT) -> Path:
+    """Canonical location of the composite of one city and one sensor."""
+    return root / f"{city}_{sensor}.tif"
 
 
-def guardar(bandas: dict[str, np.ndarray], malla: Malla, destino: Path, **etiquetas) -> Path:
-    """Escribe las bandas de un compuesto en un GeoTIFF con su georreferencia.
+def save(bands: dict[str, np.ndarray], grid: Grid, destination: Path, **tags) -> Path:
+    """Writes the bands of a composite into a GeoTIFF with its georeferencing.
 
-    Los nombres de banda se conservan en la descripción de cada una, y cualquier metadato
-    extra —escenas usadas, órbita elegida— viaja como etiqueta del archivo para poder
-    auditar después con qué se construyó.
+    Band names are kept in each band's description, and any extra metadata —scenes used,
+    orbit chosen— travels as a file tag so what it was built from can be audited later.
     """
-    if not bandas:
-        raise ValueError("no hay bandas que guardar")
+    if not bands:
+        raise ValueError("there are no bands to save")
 
-    nombres = list(bandas)
-    formas = {b.shape for b in bandas.values()}
-    if len(formas) > 1:
-        raise ValueError(f"las bandas no comparten forma: {formas}")
-    forma = formas.pop()
-    if forma != malla.forma:
-        raise ValueError(
-            f"la forma de las bandas {forma} no coincide con la retícula {malla.forma}"
-        )
+    names = list(bands)
+    shapes = {b.shape for b in bands.values()}
+    if len(shapes) > 1:
+        raise ValueError(f"the bands do not share a shape: {shapes}")
+    shape = shapes.pop()
+    if shape != grid.shape:
+        raise ValueError(f"band shape {shape} does not match the grid {grid.shape}")
 
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    perfil = {
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    profile = {
         "driver": "GTiff",
-        "height": malla.alto,
-        "width": malla.ancho,
-        "count": len(nombres),
+        "height": grid.height,
+        "width": grid.width,
+        "count": len(names),
         "dtype": "float32",
-        "crs": malla.crs,
-        "transform": malla.transform,
+        "crs": grid.crs,
+        "transform": grid.transform,
         "nodata": np.nan,
         "compress": "deflate",
         "predictor": 3,
         "tiled": True,
     }
-    with rasterio.open(destino, "w", **perfil) as salida:
-        for indice, nombre in enumerate(nombres, start=1):
-            salida.write(bandas[nombre].astype("float32"), indice)
-            salida.set_band_description(indice, nombre)
-        if etiquetas:
-            salida.update_tags(
-                **{k: json.dumps(v, ensure_ascii=False) for k, v in etiquetas.items()}
-            )
+    with rasterio.open(destination, "w", **profile) as output:
+        for index, name in enumerate(names, start=1):
+            output.write(bands[name].astype("float32"), index)
+            output.set_band_description(index, name)
+        if tags:
+            output.update_tags(**{k: json.dumps(v, ensure_ascii=False) for k, v in tags.items()})
 
-    log.info("guardado %s (%s, %.1f MP)", destino.name, ", ".join(nombres), malla.megapixeles)
-    return destino
+    log.info("saved %s (%s, %.1f MP)", destination.name, ", ".join(names), grid.megapixels)
+    return destination
 
 
-def cargar(origen: Path) -> tuple[dict[str, np.ndarray], Malla, dict]:
-    """Recupera un compuesto y la retícula sobre la que fue escrito."""
-    with rasterio.open(origen) as fuente:
-        nombres = [
-            descripcion or f"banda_{i}"
-            for i, descripcion in enumerate(fuente.descriptions, start=1)
+def load(source: Path) -> tuple[dict[str, np.ndarray], Grid, dict]:
+    """Recovers a composite and the grid it was written on."""
+    with rasterio.open(source) as origin:
+        names = [
+            description or f"band_{i}" for i, description in enumerate(origin.descriptions, start=1)
         ]
-        bandas = {nombre: fuente.read(i) for i, nombre in enumerate(nombres, start=1)}
-        malla = Malla(
-            transform=fuente.transform,
-            forma=(fuente.height, fuente.width),
-            crs=str(fuente.crs),
-            limites=tuple(fuente.bounds),
+        bands = {name: origin.read(i) for i, name in enumerate(names, start=1)}
+        grid = Grid(
+            transform=origin.transform,
+            shape=(origin.height, origin.width),
+            crs=str(origin.crs),
+            bounds=tuple(origin.bounds),
         )
-        etiquetas = {}
-        for clave, valor in fuente.tags().items():
+        tags = {}
+        for key, value in origin.tags().items():
             try:
-                etiquetas[clave] = json.loads(valor)
+                tags[key] = json.loads(value)
             except (json.JSONDecodeError, TypeError):
-                etiquetas[clave] = valor
-    return bandas, malla, etiquetas
+                tags[key] = value
+    return bands, grid, tags
 
 
-def existe(ciudad: str, sensor: str, raiz: Path = RAIZ_COMPUESTOS) -> bool:
-    """Indica si el compuesto ya está en disco."""
-    return ruta_compuesto(ciudad, sensor, raiz).exists()
+def exists(city: str, sensor: str, root: Path = COMPOSITE_ROOT) -> bool:
+    """Says whether the composite is already on disk."""
+    return composite_path(city, sensor, root).exists()

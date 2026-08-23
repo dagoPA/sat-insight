@@ -30,6 +30,10 @@ dependencies = [
 
 [project.optional-dependencies]
 plots = ["matplotlib>=3.11.1"]
+mil = [
+    "torch>=2.6",
+    "torchgeo>=0.7",
+]
 
 [project.scripts]
 satinsight = "satinsight.cli:main"

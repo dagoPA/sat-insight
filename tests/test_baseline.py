@@ -4,263 +4,317 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from satinsight.agebs import GRADOS
+from satinsight.agebs import GRADES
 from satinsight.baseline import (
-    columnas_de_conjunto,
-    comparar,
-    diagnostico_transferencia,
-    estandarizar_por_grupo,
-    evaluar,
-    resumen,
-    seleccionar_rasgos,
-    varianza_explicada,
+    columns_of_set,
+    compare,
+    evaluate,
+    explained_variance,
+    fold_summary,
+    select_features,
+    standardise_by_group,
+    transfer_diagnostics,
 )
-from satinsight.cobertura import CLASES
-from satinsight.textura import nombres_de_rasgos
+from satinsight.landcover import CLASSES
+from satinsight.texture import feature_names
 
-CIUDADES = ("tuxtla", "merida", "iztapalapa")
+CITIES = ("tuxtla", "merida", "iztapalapa")
 
 
-def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
-    """Tabla donde los rasgos llevan señal del ordinal, graduable con `fuerza`.
+def synthetic_table(n_por_ciudad=120, strength=1.0, semilla=0):
+    """Tabla donde los features llevan señal del ordinal, graduable con `strength`.
 
-    Con fuerza alta el modelo debe recuperar el orden; con fuerza cero los rasgos son ruido
-    puro y ningún modelo debería superar al azar de manera consistente.
+    Con strength alta el modelo debe recuperar el orden; con strength cero los features son ruido
+    puro y ningún modelo debería superar al rng de manera consistente.
     """
     rng = np.random.default_rng(semilla)
     partes = []
-    for ciudad in CIUDADES:
+    for ciudad in CITIES:
         ordinal = rng.integers(0, 5, n_por_ciudad)
         ruido = rng.normal(0, 1, n_por_ciudad)
-        columnas = {
+        columns = {
             "cvegeo": [f"{ciudad}{i:04d}" for i in range(n_por_ciudad)],
             "ciudad": ciudad,
             "ordinal": ordinal,
-            "grado": [GRADOS[i] for i in ordinal],
-            "c_media": fuerza * ordinal + ruido,
-            "c_desv": fuerza * ordinal * 0.5 + ruido,
+            "grado": [GRADES[i] for i in ordinal],
+            "c_mean": strength * ordinal + ruido,
+            "c_std": strength * ordinal * 0.5 + ruido,
             "c_p10": rng.normal(0, 1, n_por_ciudad),
             "c_p50": rng.normal(0, 1, n_por_ciudad),
             "c_p90": rng.normal(0, 1, n_por_ciudad),
             "c_rango_intercuartil": rng.normal(0, 1, n_por_ciudad),
         }
         # Los nombres de textura salen del propio módulo, para que renombrar un rasgo
-        # rompa la prueba, con lo que se evita que quede midiendo un conjunto vacío.
-        for clase in CLASES.values():
-            columnas[f"wc_{clase}"] = rng.random(n_por_ciudad)
-        for sufijo in nombres_de_rasgos():
+        # rompa la prueba, con lo que se evita que quede midiendo un split vacío.
+        for clase in CLASSES.values():
+            columns[f"wc_{clase}"] = rng.random(n_por_ciudad)
+        for sufijo in feature_names():
             lleva_senal = sufijo.startswith(("contrast_", "homogeneity_"))
             signo = -1 if sufijo.startswith("homogeneity_") else 1
-            señal = signo * fuerza * ordinal if lleva_senal else 0.0
-            columnas[f"c_{sufijo}"] = señal + rng.normal(0, 1, n_por_ciudad)
-        partes.append(pd.DataFrame(columnas))
+            señal = signo * strength * ordinal if lleva_senal else 0.0
+            columns[f"c_{sufijo}"] = señal + rng.normal(0, 1, n_por_ciudad)
+        partes.append(pd.DataFrame(columns))
     return pd.concat(partes, ignore_index=True)
 
 
 def test_los_conjuntos_separan_densidad_de_textura():
-    tabla = tabla_sintetica(10)
-    densidad = columnas_de_conjunto(tabla, "densidad")
-    textura = columnas_de_conjunto(tabla, "textura")
+    table = synthetic_table(10)
+    densidad = columns_of_set(table, "densidad")
+    textura = columns_of_set(table, "textura")
 
-    assert "c_media" in densidad
+    assert "c_mean" in densidad
     assert "c_contrast_d1" not in densidad
     assert "c_contrast_d1" in textura
-    assert "c_media" not in textura
+    assert "c_mean" not in textura
     assert not set(densidad) & set(textura)
 
 
 def test_el_conjunto_completo_es_la_union_de_los_tres_escalones():
-    tabla = tabla_sintetica(10)
-    completo = set(columnas_de_conjunto(tabla, "completo"))
+    table = synthetic_table(10)
+    completo = set(columns_of_set(table, "completo"))
     esperado = set()
     for escalon in ("cobertura", "densidad", "textura"):
-        esperado |= set(columnas_de_conjunto(tabla, escalon))
+        esperado |= set(columns_of_set(table, escalon))
     assert completo == esperado
 
 
 def test_la_cobertura_no_se_mezcla_con_los_otros_escalones():
-    tabla = tabla_sintetica(10)
-    cobertura = set(columnas_de_conjunto(tabla, "cobertura"))
-    assert "wc_construido" in cobertura
-    assert not cobertura & set(columnas_de_conjunto(tabla, "densidad"))
-    assert not cobertura & set(columnas_de_conjunto(tabla, "textura"))
+    table = synthetic_table(10)
+    cobertura = set(columns_of_set(table, "cobertura"))
+    assert "wc_built" in cobertura
+    assert not cobertura & set(columns_of_set(table, "densidad"))
+    assert not cobertura & set(columns_of_set(table, "textura"))
 
 
 def test_conjunto_desconocido_falla():
-    with pytest.raises(KeyError, match="conjunto desconocido"):
-        columnas_de_conjunto(tabla_sintetica(10), "inventado")
+    with pytest.raises(KeyError, match="unknown set"):
+        columns_of_set(synthetic_table(10), "inventado")
 
 
 def test_la_validacion_deja_una_ciudad_fuera_por_pliegue():
-    detalle = evaluar(tabla_sintetica(60), "completo", "clasificador")
-    assert len(detalle) == len(CIUDADES)
-    assert set(detalle["ciudad_prueba"]) == set(CIUDADES)
-    for _, fila in detalle.iterrows():
+    detail = evaluate(synthetic_table(60), "completo", "clasificador")
+    assert len(detail) == len(CITIES)
+    assert set(detail["ciudad_prueba"]) == set(CITIES)
+    for _, fila in detail.iterrows():
         assert fila["n_entrena"] == 120
         assert fila["n_prueba"] == 60
 
 
 def test_con_senal_el_modelo_le_gana_al_azar():
-    tabla = tabla_sintetica(200, fuerza=1.5)
-    modelo = evaluar(tabla, "completo", "clasificador")["kappa"].mean()
-    azar = evaluar(tabla, "completo", "azar")["kappa"].mean()
-    assert modelo > azar + 0.1
+    table = synthetic_table(200, strength=1.5)
+    modelo = evaluate(table, "completo", "clasificador")["kappa"].mean()
+    rng = evaluate(table, "completo", "rng")["kappa"].mean()
+    assert modelo > rng + 0.1
 
 
 def test_sin_senal_el_modelo_no_le_gana_al_azar():
-    tabla = tabla_sintetica(200, fuerza=0.0)
-    modelo = evaluar(tabla, "completo", "clasificador")["kappa"].mean()
+    table = synthetic_table(200, strength=0.0)
+    modelo = evaluate(table, "completo", "clasificador")["kappa"].mean()
     assert modelo < 0.15
 
 
 def test_la_moda_tiene_kappa_nulo():
-    detalle = evaluar(tabla_sintetica(100), "densidad", "moda")
-    assert detalle["kappa"].abs().max() == pytest.approx(0.0, abs=1e-9)
+    detail = evaluate(synthetic_table(100), "densidad", "moda")
+    assert detail["kappa"].abs().max() == pytest.approx(0.0, abs=1e-9)
 
 
 def test_el_regresor_predice_dentro_del_rango_ordinal():
-    tabla = tabla_sintetica(100, fuerza=2.0)
-    detalle = evaluar(tabla, "completo", "regresor")
-    assert (detalle["mae_ordinal"] >= 0).all()
-    assert (detalle["exactitud"] <= 1).all()
+    table = synthetic_table(100, strength=2.0)
+    detail = evaluate(table, "completo", "regresor")
+    assert (detail["mae_ordinal"] >= 0).all()
+    assert (detail["exactitud"] <= 1).all()
 
 
 def test_comparar_corre_los_modelos_ciegos_una_sola_vez():
-    detalle = comparar(tabla_sintetica(50))
-    ciegos = detalle[detalle["modelo"].isin(["azar", "moda"])]
-    assert set(ciegos["conjunto"]) == {"ninguno"}
-    assert len(ciegos) == 2 * len(CIUDADES)
+    detail = compare(synthetic_table(50))
+    ciegos = detail[detail["modelo"].isin(["rng", "moda"])]
+    assert set(ciegos["split"]) == {"ninguno"}
+    assert len(ciegos) == 2 * len(CITIES)
 
 
 def test_el_resumen_ordena_por_kappa():
-    agregado = resumen(comparar(tabla_sintetica(80, fuerza=1.5)))
-    assert list(agregado["kappa"]) == sorted(agregado["kappa"], reverse=True)
-    assert {"conjunto", "modelo", "kappa"} <= set(agregado.columns)
+    aggregate = fold_summary(compare(synthetic_table(80, strength=1.5)))
+    assert list(aggregate["kappa"]) == sorted(aggregate["kappa"], reverse=True)
+    assert {"split", "modelo", "kappa"} <= set(aggregate.columns)
 
 
 def test_la_varianza_explicada_reconoce_un_factor_perfecto():
-    tabla = pd.DataFrame({"v": [1.0, 1.0, 5.0, 5.0], "g": ["a", "a", "b", "b"]})
-    assert varianza_explicada(tabla, "v", "g") == pytest.approx(1.0)
+    table = pd.DataFrame({"v": [1.0, 1.0, 5.0, 5.0], "g": ["a", "a", "b", "b"]})
+    assert explained_variance(table, "v", "g") == pytest.approx(1.0)
 
 
 def test_un_factor_sin_relacion_explica_poco():
-    tabla = pd.DataFrame({"v": [1.0, 5.0, 1.0, 5.0], "g": ["a", "a", "b", "b"]})
-    assert varianza_explicada(tabla, "v", "g") == pytest.approx(0.0, abs=1e-9)
+    table = pd.DataFrame({"v": [1.0, 5.0, 1.0, 5.0], "g": ["a", "a", "b", "b"]})
+    assert explained_variance(table, "v", "g") == pytest.approx(0.0, abs=1e-9)
 
 
 def test_el_diagnostico_delata_el_rasgo_que_solo_conoce_la_ciudad():
-    """Un rasgo que separa ciudades sin separar grados debe salir con razón alta."""
-    tabla = tabla_sintetica(80, fuerza=1.5)
-    tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CIUDADES)})
-    d = diagnostico_transferencia(tabla, "densidad").set_index("rasgo")
-    assert d.loc["c_media", "razon"] > 10
-    assert d.loc["c_desv", "razon"] < d.loc["c_media", "razon"]
+    """Un rasgo que separa cities sin separar grados debe salir con razón alta."""
+    table = synthetic_table(80, strength=1.5)
+    table["c_mean"] = table["ciudad"].map({c: i * 10.0 for i, c in enumerate(CITIES)})
+    d = transfer_diagnostics(table, "densidad").set_index("feature")
+    assert d.loc["c_mean", "ratio"] > 10
+    assert d.loc["c_std", "ratio"] < d.loc["c_mean", "ratio"]
 
 
 def test_estandarizar_centra_dentro_de_cada_ciudad():
-    tabla = tabla_sintetica(60, fuerza=1.0)
-    columnas = columnas_de_conjunto(tabla, "densidad")
-    e = estandarizar_por_grupo(tabla, columnas)
+    table = synthetic_table(60, strength=1.0)
+    columns = columns_of_set(table, "densidad")
+    e = standardise_by_group(table, columns)
     for _, grupo in e.groupby("ciudad"):
-        assert grupo["c_media"].mean() == pytest.approx(0.0, abs=1e-9)
-        assert grupo["c_media"].std() == pytest.approx(1.0, abs=1e-9)
+        assert grupo["c_mean"].mean() == pytest.approx(0.0, abs=1e-9)
+        assert grupo["c_mean"].std() == pytest.approx(1.0, abs=1e-9)
 
 
 def test_un_rasgo_constante_queda_en_cero_y_no_en_nulo():
     """Varias clases de cobertura valen cero en todas las AGEB.
 
-    Convertirlas en columnas enteramente nulas rompe el binning del modelo, así que el
+    Convertirlas en columns enteramente nulas rompe el binning del modelo, así que el
     caso degenerado tiene que quedar centrado en cero.
     """
-    tabla = tabla_sintetica(40)
-    tabla["wc_nieve"] = 0.0
-    e = estandarizar_por_grupo(tabla, ["wc_nieve"])
-    assert e["wc_nieve"].notna().all()
-    assert (e["wc_nieve"] == 0.0).all()
+    table = synthetic_table(40)
+    table["wc_snow"] = 0.0
+    e = standardise_by_group(table, ["wc_snow"])
+    assert e["wc_snow"].notna().all()
+    assert (e["wc_snow"] == 0.0).all()
 
 
 def test_estandarizar_conserva_los_nulos_que_son_ausencia_de_dato():
-    tabla = tabla_sintetica(40)
-    tabla.loc[:5, "c_media"] = np.nan
-    e = estandarizar_por_grupo(tabla, ["c_media"])
-    assert e["c_media"].isna().sum() == 6
+    table = synthetic_table(40)
+    table.loc[:5, "c_mean"] = np.nan
+    e = standardise_by_group(table, ["c_mean"])
+    assert e["c_mean"].isna().sum() == 6
 
 
 def test_la_ablacion_estandarizada_corre_completa():
-    tabla = tabla_sintetica(60, fuerza=1.5)
-    detalle = comparar(tabla, estandarizar=True)
-    assert not detalle.empty
-    assert detalle["kappa"].notna().all()
+    table = synthetic_table(60, strength=1.5)
+    detail = compare(table, estandarizar=True)
+    assert not detail.empty
+    assert detail["kappa"].notna().all()
 
 
 def test_una_tabla_sin_rasgos_del_conjunto_falla():
-    tabla = pd.DataFrame({"ciudad": ["a"], "ordinal": [1], "otra_cosa": [3.0]})
-    with pytest.raises(ValueError, match="conjunto"):
-        evaluar(tabla, "textura", "clasificador")
+    table = pd.DataFrame({"ciudad": ["a"], "ordinal": [1], "otra_cosa": [3.0]})
+    with pytest.raises(ValueError, match="split"):
+        evaluate(table, "textura", "clasificador")
 
 
-def fiabilidad_de(tabla, valor=0.9):
-    """Tabla de fiabilidad sintética con el mismo valor para todos los rasgos."""
-    rasgos = columnas_de_conjunto(tabla, "textura")
-    return pd.DataFrame({"rasgo": rasgos, "r_mediana": [valor] * len(rasgos)})
+def fiabilidad_de(table, valor=0.9):
+    """Tabla de reliability sintética con el mismo valor para todos los features."""
+    features = columns_of_set(table, "textura")
+    return pd.DataFrame({"feature": features, "r_median": [valor] * len(features)})
 
 
 def test_un_rasgo_que_no_se_reproduce_queda_fuera():
-    tabla = tabla_sintetica(40)
-    tabla["c_n_px"] = 1000
-    fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.rasgo == "c_contrast_d1", "r_mediana"] = 0.2
+    table = synthetic_table(40)
+    table["c_n_px"] = 1000
+    fiab = fiabilidad_de(table)
+    fiab.loc[fiab.feature == "c_contrast_d1", "r_median"] = 0.2
 
-    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
-    assert not sel.loc["c_contrast_d1", "conservado"]
-    assert sel.loc["c_contrast_d1", "motivo"] == "no se reproduce"
+    sel = select_features(table, fiab).set_index("feature")
+    assert not sel.loc["c_contrast_d1", "kept"]
+    assert sel.loc["c_contrast_d1", "reason"] == "does not reproduce"
 
 
 def test_un_rasgo_atado_al_tamano_queda_fuera():
     """Un rasgo que es una función del área del polígono apunta al blanco por construcción."""
-    tabla = tabla_sintetica(60)
+    table = synthetic_table(60)
     rng = np.random.default_rng(3)
-    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
-    tabla["c_contrast_d1"] = np.log10(tabla["c_n_px"]) * 5
+    table["c_n_px"] = rng.integers(700, 20000, len(table))
+    table["c_contrast_d1"] = np.log10(table["c_n_px"]) * 5
 
-    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
-    assert not sel.loc["c_contrast_d1", "conservado"]
-    assert sel.loc["c_contrast_d1", "motivo"] == "atado al tamaño"
+    sel = select_features(table, fiabilidad_de(table)).set_index("feature")
+    assert not sel.loc["c_contrast_d1", "kept"]
+    assert sel.loc["c_contrast_d1", "reason"] == "tied to size"
 
 
 def test_un_rasgo_fiable_e_independiente_se_conserva():
-    tabla = tabla_sintetica(60)
+    table = synthetic_table(60)
     rng = np.random.default_rng(4)
-    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
-    tabla["c_homogeneity_d1"] = rng.normal(0, 1, len(tabla))
+    table["c_n_px"] = rng.integers(700, 20000, len(table))
+    table["c_homogeneity_d1"] = rng.normal(0, 1, len(table))
 
-    sel = seleccionar_rasgos(tabla, fiabilidad_de(tabla)).set_index("rasgo")
-    assert sel.loc["c_homogeneity_d1", "conservado"]
-    assert sel.loc["c_homogeneity_d1", "motivo"] == "conservado"
+    sel = select_features(table, fiabilidad_de(table)).set_index("feature")
+    assert sel.loc["c_homogeneity_d1", "kept"]
+    assert sel.loc["c_homogeneity_d1", "reason"] == "kept"
 
 
 def test_el_ruido_puro_lo_atrapa_la_fiabilidad_y_no_el_tamano():
     """Los dos criterios se necesitan mutuamente.
 
     Un rasgo que es ruido pasa el criterio de tamaño con holgura, porque el ruido no
-    correlaciona con nada. Solo la fiabilidad lo detecta.
+    correlaciona con nada. Solo la reliability lo detecta.
     """
-    tabla = tabla_sintetica(60)
+    table = synthetic_table(60)
     rng = np.random.default_rng(5)
-    tabla["c_n_px"] = rng.integers(700, 20000, len(tabla))
-    tabla["c_energy_d4"] = rng.normal(0, 1, len(tabla))
+    table["c_n_px"] = rng.integers(700, 20000, len(table))
+    table["c_energy_d4"] = rng.normal(0, 1, len(table))
 
-    fiab = fiabilidad_de(tabla)
-    fiab.loc[fiab.rasgo == "c_energy_d4", "r_mediana"] = 0.05
-    sel = seleccionar_rasgos(tabla, fiab).set_index("rasgo")
+    fiab = fiabilidad_de(table)
+    fiab.loc[fiab.feature == "c_energy_d4", "r_median"] = 0.05
+    sel = select_features(table, fiab).set_index("feature")
 
     assert abs(sel.loc["c_energy_d4", "r_n_px"]) < 0.30
-    assert not sel.loc["c_energy_d4", "conservado"]
+    assert not sel.loc["c_energy_d4", "kept"]
 
 
 def test_un_rasgo_sin_medicion_de_fiabilidad_queda_fuera():
-    tabla = tabla_sintetica(40)
-    tabla["c_n_px"] = 1000
-    fiab = fiabilidad_de(tabla)
-    sel = seleccionar_rasgos(tabla, fiab[fiab.rasgo != "c_contrast_d2"]).set_index("rasgo")
-    assert not sel.loc["c_contrast_d2", "conservado"]
+    table = synthetic_table(40)
+    table["c_n_px"] = 1000
+    fiab = fiabilidad_de(table)
+    sel = select_features(table, fiab[fiab.feature != "c_contrast_d2"]).set_index("feature")
+    assert not sel.loc["c_contrast_d2", "kept"]
+
+
+def test_el_auroc_de_las_clases_bajas_no_sale_invertido():
+    """Con una sola puntuación ordenada, la evidencia a favor de k es la cercanía a k.
+
+    Usar el orden crudo invierte las clases bajas y el promedio sale en 0.5 por
+    cancelación, aparentando rng donde el modelo separa casi perfecto.
+    """
+    import numpy as np
+
+    from satinsight.baseline import auroc_one_vs_rest
+
+    verdad = np.array([0, 1, 2, 3, 4] * 20)
+    casi_perfecto = verdad + np.random.default_rng(0).normal(0, 0.2, len(verdad))
+    r = auroc_one_vs_rest(verdad, casi_perfecto)
+    assert r["auroc_muy_bajo"] > 0.9
+    assert r["auroc_macro"] > 0.85
+
+
+def test_el_auroc_acumulado_respeta_el_orden():
+    import numpy as np
+
+    from satinsight.baseline import auroc_cumulative
+
+    verdad = np.array([0, 1, 2, 3, 4] * 20)
+    r = auroc_cumulative(verdad, verdad.astype(float))
+    assert all(v == 1.0 for k, v in r.items() if k.startswith("auroc_ge_"))
+
+
+def test_la_fusion_junta_las_columnas_de_las_dos_modalidades():
+    import pandas as pd
+
+    from satinsight.baseline import fuse
+
+    optico = pd.DataFrame(
+        {"cvegeo": ["a", "b"], "ciudad": ["x", "x"], "ordinal": [1, 2], "s2rojo_media": [1.0, 2.0]}
+    )
+    radar = pd.DataFrame(
+        {"cvegeo": ["a", "b"], "ciudad": ["x", "x"], "ordinal": [1, 2], "s1vv_media": [3.0, 4.0]}
+    )
+    juntas = fuse(optico, radar)
+    assert list(juntas.columns) == ["cvegeo", "ciudad", "ordinal", "s2rojo_media", "s1vv_media"]
+    assert len(juntas) == 2
+
+
+def test_la_fusion_conserva_solo_las_ageb_de_las_dos():
+    import pandas as pd
+
+    from satinsight.baseline import fuse
+
+    optico = pd.DataFrame({"cvegeo": ["a", "b", "c"], "s2rojo_media": [1.0, 2.0, 3.0]})
+    radar = pd.DataFrame({"cvegeo": ["b", "c", "d"], "s1vv_media": [4.0, 5.0, 6.0]})
+    juntas = fuse(optico, radar)
+    assert sorted(juntas.cvegeo) == ["b", "c"]
