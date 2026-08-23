@@ -93,7 +93,12 @@ importan; nunca al revés.
   `sentinel-1-rtc` y `sentinel-2-l2a`. Lectura por ventana directa del COG con rasterio,
   sin descargar escenas completas.
 - Los datos crudos van en `data/`, ignorado por git. El código debe poder regenerarlos.
-- Código, comentarios, docstrings y nombres de identificadores en español.
+- **Todo el código en inglés**: identificadores, comentarios, docstrings, mensajes de
+  registro y el texto de las figuras. El destino del proyecto es un paper en inglés, y un
+  repositorio bilingüe obliga a traducir dos veces cada concepto. Esta conversación y los
+  documentos de trabajo siguen en español.
+- Quedan quince módulos escritos en español de antes de esta decisión. Se traducen de una
+  sola pasada, no a pedazos: un módulo a medio traducir es peor que uno entero en español.
 
 ## Git
 
