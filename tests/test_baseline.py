@@ -291,3 +291,30 @@ def test_el_auroc_acumulado_respeta_el_orden():
     verdad = np.array([0, 1, 2, 3, 4] * 20)
     r = auroc_acumulada(verdad, verdad.astype(float))
     assert all(v == 1.0 for k, v in r.items() if k.startswith("auroc_ge_"))
+
+
+def test_la_fusion_junta_las_columnas_de_las_dos_modalidades():
+    import pandas as pd
+
+    from satinsight.baseline import fusionar
+
+    optico = pd.DataFrame(
+        {"cvegeo": ["a", "b"], "ciudad": ["x", "x"], "ordinal": [1, 2], "s2rojo_media": [1.0, 2.0]}
+    )
+    radar = pd.DataFrame(
+        {"cvegeo": ["a", "b"], "ciudad": ["x", "x"], "ordinal": [1, 2], "s1vv_media": [3.0, 4.0]}
+    )
+    juntas = fusionar(optico, radar)
+    assert list(juntas.columns) == ["cvegeo", "ciudad", "ordinal", "s2rojo_media", "s1vv_media"]
+    assert len(juntas) == 2
+
+
+def test_la_fusion_conserva_solo_las_ageb_de_las_dos():
+    import pandas as pd
+
+    from satinsight.baseline import fusionar
+
+    optico = pd.DataFrame({"cvegeo": ["a", "b", "c"], "s2rojo_media": [1.0, 2.0, 3.0]})
+    radar = pd.DataFrame({"cvegeo": ["b", "c", "d"], "s1vv_media": [4.0, 5.0, 6.0]})
+    juntas = fusionar(optico, radar)
+    assert sorted(juntas.cvegeo) == ["b", "c"]

@@ -543,3 +543,21 @@ def evaluar_particion(
         "n_mide": len(mide),
         "ciudades_mide": len(unicas),
     }
+
+
+def fusionar(optico: pd.DataFrame, radar: pd.DataFrame, *, clave: str = "cvegeo") -> pd.DataFrame:
+    """Une las tablas de las dos modalidades en una sola, por AGEB.
+
+    Las columnas de contexto —cobertura del suelo, población, ciudad, grado— vienen de la
+    misma fuente en ambas y se toman una vez. Las de imagen llevan el sensor en el nombre,
+    así que conviven sin chocar.
+
+    Se conservan solo las AGEB presentes en las dos. Comparar la fusión contra cada
+    modalidad por separado sobre muestras distintas mezclaría la diferencia de sensor con
+    la de qué filas evalúa cada uno.
+    """
+    solo_radar = [c for c in radar.columns if c.startswith("s1")]
+    faltantes = set(optico[clave]) ^ set(radar[clave])
+    if faltantes:
+        log.info("%d AGEB quedan fuera por faltar en una de las dos modalidades", len(faltantes))
+    return optico.merge(radar[[clave, *solo_radar]], on=clave, how="inner")
