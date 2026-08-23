@@ -20,10 +20,10 @@ from satinsight import cache
 from satinsight.agebs import CIUDADES, agebs_de_ciudad
 from satinsight.aoi import AOI
 from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
-from satinsight.cobertura import fracciones_por_ageb, mosaico
 from satinsight.composite import compuesto_s1, compuesto_s2
 from satinsight.grid import Grid, grid_from_scenes
 from satinsight.ingesta import RAIZ_DATOS
+from satinsight.landcover import fractions_per_ageb, mosaic
 from satinsight.raster import to_db
 from satinsight.textura import RANGOS_FIJOS, RANGOS_FIJOS_S1, rasgos_por_ageb
 
@@ -327,9 +327,9 @@ def rasgos_de_ciudad(
 
     # La cobertura del suelo no depende del sensor, pero se calcula sobre esta retícula
     # para que sus fracciones y los rasgos de textura miren exactamente los mismos píxeles.
-    clases = mosaico(area, malla)
+    clases = mosaic(area, malla)
     tabla = tabla.merge(
-        fracciones_por_ageb(clases, malla.transform, geometrias, claves),
+        fractions_per_ageb(clases, malla.transform, geometrias, claves),
         on="cvegeo",
         how="left",
     )
