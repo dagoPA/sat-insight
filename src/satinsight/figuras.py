@@ -16,7 +16,7 @@ from rasterio.features import rasterize
 
 from satinsight import cache
 from satinsight.agebs import GRADES
-from satinsight.pipeline import aoi_de_ciudad, canales_s1, canales_s2
+from satinsight.pipeline import channels_s1, channels_s2, city_aoi
 from satinsight.raster import stretch, to_db
 from satinsight.texture import FIXED_RANGES_S1, MIN_PIXELS, features_of_patch, quantise
 
@@ -65,7 +65,7 @@ def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
     root = Path("data") / "compuestos"
     paneles = []
     for sensor, titulo in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
-        bandas, _, etiquetas = cache.cargar(cache.ruta_compuesto(ciudad, sensor, root))
+        bandas, _, etiquetas = cache.load(cache.composite_path(ciudad, sensor, root))
         rgb = _rgb_desde_compuesto(bandas, sensor)
         alto, ancho = rgb.shape[:2]
         lado_px = min(alto, ancho)
@@ -107,8 +107,8 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
     dentro de él.
     """
     root = Path("data") / "compuestos"
-    _, agebs = aoi_de_ciudad(ciudad)
-    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, "s2", root))
+    _, agebs = city_aoi(ciudad)
+    bandas, malla, _ = cache.load(cache.composite_path(ciudad, "s2", root))
     rgb = _rgb_desde_compuesto(bandas, "s2")
     proyectadas = agebs.to_crs(malla.crs)
 
@@ -182,12 +182,12 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     está capturando la GLCM antes de creerle a un kappa.
     """
     root = Path("data") / "compuestos"
-    _, agebs = aoi_de_ciudad(ciudad)
-    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, sensor, root))
+    _, agebs = city_aoi(ciudad)
+    bandas, malla, _ = cache.load(cache.composite_path(ciudad, sensor, root))
     rgb = _rgb_desde_compuesto(bandas, sensor)
     proyectadas = agebs.to_crs(malla.crs)
 
-    canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
+    canales = channels_s2(bandas) if sensor == "s2" else channels_s1(bandas)
     nombre_canal = "s2nir" if sensor == "s2" else "s1vh"
     canal = canales[nombre_canal]
     rango = FIXED_RANGES_S1.get(nombre_canal)
@@ -264,11 +264,11 @@ def _hex(rgb: tuple[int, int, int]) -> str:
 
 
 def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
-    """Sitúa las cinco ciudades piloto dentro del país.
+    """Sitúa las cinco cities piloto dentro del país.
 
     El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
     alto o muy alto. Puestas sobre el mapa se ve de un vistazo el sesgo de la muestra: las
-    dos ciudades que aportan rezago alto están en el sur y en la costa del Pacífico.
+    dos cities que aportan rezago alto están en el sur y en la costa del Pacífico.
     """
     import matplotlib
 
@@ -285,7 +285,7 @@ def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
 
     puntos = []
     for clave in CITIES:
-        area, agebs = aoi_de_ciudad(clave, root)
+        area, agebs = city_aoi(clave, root)
         lon = (area.bbox[0] + area.bbox[2]) / 2
         lat = (area.bbox[1] + area.bbox[3]) / 2
         altos = float(agebs.grado.isin(("Alto", "Muy alto")).mean())
@@ -363,10 +363,10 @@ def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
 
 
 def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
-    """El conjunto completo de AGEB de cada ciudad, teñido por grado y a escala común.
+    """El conjunto completo de AGEB de cada ciudad, teñido por grado y a scale común.
 
     Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
-    baseline. Compartir la escala en kilómetros permite comparar el tamaño real de las cinco
+    baseline. Compartir la scale en kilómetros permite comparar el tamaño real de las cinco
     manchas urbanas.
     """
     import matplotlib
@@ -378,12 +378,12 @@ def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
     from satinsight.agebs import CITIES, METRIC_CRS
 
     root = root or Path("data")
-    ciudades = list(CITIES)
-    figura, ejes = plt.subplots(1, len(ciudades), figsize=(16, 3.7), dpi=150)
+    cities = list(CITIES)
+    figura, ejes = plt.subplots(1, len(cities), figsize=(16, 3.7), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
 
-    for ax, clave in zip(ejes, ciudades, strict=True):
-        _, agebs = aoi_de_ciudad(clave, root)
+    for ax, clave in zip(ejes, cities, strict=True):
+        _, agebs = city_aoi(clave, root)
         metrico = agebs.to_crs(METRIC_CRS)
         for grado, color in COLOR_GRADO.items():
             parte = metrico[metrico.grado == grado]
@@ -490,7 +490,7 @@ def estado_de_composicion(
 def mapa_ciudades_nacionales(
     destino: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
-    """Sitúa las ciudades del conjunto nacional y colorea cada una según su composición.
+    """Sitúa las cities del conjunto nacional y colorea cada una según su composición.
 
     El tamaño de la marca es el número de AGEB urbanas de la ciudad. Puestas sobre el país
     se ve qué tanto cubre la muestra el territorio y dónde se concentra el trabajo hecho.
@@ -512,7 +512,7 @@ def mapa_ciudades_nacionales(
     puntos = []
     for clave, ciudad in catalogue.items():
         try:
-            area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
+            area, agebs = city_aoi(clave, root, catalogue=catalogue)
         except Exception:
             log.warning("sin geometría para %s", clave, exc_info=True)
             continue
@@ -551,7 +551,7 @@ def mapa_ciudades_nacionales(
             zorder=3 + orden.index(estado),
         )
 
-    # solo se rotulan las ciudades ya compuestas y las que fallaron: rotular las 138
+    # solo se rotulan las cities ya compuestas y las que fallaron: rotular las 138
     # deja el mapa ilegible, y son esas dos las que interesa poder señalar por nombre
     rotuladas = sorted(
         (p for p in puntos if p["estado"] != "pendiente"),

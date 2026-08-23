@@ -16,13 +16,13 @@ import pandas as pd
 
 from satinsight import bags, encoders, tiling
 from satinsight.agebs import cities_by_size
-from satinsight.cache import cargar
+from satinsight.cache import load
 from satinsight.download import DATA_ROOT
-from satinsight.pipeline import aoi_de_ciudad
+from satinsight.pipeline import city_aoi
 
 log = logging.getLogger(__name__)
 
-CANALES = {
+CHANNELS = {
     "s2": ["B02", "B03", "B04", "B08", "B11"],
     "s1": ["vh", "vv"],
 }
@@ -36,25 +36,25 @@ def rutas(root: Path = DATA_ROOT) -> dict[str, Path]:
         "bolsas": root / "bolsas",
         "vectores": root / "vectores",
         "particion": root / "particion.csv",
-        "ciudades": root / "ciudades_nacional.csv",
+        "cities": root / "ciudades_nacional.csv",
     }
 
 
-def city_table(root: Path = DATA_ROOT, *, forzar: bool = False) -> pd.DataFrame:
+def city_table(root: Path = DATA_ROOT, *, force: bool = False) -> pd.DataFrame:
     """Size and deprivation of every city in the national set, which is what the split needs.
 
     Cached to disk because it walks the AGEB layer of all 32 states, and the partition has
     to be reproducible from the same numbers every time it is rebuilt.
     """
-    destino = rutas(root)["ciudades"]
-    if destino.exists() and not forzar:
+    destino = rutas(root)["cities"]
+    if destino.exists() and not force:
         return pd.read_csv(destino, dtype={"clave": str})
 
     catalogue = cities_by_size(root=root, stratify=True)
     filas = []
     for clave in catalogue:
         try:
-            _, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
+            _, agebs = city_aoi(clave, root, catalogue=catalogue)
         except Exception:
             log.warning("no geometry for %s", clave, exc_info=True)
             continue
@@ -84,15 +84,15 @@ def build_city(
     min_valid_fraction: float = tiling.MIN_VALID_FRACTION,
     minimo_instancias: int = 32,
     catalogue: dict | None = None,
-    forzar: bool = False,
+    force: bool = False,
 ) -> dict[str, Path]:
     """Tiles a city, assembles its bags, and encodes its patches if an encoder is given.
 
     Without an encoder the geometry half still runs, which is what lets the layout be
     checked and the partition be built before any deep learning stack is installed.
     """
-    if sensor not in CANALES:
-        raise KeyError(f"unknown sensor {sensor!r}, expected one of {sorted(CANALES)}")
+    if sensor not in CHANNELS:
+        raise KeyError(f"unknown sensor {sensor!r}, expected one of {sorted(CHANNELS)}")
     destino = rutas(root)
     salidas = {
         "instancias": destino["instancias"] / f"{clave}_{sensor}.parquet",
@@ -103,14 +103,14 @@ def build_city(
     if not compuesto.exists():
         raise FileNotFoundError(f"{clave} has no {sensor} composite yet: {compuesto}")
 
-    bandas, malla, _ = cargar(compuesto)
-    faltantes = [c for c in CANALES[sensor] if c not in bandas]
+    bandas, malla, _ = load(compuesto)
+    faltantes = [c for c in CHANNELS[sensor] if c not in bandas]
     if faltantes:
         raise KeyError(f"{compuesto.name} is missing {faltantes}")
-    bandas = {c: bandas[c] for c in CANALES[sensor]}
+    bandas = {c: bandas[c] for c in CHANNELS[sensor]}
 
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
-    _, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
+    _, agebs = city_aoi(clave, root, catalogue=catalogue)
 
     ventanas = tiling.select(bandas, size=size, min_valid_fraction=min_valid_fraction)
     tokens, _ = tiling.instances(ventanas, bandas, min_valid_fraction=min_valid_fraction)
@@ -127,7 +127,7 @@ def build_city(
         return salidas
 
     vectores = destino["vectores"] / f"{clave}_{sensor}.npz"
-    if vectores.exists() and not forzar:
+    if vectores.exists() and not force:
         log.info("%s already encoded", vectores.name)
         salidas["vectores"] = vectores
         return salidas
@@ -135,7 +135,7 @@ def build_city(
     # el modelo recibe ventanas enteras y devuelve todos sus tokens, así que se codifica
     # una vez y después se conservan las filas que siguieron siendo instancias
     matriz, codificados = encoders.extract(
-        bandas, ventanas, encoder, order=CANALES[sensor], min_valid_fraction=min_valid_fraction
+        bandas, ventanas, encoder, order=CHANNELS[sensor], min_valid_fraction=min_valid_fraction
     )
     posicion = {(t.y0, t.x0): i for i, t in enumerate(codificados)}
     filas = [posicion[(y, x)] for y, x in zip(instancias.y0, instancias.x0, strict=True)]
@@ -149,7 +149,7 @@ def build_city(
     return salidas
 
 
-def build_split(root: Path = DATA_ROOT, *, forzar: bool = False, **kwargs) -> pd.DataFrame:
+def build_split(root: Path = DATA_ROOT, *, force: bool = False, **kwargs) -> pd.DataFrame:
     """Writes the train and test partition of the national set.
 
     Built once and read from disk afterwards, because a partition that quietly changes
@@ -158,7 +158,7 @@ def build_split(root: Path = DATA_ROOT, *, forzar: bool = False, **kwargs) -> pd
     from satinsight import splits
 
     destino = rutas(root)["particion"]
-    if destino.exists() and not forzar:
+    if destino.exists() and not force:
         return pd.read_csv(destino)
     particion = splits.assign(city_table(root), **kwargs)
     particion.to_csv(destino, index=False)

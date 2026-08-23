@@ -1,12 +1,11 @@
-"""De una ciudad a su tabla de rasgos por AGEB.
+"""From a city to its table of features per AGEB.
 
-Encadena las piezas de la fase 1 en el único orden en que se pueden ejecutar: las AGEB
-definen el recuadro, el recuadro define la búsqueda en el catálogo, las escenas definen la
-retícula, la retícula permite componer, y el compuesto permite medir textura dentro de cada
-polígono.
+Chains the pieces of phase one in the only order they can run: the AGEB define the box, the
+box defines the catalogue search, the scenes define the grid, the grid allows compositing,
+and the composite allows measuring texture inside each polygon.
 
-Cada compuesto se guarda al construirse, así que una corrida interrumpida se reanuda sin
-volver a pagar la hora de descarga por ciudad y sensor.
+Every composite is saved as it is built, so an interrupted run resumes without paying the
+hour of downloading per city and sensor again.
 """
 
 import logging
@@ -29,400 +28,401 @@ from satinsight.texture import FIXED_RANGES, FIXED_RANGES_S1, features_per_ageb
 
 log = logging.getLogger(__name__)
 
-PERIODO_CENSO = "2020-01-01/2020-12-31"
+CENSUS_PERIOD = "2020-01-01/2020-12-31"
 
-BANDAS_S2 = ("B04", "B03", "B02", "B08", "B11")
-"""Rojo, verde, azul, infrarrojo cercano e infrarrojo de onda corta.
+BANDS_S2 = ("B04", "B03", "B02", "B08", "B11")
+"""Red, green, blue, near infrared and shortwave infrared.
 
-Las cuatro primeras son nativas a 10 m. B11 llega a 20 m y se remuestrea, y entra porque
-habilita el NDBI, el índice estándar de superficie construida. El riesgo central del
-proyecto es que el modelo lea densidad construida en vez de morfología de la privación, así
-que conviene tener el canal que mejor describe lo primero.
+The first four are native at 10 m. B11 arrives at 20 m and is resampled, and it enters
+because it enables NDBI, the standard built-up index. The central risk of the project is
+that the model reads built density rather than the morphology of deprivation, so it is
+worth holding the channel that best describes the former.
 
-Azul y verde no alimentan ningún rasgo: existen para poder renderizar color natural de
-cualquier ciudad.
+Blue and green feed no feature: they exist so natural colour can be rendered for any city.
 """
 
-MARGEN_M = 200.0
-"""Holgura alrededor de las AGEB, para que ninguna quede cortada por el borde del recuadro."""
+MARGIN_M = 200.0
+"""Slack around the AGEB, so none is cut by the edge of the box."""
 
-SENSORES = ("s2", "s1")
+SENSORS = ("s2", "s1")
 
-ESCALAS = ("nativa", "fija", "percentiles")
-"""Cómo se fija la escala de cuantización de la textura, y por qué hay tres opciones.
+SCALES = ("native", "fixed", "percentiles")
+"""How the texture quantisation scale is set, and why there are three options.
 
-- `nativa` es el criterio de la fase 1: rango fijo en decibeles para el radar, porque gamma0
-  está calibrado, y percentiles por ciudad para el óptico, porque arrastra residuos
-  atmosféricos.
-- `fija` cuantiza ambas modalidades con bordes fijos.
-- `percentiles` estima el rango de cada ciudad en ambas.
+- `native` is the phase one criterion: a fixed range in decibels for radar, because gamma0
+  is calibrated, and per-city percentiles for optical, because it carries atmospheric
+  residuals.
+- `fixed` quantises both modalities with fixed edges.
+- `percentiles` estimates the range of each city in both.
 
-Las dos últimas existen para poder comparar las modalidades bajo el mismo tratamiento.
-Medirlas con criterios distintos confunde el sensor con el preproceso, y esa confusión es
-justo lo que la comparación tiene que descartar.
+The last two exist so the modalities can be compared under the same treatment. Measuring
+them under different criteria confounds the sensor with the preprocessing, and that
+confusion is exactly what the comparison has to rule out.
 """
 
 
-def _rango_de_canal(nombre: str, escala: str) -> tuple[float, float] | None:
-    """Rango de cuantización de un canal bajo la escala pedida, o `None` para estimarlo."""
-    if escala == "nativa":
-        return FIXED_RANGES_S1.get(nombre)
-    if escala == "fija":
-        return FIXED_RANGES.get(nombre)
-    if escala == "percentiles":
+def _channel_range(name: str, scale: str) -> tuple[float, float] | None:
+    """Quantisation range of a channel under the requested scale, or `None` to estimate it."""
+    if scale == "native":
+        return FIXED_RANGES_S1.get(name)
+    if scale == "fixed":
+        return FIXED_RANGES.get(name)
+    if scale == "percentiles":
         return None
-    raise ValueError(f"escala desconocida: {escala!r}. Válidas: {', '.join(ESCALAS)}")
+    raise ValueError(f"unknown scale: {scale!r}. Valid: {', '.join(SCALES)}")
 
 
-TOPE_S2 = 20
-TOPE_S1 = 16
-"""Escenas que entran a cada compuesto.
+CAP_S2 = 20
+CAP_S1 = 16
+"""Scenes that enter each composite.
 
-El mismo tope para las cinco ciudades: la validación deja una ciudad fuera por pliegue, así
-que un compuesto armado con menos escenas en una de ellas se confundiría con señal de esa
-ciudad. Sentinel-2 se recorre de la escena más despejada a la más nublada, de modo que las
-veinte primeras son las mejores disponibles.
+The same cap for every city: validation holds cities out, so a composite built from fewer
+scenes in one of them would be confused with signal from that city. Sentinel-2 is walked
+from the clearest scene to the cloudiest, so the first twenty are the best available.
 """
 
-PROFUNDIDAD_MINIMA = 8
-"""Observaciones que debe tener el píxel típico para dar el compuesto por comparable.
+MIN_DEPTH = 8
+"""Observations the typical pixel needs for the composite to count as comparable.
 
-`composite` ya aborta cuando fallan demasiadas lecturas, que es el síntoma de una avería.
-Esta segunda comprobación mira otra cosa: con cuántas observaciones se calculó la mediana
-del píxel típico. Una ciudad compuesta con la mitad de observaciones que otra tiene más
-ruido residual, y como la validación reparte los pliegues por ciudad, esa diferencia se
-leería como señal de esa ciudad. Responde al diseño experimental, y por eso vive aquí
-mientras la detección de averías vive en la librería.
+`composite` already aborts when too many reads fail, which is the symptom of an outage.
+This second check looks at something else: how many observations the median of the typical
+pixel was computed from. A city composited with half the observations of another carries
+more residual noise, and since validation splits by city, that difference would read as
+signal from that city. It answers to the experimental design, and that is why it lives here
+while outage detection lives in the library.
 
-Se cuenta por píxel y no por escena porque una ciudad repartida entre dos tiles MGRS
-recibe escenas que solo cubren su mitad del recuadro: contarlas enteras da un número que
-ninguna parte de la imagen llegó a tener.
+It counts per pixel and not per scene because a city split between two MGRS tiles receives
+scenes that cover only its half of the box: counting them whole gives a number no part of
+the image ever had.
 """
 
 
-def _exigir_profundidad(clave: str, sensor: str, profundidad: int, minimo: int) -> None:
-    """Avisa cuando la mediana del píxel típico se calculó con muy pocas observaciones."""
-    if profundidad < minimo:
+def _require_depth(key: str, sensor: str, depth: int, minimum: int) -> None:
+    """Warns when the median of the typical pixel came from too few observations."""
+    if depth < minimum:
         raise RuntimeError(
-            f"{clave}/{sensor}: el píxel típico se compuso con {profundidad} observaciones, "
-            f"menos de las {minimo} exigidas. Comparar ciudades armadas con distinta "
-            "profundidad mezcla señal con ruido de muestreo, y la validación reparte los "
-            "pliegues justamente por ciudad."
+            f"{key}/{sensor}: the typical pixel was composited from {depth} observations, "
+            f"fewer than the {minimum} required. Comparing cities built at different depths "
+            "mixes signal with sampling noise, and validation splits precisely by city."
         )
 
 
-def aoi_de_ciudad(
-    clave: str,
+def city_aoi(
+    key: str,
     root: Path = DATA_ROOT,
     *,
-    margen_m: float = MARGEN_M,
+    margin_m: float = MARGIN_M,
     catalogue: dict | None = None,
 ) -> tuple[AOI, gpd.GeoDataFrame]:
-    """Recuadro que envuelve a las AGEB de una ciudad, junto con esas AGEB.
+    """Box wrapping the AGEB of a city, together with those AGEB.
 
-    `catalogue` permite trabajar sobre el conjunto nacional que devuelve
-    `agebs.cities_by_size` en vez de las cinco piloto escritas a mano.
+    `catalogue` allows working over the national set `agebs.cities_by_size` returns instead
+    of the five pilots written by hand.
     """
     catalogue = catalogue or CITIES
-    agebs = agebs_of_city(clave, root, catalogue=catalogue)
-    ciudad = catalogue[clave]
-    area = AOI.from_polygons(clave, ciudad.name, ciudad.state, agebs, margen_m=margen_m)
-    alto, ancho = area.approximate_shape()
-    log.info("%s: %d AGEB, recuadro ~%dx%d px @10 m", ciudad.name, len(agebs), ancho, alto)
+    agebs = agebs_of_city(key, root, catalogue=catalogue)
+    city = catalogue[key]
+    area = AOI.from_polygons(key, city.name, city.state, agebs, margin_m=margin_m)
+    height, width = area.approximate_shape()
+    log.info("%s: %d AGEB, box ~%dx%d px @10 m", city.name, len(agebs), width, height)
     return area, agebs
 
 
-def construir_compuesto(
-    clave: str,
+def build_composite(
+    key: str,
     sensor: str,
     area: AOI,
     *,
-    periodo: str = PERIODO_CENSO,
+    period: str = CENSUS_PERIOD,
     max_scenes: int | None = None,
     catalogue=None,
 ) -> tuple[dict[str, np.ndarray], Grid, dict]:
-    """Compone una ciudad y un sensor desde el catálogo, sin consultar el disco."""
-    if sensor not in SENSORES:
-        raise ValueError(f"sensor desconocido: {sensor!r}. Válidos: {', '.join(SENSORES)}")
+    """Composites a city and a sensor from the catalogue, without consulting disk."""
+    if sensor not in SENSORS:
+        raise ValueError(f"unknown sensor: {sensor!r}. Valid: {', '.join(SENSORS)}")
 
     catalogue = catalogue or open_catalogue()
-    coleccion = COLLECTION_S2 if sensor == "s2" else COLLECTION_S1
-    escenas = search(coleccion, area.bbox, periodo, catalogue)
-    if not escenas:
-        raise RuntimeError(f"el catálogo no devolvió escenas de {sensor} para {clave}")
+    collection = COLLECTION_S2 if sensor == "s2" else COLLECTION_S1
+    scenes = search(collection, area.bbox, period, catalogue)
+    if not scenes:
+        raise RuntimeError(f"the catalogue returned no {sensor} scenes for {key}")
 
-    # sobre radar el huso se elige por la cobertura que alcanza cada uno y no por cuántas
-    # escenas trae: los dos husos de una ciudad en el borde pueden ver mitades distintas
-    puntuar = None
+    # for radar the UTM zone is chosen by the coverage each one reaches and not by how many
+    # scenes it brings: the two zones of a city on the edge can see different halves
+    score = None
     if sensor == "s1":
 
-        def puntuar(grupo):
+        def score(group):
             from satinsight.catalog import group_by_orbit
             from satinsight.composite import useful_coverage
 
-            orbitas = group_by_orbit(grupo)
-            return max((useful_coverage(v, area.bbox) for v in orbitas.values()), default=0.0)
+            orbits = group_by_orbit(group)
+            return max((useful_coverage(v, area.bbox) for v in orbits.values()), default=0.0)
 
-    malla, escenas = grid_from_scenes(area.bbox, escenas, puntuar=puntuar)
-    log.info("%s/%s: %d escenas, retícula %.1f MP", clave, sensor, len(escenas), malla.megapixels)
+    grid, scenes = grid_from_scenes(area.bbox, scenes, score=score)
+    log.info("%s/%s: %d scenes, grid %.1f MP", key, sensor, len(scenes), grid.megapixels)
 
     if sensor == "s2":
-        tope = max_scenes or TOPE_S2
-        bandas, meta = composite_s2(escenas, area.bbox, malla.shape, BANDAS_S2, tope)
-        etiquetas = {"scenes_available": len(escenas), **meta}
-        profundidad = int(meta["median_depth"])
+        cap = max_scenes or CAP_S2
+        bands, meta = composite_s2(scenes, area.bbox, grid.shape, BANDS_S2, cap)
+        tags = {"scenes_available": len(scenes), **meta}
+        depth = int(meta["median_depth"])
     else:
-        tope = max_scenes or TOPE_S1
-        bandas, meta = composite_s1(escenas, area.bbox, malla.shape, tope)
-        etiquetas = dict(meta)
-        profundidad = int(meta["scenes_used"])
+        cap = max_scenes or CAP_S1
+        bands, meta = composite_s1(scenes, area.bbox, grid.shape, cap)
+        tags = dict(meta)
+        depth = int(meta["scenes_used"])
 
-    _exigir_profundidad(clave, sensor, profundidad, min(PROFUNDIDAD_MINIMA, tope))
-    etiquetas |= {"ciudad": clave, "sensor": sensor, "periodo": periodo, "bbox": list(area.bbox)}
-    return bandas, malla, etiquetas
+    _require_depth(key, sensor, depth, min(MIN_DEPTH, cap))
+    tags |= {"ciudad": key, "sensor": sensor, "period": period, "bbox": list(area.bbox)}
+    return bands, grid, tags
 
 
-def _mismo_recuadro(guardado, actual, tolerancia: float = 1e-6) -> bool:
-    """Compara el recuadro con el que se construyó un compuesto contra el vigente.
+def _same_box(stored, current, tolerance: float = 1e-6) -> bool:
+    """Compares the box a composite was built with against the one in force.
 
-    El compuesto se guarda con el nombre de la ciudad, así que un cambio en la regla que
-    define el recuadro dejaría en disco un archivo que cubre otra zona y se seguiría
-    reutilizando sin avisar. Comparar el recuadro almacenado convierte esa corrupción
-    silenciosa en una reconstrucción.
+    The composite is saved under the city's name, so a change in the rule that defines the
+    box would leave a file on disk covering another area and it would go on being reused
+    with no warning. Comparing the stored box turns that silent corruption into a rebuild.
     """
-    if guardado is None:
+    if stored is None:
         return False
-    return len(guardado) == len(actual) and all(
-        abs(float(a) - float(b)) <= tolerancia for a, b in zip(guardado, actual, strict=True)
+    return len(stored) == len(current) and all(
+        abs(float(a) - float(b)) <= tolerance for a, b in zip(stored, current, strict=True)
     )
 
 
-def _mismas_bandas(guardadas, sensor: str) -> bool:
-    """Confirma que un compuesto en disco traiga las bandas que el pipeline espera hoy.
+def _same_bands(stored, sensor: str) -> bool:
+    """Confirms a composite on disk carries the bands the pipeline expects today.
 
-    Agregar una banda deja obsoletos los compuestos anteriores, y el archivo sigue
-    cargándose sin queja hasta que un canal derivado busca la que falta. Peor todavía si el
-    canal nuevo existe en unas ciudades y no en otras: esa diferencia quedaría correlacionada
-    con qué ciudades se compusieron primero, que es exactamente el confundido que la
-    validación por ciudad tiene que evitar.
+    Adding a band leaves earlier composites obsolete, and the file keeps loading without
+    complaint until a derived channel looks for the missing one. Worse still if the new
+    channel exists in some cities and not others: that difference would end up correlated
+    with which cities were composited first, exactly the confound that validation by city
+    has to avoid.
     """
-    esperadas = set(BANDAS_S2) if sensor == "s2" else {"vv", "vh"}
-    return set(guardadas) == esperadas
+    expected = set(BANDS_S2) if sensor == "s2" else {"vv", "vh"}
+    return set(stored) == expected
 
 
-def asegurar_compuesto(
-    clave: str,
+def ensure_composite(
+    key: str,
     sensor: str,
     *,
     area: AOI | None = None,
     root: Path = DATA_ROOT,
-    periodo: str = PERIODO_CENSO,
-    forzar: bool = False,
+    period: str = CENSUS_PERIOD,
+    force: bool = False,
     **kwargs,
 ) -> tuple[dict[str, np.ndarray], Grid, dict]:
-    """Devuelve el compuesto desde disco, construyéndolo la primera vez.
+    """Returns the composite from disk, building it the first time.
 
-    Quien ya haya resuelto el recuadro puede pasarlo en `area` para ahorrarse una segunda
-    lectura del shapefile de la entidad, que en City de México ronda los ochenta megas.
+    Whoever already resolved the box can pass it in `area` to save a second read of the
+    state shapefile, which for Mexico City runs to some eighty megabytes.
     """
-    destino = cache.ruta_compuesto(clave, sensor, root / "compuestos")
-    if destino.exists() and not forzar:
-        guardado = cache.cargar(destino)
-        recuadro_ok = area is None or _mismo_recuadro(guardado[2].get("bbox"), area.bbox)
-        bandas_ok = _mismas_bandas(guardado[0], sensor)
-        if recuadro_ok and bandas_ok:
-            log.info("compuesto en caché: %s", destino.name)
-            return guardado
-        motivo = "cubre otro recuadro" if not recuadro_ok else "le faltan bandas"
-        log.warning("%s/%s en caché %s; se reconstruye", clave, sensor, motivo)
+    destination = cache.composite_path(key, sensor, root / "compuestos")
+    if destination.exists() and not force:
+        stored = cache.load(destination)
+        box_ok = area is None or _same_box(stored[2].get("bbox"), area.bbox)
+        bands_ok = _same_bands(stored[0], sensor)
+        if box_ok and bands_ok:
+            log.info("composite cached: %s", destination.name)
+            return stored
+        reason = "covers another box" if not box_ok else "is missing bands"
+        log.warning("%s/%s cached %s; rebuilding", key, sensor, reason)
 
     if area is None:
-        area, _ = aoi_de_ciudad(clave, root)
-    bandas, malla, etiquetas = construir_compuesto(clave, sensor, area, periodo=periodo, **kwargs)
-    cache.guardar(bandas, malla, destino, **etiquetas)
-    return bandas, malla, etiquetas
+        area, _ = city_aoi(key, root)
+    bands, grid, tags = build_composite(key, sensor, area, period=period, **kwargs)
+    cache.save(bands, grid, destination, **tags)
+    return bands, grid, tags
 
 
-def _division_segura(numerador: np.ndarray, denominador: np.ndarray) -> np.ndarray:
-    """Cociente que devuelve NaN donde el denominador se anula."""
-    salida = np.full(numerador.shape, np.nan, dtype="float32")
-    np.divide(numerador, denominador, out=salida, where=np.abs(denominador) > 1e-6)
-    return salida
+def _safe_divide(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
+    """Quotient that returns NaN wherever the denominator vanishes."""
+    output = np.full(numerator.shape, np.nan, dtype="float32")
+    np.divide(numerator, denominator, out=output, where=np.abs(denominator) > 1e-6)
+    return output
 
 
-def canales_s2(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    """Canales sobre los que se mide textura en el brazo óptico.
+def channels_s2(bands: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Channels texture is measured on in the optical arm.
 
-    El rojo lleva la señal de material construido, el infrarrojo cercano separa vegetación
-    de suelo desnudo, y el NDVI resume ambos en un índice acotado que no depende de la
-    calibración absoluta. El NDBI agrega la respuesta del infrarrojo de onda corta, que es
-    donde el material construido se distingue mejor del suelo desnudo.
+    Red carries the signal of built material, the near infrared separates vegetation from
+    bare soil, and NDVI summarises both in a bounded index that does not depend on absolute
+    calibration. NDBI adds the shortwave infrared response, which is where built material
+    is best told apart from bare soil.
     """
-    rojo = bandas["B04"].astype("float32")
-    nir = bandas["B08"].astype("float32")
-    swir = bandas["B11"].astype("float32")
+    red = bands["B04"].astype("float32")
+    nir = bands["B08"].astype("float32")
+    swir = bands["B11"].astype("float32")
     return {
-        "s2red": rojo,
+        "s2red": red,
         "s2nir": nir,
-        "s2ndvi": _division_segura(nir - rojo, nir + rojo),
-        "s2ndbi": _division_segura(swir - nir, swir + nir),
+        "s2ndvi": _safe_divide(nir - red, nir + red),
+        "s2ndbi": _safe_divide(swir - nir, swir + nir),
     }
 
 
-def canales_s1(bandas: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    """Canales del brazo radar, en decibeles.
+def channels_s1(bands: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Channels of the radar arm, in decibels.
 
-    La conversión ocurre aquí y nunca antes de guardar: el compuesto vive en potencia
-    lineal porque promediar en decibeles sesga el resultado hacia los valores bajos.
+    The conversion happens here and never before saving: the composite lives in linear
+    power because averaging in decibels biases the result towards the low values.
     """
-    vv = to_db(bandas["vv"])
-    vh = to_db(bandas["vh"])
+    vv = to_db(bands["vv"])
+    vh = to_db(bands["vh"])
     return {"s1vv": vv, "s1vh": vh, "s1ratio": vv - vh}
 
 
-CANALES = {"s2": canales_s2, "s1": canales_s1}
+CHANNELS = {"s2": channels_s2, "s1": channels_s1}
 
 
-def rasgos_de_ciudad(
-    clave: str,
+def features_of_city(
+    key: str,
     sensor: str,
     *,
     root: Path = DATA_ROOT,
-    periodo: str = PERIODO_CENSO,
-    forzar: bool = False,
+    period: str = CENSUS_PERIOD,
+    force: bool = False,
     max_scenes: int | None = None,
-    escala: str = "nativa",
+    scale: str = "native",
     catalogue: dict | None = None,
 ) -> pd.DataFrame:
-    """Tabla de rasgos por AGEB para una ciudad y un sensor, con su etiqueta ordinal.
+    """Table of features per AGEB for one city and one sensor, with its ordinal label.
 
-    `escala` elige cómo se cuantiza la textura; ver `ESCALAS`.
+    `scale` chooses how texture is quantised; see `SCALES`.
     """
-    area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
-    bandas, malla, _ = asegurar_compuesto(
-        clave,
+    area, agebs = city_aoi(key, root, catalogue=catalogue)
+    bands, grid, _ = ensure_composite(
+        key,
         sensor,
         area=area,
         root=root,
-        periodo=periodo,
-        forzar=forzar,
+        period=period,
+        force=force,
         max_scenes=max_scenes,
     )
 
-    proyectadas = agebs.to_crs(malla.crs)
-    geometrias = list(proyectadas.geometry)
-    claves = list(proyectadas["cvegeo"])
+    projected = agebs.to_crs(grid.crs)
+    geometries = list(projected.geometry)
+    keys = list(projected["cvegeo"])
 
-    tabla = pd.DataFrame({"cvegeo": claves})
-    for nombre, canal in CANALES[sensor](bandas).items():
-        parcial = features_per_ageb(
-            canal,
-            malla.transform,
-            geometrias,
-            claves,
-            prefix=nombre,
-            rango=_rango_de_canal(nombre, escala),
+    table = pd.DataFrame({"cvegeo": keys})
+    for name, channel in CHANNELS[sensor](bands).items():
+        partial = features_per_ageb(
+            channel,
+            grid.transform,
+            geometries,
+            keys,
+            prefix=name,
+            value_range=_channel_range(name, scale),
         )
-        tabla = tabla.merge(parcial, on="cvegeo", how="left")
+        table = table.merge(partial, on="cvegeo", how="left")
 
-    # La cobertura del suelo no depende del sensor, pero se calcula sobre esta retícula
-    # para que sus fracciones y los rasgos de textura miren exactamente los mismos píxeles.
-    clases = mosaic(area, malla)
-    tabla = tabla.merge(
-        fractions_per_ageb(clases, malla.transform, geometrias, claves),
+    # Land cover does not depend on the sensor, but it is computed over this grid so that
+    # its fractions and the texture features look at exactly the same pixels.
+    classes = mosaic(area, grid)
+    table = table.merge(
+        fractions_per_ageb(classes, grid.transform, geometries, keys),
         on="cvegeo",
         how="left",
     )
 
-    etiquetas = agebs[["cvegeo", "ciudad", "grado", "ordinal", "poblacion", "viviendas"]]
-    tabla = tabla.merge(etiquetas, on="cvegeo", how="left")
-    tabla["area_km2"] = proyectadas.geometry.area.to_numpy() / 1e6
-    return tabla
+    labels = agebs[["cvegeo", "ciudad", "grado", "ordinal", "poblacion", "viviendas"]]
+    table = table.merge(labels, on="cvegeo", how="left")
+    table["area_km2"] = projected.geometry.area.to_numpy() / 1e6
+    return table
 
 
-def rasgos_de_todas(
+def features_of_all(
     sensor: str,
-    ciudades: tuple[str, ...] = tuple(CITIES),
+    cities: tuple[str, ...] = tuple(CITIES),
     *,
     root: Path = DATA_ROOT,
     max_scenes: int | None = None,
-    escala: str = "nativa",
+    scale: str = "native",
     catalogue: dict | None = None,
 ) -> pd.DataFrame:
-    """Apila las tablas de rasgos de varias ciudades para un mismo sensor.
+    """Stacks the feature tables of several cities for one sensor.
 
-    Una ciudad que falle no detiene al resto: con 138 ciudades, abortar por una sola
-    obliga a repetir horas de trabajo ya hecho, y qué faltó se ve en el registro.
+    A city that fails does not stop the rest: with 138 cities, aborting over one forces
+    repeating hours of work already done, and what was missed shows in the log.
     """
-    partes = []
-    for c in ciudades:
+    parts = []
+    for city in cities:
         try:
-            partes.append(
-                rasgos_de_ciudad(
-                    c, sensor, root=root, max_scenes=max_scenes, escala=escala, catalogue=catalogue
+            parts.append(
+                features_of_city(
+                    city,
+                    sensor,
+                    root=root,
+                    max_scenes=max_scenes,
+                    scale=scale,
+                    catalogue=catalogue,
                 )
             )
         except Exception:
-            log.warning("sin rasgos para %s", c, exc_info=True)
-    if not partes:
-        raise RuntimeError(f"ninguna ciudad dio rasgos para {sensor}")
-    log.info("rasgos de %d de %d ciudades", len(partes), len(ciudades))
-    return pd.concat(partes, ignore_index=True)
+            log.warning("no features for %s", city, exc_info=True)
+    if not parts:
+        raise RuntimeError(f"no city yielded features for {sensor}")
+    log.info("features of %d of %d cities", len(parts), len(cities))
+    return pd.concat(parts, ignore_index=True)
 
 
-def fiabilidad_de_ciudades(
+def reliability_of_cities(
     sensor: str,
-    ciudades: tuple[str, ...] | None = None,
+    cities: tuple[str, ...] | None = None,
     *,
     root: Path = DATA_ROOT,
-    escala: str = "fija",
+    scale: str = "fixed",
     catalogue: dict | None = None,
 ) -> pd.DataFrame:
-    """Correlación entre mitades de cada rasgo, agregada sobre muchas ciudades.
+    """Split-half correlation of each feature, aggregated over many cities.
 
-    Cada ciudad aporta una correlación por rasgo, y se conserva la mediana entre ciudades
-    junto con la peor. Medirlo sobre pocas ciudades deja el criterio a merced de sus
-    particularidades: un rasgo puede reproducirse en cinco ciudades del sur y ser ruido
-    en el norte, y el filtro lo dejaría pasar sin que nada avisara.
+    Every city contributes one correlation per feature, and the median across cities is
+    kept together with the worst. Measuring it over few cities leaves the criterion at the
+    mercy of their peculiarities: a feature can reproduce in five southern cities and be
+    noise in the north, and the filter would let it through with nothing to warn about it.
     """
     from satinsight.agebs import cities_by_size
     from satinsight.texture import split_half_reliability
 
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
-    claves = ciudades or tuple(
+    keys = cities or tuple(
         p.stem.replace(f"_{sensor}", "")
         for p in sorted((root / "compuestos").glob(f"*_{sensor}.tif"))
     )
 
-    partes = []
-    for clave in claves:
+    parts = []
+    for key in keys:
         try:
-            area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
-            bandas, malla, _ = asegurar_compuesto(clave, sensor, area=area, root=root)
-            agebs = agebs.to_crs(malla.crs)
-            canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
-            for nombre, banda in canales.items():
-                partes.append(
+            area, agebs = city_aoi(key, root, catalogue=catalogue)
+            bands, grid, _ = ensure_composite(key, sensor, area=area, root=root)
+            agebs = agebs.to_crs(grid.crs)
+            channels = channels_s2(bands) if sensor == "s2" else channels_s1(bands)
+            for name, band in channels.items():
+                parts.append(
                     split_half_reliability(
-                        banda,
-                        malla.transform,
+                        band,
+                        grid.transform,
                         list(agebs.geometry),
                         list(agebs.cvegeo),
-                        prefix=nombre,
-                        rango=_rango_de_canal(nombre, escala),
-                    ).assign(ciudad=clave)
+                        prefix=name,
+                        value_range=_channel_range(name, scale),
+                    ).assign(ciudad=key)
                 )
         except Exception:
-            log.warning("sin fiabilidad para %s", clave, exc_info=True)
+            log.warning("no reliability for %s", key, exc_info=True)
 
-    if not partes:
-        raise RuntimeError(f"ninguna ciudad dio fiabilidad para {sensor}")
-    juntas = pd.concat(partes, ignore_index=True)
-    resumen = (
-        juntas.groupby("feature", observed=True)["r"]
-        .agg(r_mediana="median", r_min="min", ciudades="size")
+    if not parts:
+        raise RuntimeError(f"no city yielded reliability for {sensor}")
+    together = pd.concat(parts, ignore_index=True)
+    summary = (
+        together.groupby("feature", observed=True)["r"]
+        .agg(r_median="median", r_min="min", cities="size")
         .reset_index()
-        .sort_values("r_mediana", ascending=False)
+        .sort_values("r_median", ascending=False)
     )
-    log.info("fiabilidad de %d rasgos sobre %d ciudades", len(resumen), juntas.ciudad.nunique())
-    return resumen
+    log.info("reliability of %d features over %d cities", len(summary), together.ciudad.nunique())
+    return summary

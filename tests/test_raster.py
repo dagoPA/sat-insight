@@ -57,7 +57,7 @@ def test_el_centinela_de_la_escena_se_vuelve_nan(tmp_path):
     """El valor de «sin dato» de un ráster de punto flotante no puede entrar a la mediana.
 
     Sentinel-1 RTC declara -32768 y lo escribe fuera de la franja y en la sombra del radar.
-    Leído como número hunde el compuesto de las ciudades que asoman del borde de la escena.
+    Leído como número hunde el compuesto de las cities que asoman del borde de la escena.
     """
     ruta = tmp_path / "sar.tif"
     datos = np.full((8, 8), 0.25, dtype="float32")
