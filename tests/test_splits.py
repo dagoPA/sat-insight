@@ -124,3 +124,52 @@ def test_check_passes_on_a_clean_partition():
         }
     )
     check(p, instancias)
+
+
+def _tabla_conurbada():
+    """Dos ciudades vecinas que comparten AGEB, como Guadalajara y Zapopan."""
+    return pd.DataFrame(
+        {
+            "cvegeo": ["1403900010001", "1403900010002", "1412000010001", "1403900010001"],
+            "ciudad": ["guadalajara", "guadalajara", "zapopan", "zapopan"],
+            "valor": [1.0, 2.0, 3.0, 4.0],
+        }
+    )
+
+
+class _Ciudad:
+    def __init__(self, municipio):
+        self.municipio = municipio
+
+
+def test_una_ageb_compartida_queda_bajo_una_sola_ciudad():
+    from satinsight.splits import desduplicar
+
+    catalogo = {"guadalajara": _Ciudad("14039"), "zapopan": _Ciudad("14120")}
+    d = desduplicar(_tabla_conurbada(), catalogo)
+    assert len(d) == 3
+    assert d.cvegeo.is_unique
+    assert d.loc[d.cvegeo == "1403900010001", "ciudad"].item() == "guadalajara"
+
+
+def test_un_municipio_que_ninguna_ciudad_reclama_va_a_la_que_mas_tiene():
+    from satinsight.splits import dueno_de_municipio
+
+    tabla = pd.DataFrame(
+        {
+            "cvegeo": ["1409800010001", "1409800010002", "1409800010003"],
+            "ciudad": ["guadalajara", "guadalajara", "zapopan"],
+        }
+    )
+    catalogo = {"guadalajara": _Ciudad("14039"), "zapopan": _Ciudad("14120")}
+    assert dueno_de_municipio(tabla, catalogo)["14098"] == "guadalajara"
+
+
+def test_desduplicar_deja_la_particion_sin_fuga():
+    from satinsight.splits import desduplicar
+
+    catalogo = {"guadalajara": _Ciudad("14039"), "zapopan": _Ciudad("14120")}
+    d = desduplicar(_tabla_conurbada(), catalogo)
+    particion = pd.DataFrame({"ciudad": ["guadalajara", "zapopan"], "conjunto": ["train", "val"]})
+    d["municipio"] = d.cvegeo.str[:5]
+    check(particion, d[["ciudad", "cvegeo", "municipio"]])
