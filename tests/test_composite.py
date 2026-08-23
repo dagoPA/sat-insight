@@ -159,3 +159,50 @@ def test_un_compuesto_de_radar_sano_pasa():
     arreglo = np.full((10, 10), 0.2, dtype="float32")
     arreglo[0] = np.nan
     assert composite._revisar_compuesto_s1({"vv": arreglo, "vh": arreglo}) == pytest.approx(0.9)
+
+
+def escena_optica(nombre: str, tesela: str, nubes: float = 10.0) -> ItemFalso:
+    return ItemFalso(
+        id=nombre,
+        assets={b: ActivoFalso(f"{nombre}/{b}") for b in ("SCL", "B04", "B03", "B02")},
+        properties={"s2:mgrs_tile": tesela, "eo:cloud_cover": nubes},
+    )
+
+
+def test_se_descarta_la_tesela_que_no_toca_el_recuadro(monkeypatch):
+    """El caso de San Pedro Tlaquepaque: las más despejadas son de la tesela equivocada.
+
+    Fuera de su huella la lectura llega en ceros y el SCL en cero significa sin dato, de
+    modo que la escena no aporta un solo píxel por muy despejada que venga.
+    """
+    escenas = [escena_optica(f"lejos{i}", "13QFD", nubes=1.0) for i in range(19)]
+    escenas += [escena_optica("encima", "13QFC", nubes=40.0)]
+
+    def leer(href, bbox, forma):
+        return np.full(forma, 0 if href.startswith("lejos") else 4, dtype="uint8")
+
+    monkeypatch.setattr(composite, "leer_ventana", leer)
+    utiles = composite.teselas_utiles(escenas, BBOX)
+    assert [e.id for e in utiles] == ["encima"]
+
+
+def test_un_recuadro_partido_conserva_las_dos_teselas(monkeypatch):
+    escenas = [escena_optica(f"a{i}", "14QKH") for i in range(3)]
+    escenas += [escena_optica(f"b{i}", "14QLH") for i in range(3)]
+
+    def leer(href, bbox, forma):
+        arreglo = np.zeros(forma, dtype="uint8")
+        if href.startswith("a"):
+            arreglo[:, : forma[1] // 2] = 4
+        else:
+            arreglo[:, forma[1] // 2 :] = 5
+        return arreglo
+
+    monkeypatch.setattr(composite, "leer_ventana", leer)
+    assert len(composite.teselas_utiles(escenas, BBOX)) == 6
+
+
+def test_sin_ninguna_tesela_util_falla(monkeypatch):
+    monkeypatch.setattr(composite, "leer_ventana", lambda h, b, f: np.zeros(f, dtype="uint8"))
+    with pytest.raises(RuntimeError, match="ninguna de las"):
+        composite.teselas_utiles([escena_optica("x", "14QKH")], BBOX)
