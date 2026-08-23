@@ -28,9 +28,9 @@ log = logging.getLogger(__name__)
 RAIZ_COMPUESTOS = Path("data") / "compuestos"
 
 
-def ruta_compuesto(ciudad: str, sensor: str, raiz: Path = RAIZ_COMPUESTOS) -> Path:
+def ruta_compuesto(ciudad: str, sensor: str, root: Path = RAIZ_COMPUESTOS) -> Path:
     """Ubicación canónica del compuesto de una ciudad y un sensor."""
-    return raiz / f"{ciudad}_{sensor}.tif"
+    return root / f"{ciudad}_{sensor}.tif"
 
 
 def guardar(bandas: dict[str, np.ndarray], malla: Grid, destino: Path, **etiquetas) -> Path:
@@ -103,6 +103,6 @@ def cargar(origen: Path) -> tuple[dict[str, np.ndarray], Grid, dict]:
     return bandas, malla, etiquetas
 
 
-def existe(ciudad: str, sensor: str, raiz: Path = RAIZ_COMPUESTOS) -> bool:
+def existe(ciudad: str, sensor: str, root: Path = RAIZ_COMPUESTOS) -> bool:
     """Indica si el compuesto ya está en disco."""
-    return ruta_compuesto(ciudad, sensor, raiz).exists()
+    return ruta_compuesto(ciudad, sensor, root).exists()

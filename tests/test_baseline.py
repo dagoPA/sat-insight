@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from satinsight.agebs import GRADOS
+from satinsight.agebs import GRADES
 from satinsight.baseline import (
     columnas_de_conjunto,
     comparar,
@@ -18,7 +18,7 @@ from satinsight.baseline import (
 from satinsight.landcover import CLASSES
 from satinsight.texture import feature_names
 
-CIUDADES = ("tuxtla", "merida", "iztapalapa")
+CITIES = ("tuxtla", "merida", "iztapalapa")
 
 
 def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
@@ -29,14 +29,14 @@ def tabla_sintetica(n_por_ciudad=120, fuerza=1.0, semilla=0):
     """
     rng = np.random.default_rng(semilla)
     partes = []
-    for ciudad in CIUDADES:
+    for ciudad in CITIES:
         ordinal = rng.integers(0, 5, n_por_ciudad)
         ruido = rng.normal(0, 1, n_por_ciudad)
         columnas = {
             "cvegeo": [f"{ciudad}{i:04d}" for i in range(n_por_ciudad)],
             "ciudad": ciudad,
             "ordinal": ordinal,
-            "grado": [GRADOS[i] for i in ordinal],
+            "grado": [GRADES[i] for i in ordinal],
             "c_media": fuerza * ordinal + ruido,
             "c_desv": fuerza * ordinal * 0.5 + ruido,
             "c_p10": rng.normal(0, 1, n_por_ciudad),
@@ -93,8 +93,8 @@ def test_conjunto_desconocido_falla():
 
 def test_la_validacion_deja_una_ciudad_fuera_por_pliegue():
     detalle = evaluar(tabla_sintetica(60), "completo", "clasificador")
-    assert len(detalle) == len(CIUDADES)
-    assert set(detalle["ciudad_prueba"]) == set(CIUDADES)
+    assert len(detalle) == len(CITIES)
+    assert set(detalle["ciudad_prueba"]) == set(CITIES)
     for _, fila in detalle.iterrows():
         assert fila["n_entrena"] == 120
         assert fila["n_prueba"] == 60
@@ -129,7 +129,7 @@ def test_comparar_corre_los_modelos_ciegos_una_sola_vez():
     detalle = comparar(tabla_sintetica(50))
     ciegos = detalle[detalle["modelo"].isin(["azar", "moda"])]
     assert set(ciegos["conjunto"]) == {"ninguno"}
-    assert len(ciegos) == 2 * len(CIUDADES)
+    assert len(ciegos) == 2 * len(CITIES)
 
 
 def test_el_resumen_ordena_por_kappa():
@@ -151,7 +151,7 @@ def test_un_factor_sin_relacion_explica_poco():
 def test_el_diagnostico_delata_el_rasgo_que_solo_conoce_la_ciudad():
     """Un rasgo que separa ciudades sin separar grados debe salir con razón alta."""
     tabla = tabla_sintetica(80, fuerza=1.5)
-    tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CIUDADES)})
+    tabla["c_media"] = tabla["ciudad"].map({c: i * 10.0 for i, c in enumerate(CITIES)})
     d = diagnostico_transferencia(tabla, "densidad").set_index("feature")
     assert d.loc["c_media", "razon"] > 10
     assert d.loc["c_desv", "razon"] < d.loc["c_media", "razon"]

@@ -30,7 +30,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.metrics import cohen_kappa_score, f1_score, roc_auc_score
 
-from satinsight.agebs import GRADOS
+from satinsight.agebs import GRADES
 from satinsight.landcover import CLASSES
 from satinsight.texture import feature_names
 
@@ -179,7 +179,7 @@ def _predecir(nombre: str, x_entrena, y_entrena, x_prueba) -> np.ndarray:
     modelo.fit(x_entrena, y_entrena)
     crudo = modelo.predict(x_prueba)
     if nombre == "regresor":
-        crudo = np.clip(np.round(crudo), 0, len(GRADOS) - 1)
+        crudo = np.clip(np.round(crudo), 0, len(GRADES) - 1)
     return crudo.astype(int)
 
 
@@ -415,7 +415,7 @@ def _puntuaciones(nombre: str, x_entrena, y_entrena, x_prueba):
         modelo = HistGradientBoostingRegressor(random_state=SEMILLA, max_iter=300)
         modelo.fit(x_entrena, y_entrena)
         crudo = modelo.predict(x_prueba)
-        duras = np.clip(np.round(crudo), 0, len(GRADOS) - 1).astype(int)
+        duras = np.clip(np.round(crudo), 0, len(GRADES) - 1).astype(int)
         return duras, crudo
     duras = _predecir(nombre, x_entrena, y_entrena, x_prueba)
     return duras, duras.astype(float)
@@ -433,7 +433,7 @@ def auroc_una_contra_resto(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict
     banda en el centro de una escala ordenada.
     """
     salida = {}
-    for k, grado in enumerate(GRADOS):
+    for k, grado in enumerate(GRADES):
         objetivo = (verdad == k).astype(int)
         if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
             continue
@@ -458,7 +458,7 @@ def auroc_acumulada(verdad: np.ndarray, puntuaciones: np.ndarray) -> dict[str, f
         puntuaciones @ np.arange(puntuaciones.shape[1]) if puntuaciones.ndim == 2 else puntuaciones
     )
     salida = {}
-    for k in range(1, len(GRADOS)):
+    for k in range(1, len(GRADES)):
         objetivo = (verdad >= k).astype(int)
         if objetivo.sum() == 0 or objetivo.sum() == len(objetivo):
             continue

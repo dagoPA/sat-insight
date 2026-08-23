@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from satinsight import aoi as modulo_aoi
-from satinsight.agebs import CIUDADES, agebs_de_ciudad, resumen_grados
+from satinsight.agebs import CITIES, agebs_of_city, grade_summary
 from satinsight.baseline import comparar, diagnostico_transferencia, resumen
 from satinsight.catalog import (
     COLLECTION_S1,
@@ -48,17 +48,17 @@ def cmd_aoi(_: argparse.Namespace) -> int:
 def cmd_probe(args: argparse.Namespace) -> int:
     """Reporta cuántas escenas hay disponibles sobre un AOI."""
     area = modulo_aoi.obtener(args.aoi)
-    catalogo = open_catalogue()
+    catalogue = open_catalogue()
     print(f"{area.nombre} · {args.periodo}")
 
-    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogo)
+    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogue)
     resumen = cloud_summary(escenas_s2)
     print(f"  Sentinel-2  {resumen['escenas']:>4} escenas")
     print(f"              nubes mediana {resumen['mediana']}%")
     print(f"              {resumen['pct_mayor_50']}% por encima del 50% de nubes")
     print(f"              {resumen['pct_mayor_80']}% por encima del 80%")
 
-    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogo)
+    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogue)
     print(f"  Sentinel-1  {len(escenas_s1):>4} escenas")
     return 0
 
@@ -67,7 +67,7 @@ def cmd_panels(args: argparse.Namespace) -> int:
     """Descarga una muestra y renderiza los cuatro paneles de inspección."""
     area = modulo_aoi.obtener(args.aoi)
     destino = Path(args.salida)
-    catalogo = open_catalogue()
+    catalogue = open_catalogue()
     stats: dict[str, object] = {
         "aoi_clave": area.clave,
         "aoi_nombre": area.nombre,
@@ -77,7 +77,7 @@ def cmd_panels(args: argparse.Namespace) -> int:
     }
 
     log.info("consultando Sentinel-2")
-    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogo)
+    escenas_s2 = search(COLLECTION_S2, area.bbox, args.periodo, catalogue)
     stats["s2"] = cloud_summary(escenas_s2)
     ordenadas = by_cloud_cover(escenas_s2)
     despejada, nublada = ordenadas[0], ordenadas[-1]
@@ -108,7 +108,7 @@ def cmd_panels(args: argparse.Namespace) -> int:
     stats["s2_compuesto"] = {"scenes_used": usadas}
 
     log.info("consultando y componiendo Sentinel-1")
-    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogo)
+    escenas_s1 = search(COLLECTION_S1, area.bbox, args.periodo, catalogue)
     sar, meta = composite_s1(escenas_s1, area.bbox, forma, max_scenes=args.max_s1)
     vv_db, vh_db = to_db(sar["vv"]), to_db(sar["vh"])
     save_rgb(stretch(vv_db), stretch(vh_db), stretch(vv_db - vh_db), destino / "s1_compuesto.png")
@@ -129,21 +129,21 @@ def cmd_panels(args: argparse.Namespace) -> int:
 def cmd_agebs(args: argparse.Namespace) -> int:
     """Resume las AGEB de cada ciudad piloto y su distribución de grados."""
     total = 0
-    for clave in args.ciudades or sorted(CIUDADES):
-        agebs = agebs_de_ciudad(clave)
+    for clave in args.ciudades or sorted(CITIES):
+        agebs = agebs_of_city(clave)
         total += len(agebs)
         habitantes = int(agebs["poblacion"].sum())
-        print(f"\n{CIUDADES[clave].nombre} · {len(agebs)} AGEB · {habitantes:,} hab")
-        print(resumen_grados(agebs).to_string())
+        print(f"\n{CITIES[clave].name} · {len(agebs)} AGEB · {habitantes:,} hab")
+        print(grade_summary(agebs).to_string())
     print(f"\ntotal: {total} AGEB")
     return 0
 
 
 def cmd_rasgos(args: argparse.Namespace) -> int:
     """Extrae la textura por AGEB de un sensor y la deja en disco."""
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
 
-    catalogo = ciudades_por_tamano(estratificar=True)
+    catalogue = cities_by_size(stratify=True)
     claves = args.ciudades or sorted(
         p.stem.replace(f"_{args.sensor}", "")
         for p in (DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif")
@@ -153,7 +153,7 @@ def cmd_rasgos(args: argparse.Namespace) -> int:
         tuple(claves),
         max_scenes=args.max_scenes,
         escala=args.escala,
-        catalogo=catalogo,
+        catalogue=catalogue,
     )
     destino = Path(args.salida or DATA_ROOT / f"rasgos_{args.sensor}_{args.escala}.parquet")
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -233,19 +233,19 @@ def cmd_avance(args: argparse.Namespace) -> int:
     La composición nacional tarda días y sobrevive a la sesión que la lanzó, así que hace
     falta poder consultarla desde cualquier otra.
     """
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
     from satinsight.cache import ruta_compuesto
 
-    catalogo = ciudades_por_tamano(estratificar=not args.sin_estratificar)
-    raiz = DATA_ROOT / "compuestos"
+    catalogue = cities_by_size(stratify=not args.sin_estratificar)
+    root = DATA_ROOT / "compuestos"
     completas, a_medias, faltan = [], [], []
-    for clave in catalogo:
-        hechos = [s for s in SENSORES if ruta_compuesto(clave, s, raiz).exists()]
+    for clave in catalogue:
+        hechos = [s for s in SENSORES if ruta_compuesto(clave, s, root).exists()]
         destino = completas if len(hechos) == len(SENSORES) else a_medias if hechos else faltan
         destino.append(clave)
 
-    tamano = sum(p.stat().st_size for p in raiz.glob("*.tif")) / 1e9 if raiz.exists() else 0
-    print(f"\n{len(completas)} de {len(catalogo)} ciudades completas")
+    tamano = sum(p.stat().st_size for p in root.glob("*.tif")) / 1e9 if root.exists() else 0
+    print(f"\n{len(completas)} de {len(catalogue)} ciudades completas")
     print(f"{len(a_medias)} a medias · {len(faltan)} sin empezar · {tamano:.1f} GB en disco")
     if a_medias:
         print(f"\nen curso: {', '.join(a_medias[:8])}")
@@ -256,10 +256,10 @@ def cmd_avance(args: argparse.Namespace) -> int:
 
 def cmd_bolsas(args: argparse.Namespace) -> int:
     """Tesela ciudades y arma sus bolsas MIL, sin codificar los parches."""
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
     from satinsight.dataset import build_city
 
-    catalogo = ciudades_por_tamano(estratificar=True)
+    catalogue = cities_by_size(stratify=True)
     claves = args.ciudades or [
         p.stem.replace(f"_{args.sensor}", "")
         for p in sorted((DATA_ROOT / "compuestos").glob(f"*_{args.sensor}.tif"))
@@ -268,7 +268,7 @@ def cmd_bolsas(args: argparse.Namespace) -> int:
     for clave in claves:
         try:
             salidas = build_city(
-                clave, args.sensor, encoder=None, size=args.tamano, catalogo=catalogo
+                clave, args.sensor, encoder=None, size=args.tamano, catalogue=catalogue
             )
         except Exception as e:
             print(f"FALLO {clave}: {type(e).__name__}: {e}")
@@ -298,12 +298,12 @@ def cmd_particion(args: argparse.Namespace) -> int:
 
 def cmd_vectores(args: argparse.Namespace) -> int:
     """Codifica los parches con el modelo fundacional congelado."""
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
     from satinsight.dataset import build_city
     from satinsight.encoders import DofaEncoder
 
     encoder = DofaEncoder()
-    catalogo = ciudades_por_tamano(estratificar=True)
+    catalogue = cities_by_size(stratify=True)
     claves = args.ciudades or [
         p.stem.replace(f"_{args.sensor}", "")
         for p in sorted((DATA_ROOT / "instancias").glob(f"*_{args.sensor}.parquet"))
@@ -311,7 +311,7 @@ def cmd_vectores(args: argparse.Namespace) -> int:
     for clave in claves:
         try:
             salidas = build_city(
-                clave, args.sensor, encoder=encoder, catalogo=catalogo, forzar=args.forzar
+                clave, args.sensor, encoder=encoder, catalogue=catalogue, forzar=args.forzar
             )
             print(f"{clave}: {salidas['vectores'].name}")
         except Exception as e:
@@ -389,7 +389,7 @@ def construir_parser() -> argparse.ArgumentParser:
 
     avance = sub.add_parser("avance", help="cuántas ciudades llevan sus dos compuestos")
     avance.add_argument("--detalle", action="store_true", help="lista las pendientes")
-    avance.add_argument("--sin-estratificar", action="store_true", help="solo las 81 mayores")
+    avance.add_argument("--sin-stratify", action="store_true", help="solo las 81 mayores")
     avance.set_defaults(func=cmd_avance)
 
     figs = sub.add_parser("figuras", help="regenera las figuras de la fase 1")

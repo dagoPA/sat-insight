@@ -15,17 +15,17 @@ logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
 )
 
-from satinsight.agebs import ciudades_por_tamano  # noqa: E402
+from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.pipeline import aoi_de_ciudad, asegurar_compuesto  # noqa: E402
 
-catalogo = ciudades_por_tamano(estratificar=True)
+catalogue = cities_by_size(stratify=True)
 argumentos = sys.argv[1:]
 if argumentos and argumentos[0].isdigit():
     indice, total = int(argumentos[0]), int(argumentos[1])
-    mias = list(catalogo)[indice::total]
+    mias = list(catalogue)[indice::total]
     etiqueta = f"proceso {indice}"
 else:
-    mias = argumentos or list(catalogo)
+    mias = argumentos or list(catalogue)
     etiqueta = "corrida"
 
 print(f"{etiqueta}: {len(mias)} ciudades", flush=True)
@@ -33,7 +33,7 @@ fallidas = []
 for n, clave in enumerate(mias, start=1):
     inicio = time.time()
     try:
-        area, agebs = aoi_de_ciudad(clave, catalogo=catalogo)
+        area, agebs = aoi_de_ciudad(clave, catalogue=catalogue)
         for sensor in ("s2", "s1"):
             asegurar_compuesto(clave, sensor, area=area)
         minutos = (time.time() - inicio) / 60
