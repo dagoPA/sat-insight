@@ -34,7 +34,7 @@ def dibujar(resultados: pd.DataFrame, destino: str) -> None:
     for eje, (metrica, titulo, piso, techo) in zip(ejes, METRICAS, strict=True):
         x = np.arange(len(SETS))
         for i, (modalidad, etiqueta) in enumerate(MODALIDADES.items()):
-            sub = resultados[resultados.modalidad == modalidad].set_index("split")
+            sub = resultados[resultados.modalidad == modalidad].set_index("conjunto")
             sub = sub.loc[SETS]
             valor = sub[metrica].to_numpy()
             eje.bar(
@@ -73,4 +73,4 @@ def dibujar(resultados: pd.DataFrame, destino: str) -> None:
 
 
 if __name__ == "__main__":
-    dibujar(pd.read_csv("data/baseline_nacional_val.csv"), sys.argv[1])
+    dibujar(pd.read_csv("data/baseline_val.csv"), sys.argv[1])
