@@ -22,7 +22,7 @@ from satinsight.texture import FIXED_RANGES_S1, MIN_PIXELS, features_of_patch, q
 
 log = logging.getLogger(__name__)
 
-COLOR_GRADO = {
+GRADE_COLOUR = {
     "Muy bajo": (27, 110, 114),
     "Bajo": (99, 162, 155),
     "Medio": (216, 199, 154),
@@ -35,7 +35,7 @@ TINTA = (245, 245, 245)
 FONDO = (20, 24, 31)
 
 
-def _rgb_desde_compuesto(bandas: dict, sensor: str) -> np.ndarray:
+def _rgb_from_composite(bandas: dict, sensor: str) -> np.ndarray:
     """Arreglo RGB de 8 bits listo para mostrar, según el sensor."""
     if sensor == "s2":
         return np.dstack([stretch(bandas[b]) for b in ("B04", "B03", "B02")])
@@ -43,7 +43,7 @@ def _rgb_desde_compuesto(bandas: dict, sensor: str) -> np.ndarray:
     return np.dstack([stretch(vv), stretch(vh), stretch(vv - vh)])
 
 
-def _texto(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> None:
+def _text(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> None:
     """Escribe una etiqueta con un halo oscuro para que se lea sobre cualquier fondo."""
     dibujo = ImageDraw.Draw(imagen)
     try:
@@ -56,7 +56,7 @@ def _texto(imagen: Image.Image, xy, texto: str, size: int = 13, color=TINTA) -> 
     dibujo.text(xy, texto, font=fuente, fill=color)
 
 
-def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
+def modality_panel(ciudad: str, destino: Path, lado: int = 520) -> Path:
     """Los dos sensores sobre el mismo recuadro, uno al lado del otro.
 
     Es la comparación que el documento sostiene en prosa: el óptico tiene la traza urbana
@@ -66,14 +66,14 @@ def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
     paneles = []
     for sensor, titulo in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
         bandas, _, etiquetas = cache.load(cache.composite_path(ciudad, sensor, root))
-        rgb = _rgb_desde_compuesto(bandas, sensor)
+        rgb = _rgb_from_composite(bandas, sensor)
         alto, ancho = rgb.shape[:2]
         lado_px = min(alto, ancho)
         f0, c0 = (alto - lado_px) // 2, (ancho - lado_px) // 2
         recorte = rgb[f0 : f0 + lado_px, c0 : c0 + lado_px]
         imagen = Image.fromarray(recorte).resize((lado, lado), Image.LANCZOS)
-        _texto(imagen, (10, 8), titulo)
-        _texto(
+        _text(imagen, (10, 8), titulo)
+        _text(
             imagen,
             (10, lado - 22),
             f"{etiquetas.get('scenes_used', '?')} escenas · mediana anual",
@@ -90,7 +90,7 @@ def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
     return destino
 
 
-def _engrosar(mascara: np.ndarray, radio: int = 1) -> np.ndarray:
+def _thicken(mascara: np.ndarray, radio: int = 1) -> np.ndarray:
     """Dilata una máscara booleana desplazándola. Un borde de un píxel se pierde al escalar."""
     salida = mascara.copy()
     for eje in (0, 1):
@@ -99,7 +99,7 @@ def _engrosar(mascara: np.ndarray, radio: int = 1) -> np.ndarray:
     return salida
 
 
-def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 420) -> Path:
+def ageb_panel(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 420) -> Path:
     """El compuesto con los bordes de las AGEB encima, teñidos por grado.
 
     Muestra la unidad de análisis apoyada sobre los píxeles que la alimentan, que es lo que
@@ -109,7 +109,7 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
     root = Path("data") / "compuestos"
     _, agebs = city_aoi(ciudad)
     bandas, malla, _ = cache.load(cache.composite_path(ciudad, "s2", root))
-    rgb = _rgb_desde_compuesto(bandas, "s2")
+    rgb = _rgb_from_composite(bandas, "s2")
     proyectadas = agebs.to_crs(malla.crs)
 
     # una etiqueta por grado, para dibujar los bordes con su color
@@ -130,8 +130,8 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
 
     pintado = rgb.copy()
     for indice, grado in enumerate(GRADES, start=1):
-        mascara = _engrosar(borde & (etiquetas == indice))
-        pintado[mascara] = COLOR_GRADO[grado]
+        mascara = _thicken(borde & (etiquetas == indice))
+        pintado[mascara] = GRADE_COLOUR[grado]
 
     # recorte centrado en la zona con más AGEB, chico para que el borde se distinga al ampliar
     filas, columnas = np.where(etiquetas > 0)
@@ -144,14 +144,14 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
     alto_leyenda = 30
     imagen = Image.new("RGB", (lado, lado + alto_leyenda), FONDO)
     imagen.paste(Image.fromarray(recorte).resize((lado, lado), Image.LANCZOS), (0, 0))
-    _texto(imagen, (10, 8), f"{ciudad} · bordes de AGEB, teñidos por grado de rezago")
-    _texto(imagen, (10, lado - 22), f"{2 * mitad * 10 / 1000:.1f} km de lado · píxel de 10 m", 11)
+    _text(imagen, (10, 8), f"{ciudad} · bordes de AGEB, teñidos por grado de rezago")
+    _text(imagen, (10, lado - 22), f"{2 * mitad * 10 / 1000:.1f} km de lado · píxel de 10 m", 11)
 
     dibujo = ImageDraw.Draw(imagen)
     x = 10
     for grado in GRADES:
-        dibujo.rectangle([x, lado + 11, x + 22, lado + 19], fill=COLOR_GRADO[grado])
-        _texto(imagen, (x + 28, lado + 8), grado, 11)
+        dibujo.rectangle([x, lado + 11, x + 22, lado + 19], fill=GRADE_COLOUR[grado])
+        _text(imagen, (x + 28, lado + 8), grado, 11)
         x += 34 + 8 * len(grado)
 
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -160,7 +160,7 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
     return destino
 
 
-def _recorte_de_ageb(rgb: np.ndarray, canal: np.ndarray, malla, geometria, margen: int = 6):
+def _ageb_crop(rgb: np.ndarray, canal: np.ndarray, malla, geometria, margen: int = 6):
     """Recorta una AGEB de la imagen y del canal, con un poco de aire alrededor."""
     from satinsight.grid import polygon_window
 
@@ -175,7 +175,7 @@ def _recorte_de_ageb(rgb: np.ndarray, canal: np.ndarray, malla, geometria, marge
     return rgb[f0:f1, c0:c1], canal[filas, columnas], dentro
 
 
-def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) -> Path:
+def contrast_panel(ciudad: str, sensor: str, destino: Path, lado: int = 190) -> Path:
     """Cuatro AGEB de la misma ciudad, dos de rezago bajo y dos de rezago alto.
 
     Debajo de cada una van su contraste y su homogeneidad medidos. Es la forma de ver qué
@@ -184,7 +184,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     root = Path("data") / "compuestos"
     _, agebs = city_aoi(ciudad)
     bandas, malla, _ = cache.load(cache.composite_path(ciudad, sensor, root))
-    rgb = _rgb_desde_compuesto(bandas, sensor)
+    rgb = _rgb_from_composite(bandas, sensor)
     proyectadas = agebs.to_crs(malla.crs)
 
     canales = channels_s2(bandas) if sensor == "s2" else channels_s1(bandas)
@@ -200,7 +200,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     # un solo píxel de radar utilizable, porque sobre agua la retrodispersión cae a cero y
     # `to_db` la vuelve nula. La candidata se mide por píxeles válidos del canal.
     def utilizables(geometria) -> int:
-        partes = _recorte_de_ageb(rgb, cuantizada, malla, geometria)
+        partes = _ageb_crop(rgb, cuantizada, malla, geometria)
         if partes is None:
             return 0
         _, recorte_q, dentro = partes
@@ -223,7 +223,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     celda, alto_celda = lado, lado + 34
     lienzo = Image.new("RGB", (celda * 4 + 18, alto_celda), FONDO)
     for indice, fila in enumerate(seleccion[:4]):
-        partes = _recorte_de_ageb(rgb, cuantizada, malla, fila.geometry)
+        partes = _ageb_crop(rgb, cuantizada, malla, fila.geometry)
         if partes is None:
             continue
         vista, recorte_q, dentro = partes
@@ -232,12 +232,12 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
 
         imagen = Image.fromarray(vista).resize((celda, celda), Image.NEAREST)
         borde = ImageDraw.Draw(imagen)
-        borde.rectangle([0, 0, celda - 1, celda - 1], outline=COLOR_GRADO[fila.grado], width=3)
+        borde.rectangle([0, 0, celda - 1, celda - 1], outline=GRADE_COLOUR[fila.grado], width=3)
         lienzo.paste(imagen, (indice * (celda + 6), 0))
-        _texto(
-            lienzo, (indice * (celda + 6) + 4, celda + 4), fila.grado, 12, COLOR_GRADO[fila.grado]
+        _text(
+            lienzo, (indice * (celda + 6) + 4, celda + 4), fila.grado, 12, GRADE_COLOUR[fila.grado]
         )
-        _texto(
+        _text(
             lienzo,
             (indice * (celda + 6) + 4, celda + 19),
             f"contraste {rasgos['contrast_d1']:.2f} · homog {rasgos['homogeneity_d1']:.2f}",
@@ -250,7 +250,7 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     return destino
 
 
-def _estilo_oscuro(ax) -> None:
+def _dark_style(ax) -> None:
     """Deja los ejes sin marco ni marcas, sobre el mismo fondo que los demás paneles."""
     ax.set_facecolor(_hex(FONDO))
     ax.set_xticks([])
@@ -263,7 +263,7 @@ def _hex(rgb: tuple[int, int, int]) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
-def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
+def national_map(destino: Path, root: Path | None = None) -> Path:
     """Sitúa las cinco cities piloto dentro del país.
 
     El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
@@ -293,13 +293,17 @@ def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
 
     figura, ax = plt.subplots(figsize=(11, 7), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
-    _estilo_oscuro(ax)
+    _dark_style(ax)
 
     mexico.plot(ax=ax, facecolor="#1d2530", edgecolor="#3b4653", linewidth=0.6)
 
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
         "rezago",
-        [_hex(COLOR_GRADO["Muy bajo"]), _hex(COLOR_GRADO["Medio"]), _hex(COLOR_GRADO["Muy alto"])],
+        [
+            _hex(GRADE_COLOUR["Muy bajo"]),
+            _hex(GRADE_COLOUR["Medio"]),
+            _hex(GRADE_COLOUR["Muy alto"]),
+        ],
     )
     # desplazamientos escogidos a mano: puestas todas a la derecha, las etiquetas de
     # Acapulco y Tuxtla se encimaban y la de Mérida caía sobre la barra de color
@@ -362,7 +366,7 @@ def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
     return destino
 
 
-def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
+def agebs_by_city_map(destino: Path, root: Path | None = None) -> Path:
     """El split completo de AGEB de cada ciudad, teñido por grado y a scale común.
 
     Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
@@ -385,11 +389,11 @@ def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
     for ax, clave in zip(ejes, cities, strict=True):
         _, agebs = city_aoi(clave, root)
         metrico = agebs.to_crs(METRIC_CRS)
-        for grado, color in COLOR_GRADO.items():
+        for grado, color in GRADE_COLOUR.items():
             parte = metrico[metrico.grado == grado]
             if len(parte):
                 parte.plot(ax=ax, facecolor=_hex(color), edgecolor="none")
-        _estilo_oscuro(ax)
+        _dark_style(ax)
         ax.set_aspect("equal")
 
         x0, y0, x1, y1 = metrico.total_bounds
@@ -408,7 +412,7 @@ def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
         )
 
     figura.legend(
-        handles=[Patch(facecolor=_hex(c), label=GRADOS_EN[g]) for g, c in COLOR_GRADO.items()],
+        handles=[Patch(facecolor=_hex(c), label=GRADE_LABELS[g]) for g, c in GRADE_COLOUR.items()],
         loc="lower center",
         ncol=5,
         frameon=False,
@@ -423,7 +427,7 @@ def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
     return destino
 
 
-GRADOS_EN = {
+GRADE_LABELS = {
     "Muy bajo": "Very low",
     "Bajo": "Low",
     "Medio": "Medium",
@@ -432,7 +436,7 @@ GRADOS_EN = {
 }
 """Nombre en inglés de los cinco grados. Las figuras van al paper y el paper va en inglés."""
 
-ESTADOS_EN = {
+STATE_LABELS = {
     "completa": "complete",
     "a medias": "partial",
     "fallida": "failed",
@@ -440,7 +444,7 @@ ESTADOS_EN = {
 }
 """Nombre en inglés de cada estado, porque las figuras van al paper y el paper va en inglés."""
 
-ESTADOS_COMPOSICION = {
+COMPOSITING_STATES = {
     "completa": ("#4ade80", "composited in both modalities"),
     "a medias": ("#fbbf24", "one modality ready"),
     "fallida": ("#f87171", "aborted on failed reads"),
@@ -449,7 +453,7 @@ ESTADOS_COMPOSICION = {
 """Color y glosa de cada estado en que puede estar la composición de una ciudad."""
 
 
-def estado_de_composicion(
+def compositing_state(
     claves: list[str], root: Path | None = None, logs: Path | None = None
 ) -> dict[str, str]:
     """Clasifica cada ciudad según lo que hay en disco y lo que dicen los registros.
@@ -487,7 +491,7 @@ def estado_de_composicion(
     return estados
 
 
-def mapa_ciudades_nacionales(
+def national_cities_map(
     destino: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
     """Sitúa las cities del split nacional y colorea cada una según su composición.
@@ -532,7 +536,7 @@ def mapa_ciudades_nacionales(
 
     figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
-    _estilo_oscuro(ax)
+    _dark_style(ax)
     mexico.plot(ax=ax, facecolor="#171d26", edgecolor="#333e4b", linewidth=0.5)
 
     orden = ["pendiente", "a medias", "fallida", "completa"]
@@ -544,7 +548,7 @@ def mapa_ciudades_nacionales(
             [p["lon"] for p in grupo],
             [p["lat"] for p in grupo],
             s=[30 + p["agebs"] * 0.2 for p in grupo],
-            c=ESTADOS_COMPOSICION[estado][0],
+            c=COMPOSITING_STATES[estado][0],
             edgecolor="#0f1319",
             linewidth=0.7,
             alpha=0.95,
@@ -601,9 +605,9 @@ def mapa_ciudades_nacionales(
             markersize=7,
             markerfacecolor=color,
             markeredgecolor="#0f1319",
-            label=f"{ESTADOS_EN.get(estado, estado)} · {glosa}",
+            label=f"{STATE_LABELS.get(estado, estado)} · {glosa}",
         )
-        for estado, (color, glosa) in ESTADOS_COMPOSICION.items()
+        for estado, (color, glosa) in COMPOSITING_STATES.items()
     ]
     leyenda = ax.legend(
         handles=marcas,
