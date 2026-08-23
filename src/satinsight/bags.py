@@ -17,7 +17,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from satinsight.agebs import GRADOS, ORDINAL
+from satinsight.agebs import GRADES, ORDINAL
 from satinsight.tiling import Tile, centers
 
 if TYPE_CHECKING:
@@ -107,7 +107,7 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
         medio = float(np.average(grupo.ordinal.to_numpy(dtype="float64"), weights=peso))
         return pd.Series(
             {
-                "ordinal": int(np.clip(round(medio), 0, len(GRADOS) - 1)),
+                "ordinal": int(np.clip(round(medio), 0, len(GRADES) - 1)),
                 "ordinal_continuo": medio,
                 "poblacion": float(peso.sum()),
                 "agebs": len(grupo),

@@ -159,7 +159,7 @@ def check(particion: pd.DataFrame, instancias: pd.DataFrame | None = None) -> No
     log.info("partition clean over %d instances", len(instancias))
 
 
-def dueno_de_municipio(tabla: pd.DataFrame, catalogo: dict) -> dict[str, str]:
+def dueno_de_municipio(tabla: pd.DataFrame, catalogue: dict) -> dict[str, str]:
     """Asigna cada municipio a una sola ciudad, para que ninguna AGEB pertenezca a dos.
 
     El recuadro de una ciudad envuelve su mancha urbana conurbada, y las manchas de dos
@@ -173,7 +173,7 @@ def dueno_de_municipio(tabla: pd.DataFrame, catalogo: dict) -> dict[str, str]:
     centro— va a la que más AGEB suyas tenga, y el empate se rompe por nombre para que la
     asignación no dependa del orden en que se leyeron los archivos.
     """
-    propietario = {c.municipio: clave for clave, c in catalogo.items()}
+    propietario = {c.municipality: clave for clave, c in catalogue.items()}
     salida: dict[str, str] = {}
     for municipio, grupo in tabla.groupby(tabla.cvegeo.str[:5], observed=True):
         if municipio in propietario and propietario[municipio] in set(grupo.ciudad):
@@ -184,9 +184,9 @@ def dueno_de_municipio(tabla: pd.DataFrame, catalogo: dict) -> dict[str, str]:
     return salida
 
 
-def desduplicar(tabla: pd.DataFrame, catalogo: dict) -> pd.DataFrame:
+def desduplicar(tabla: pd.DataFrame, catalogue: dict) -> pd.DataFrame:
     """Deja una sola fila por AGEB, bajo la ciudad que se queda con su municipio."""
-    dueno = dueno_de_municipio(tabla, catalogo)
+    dueno = dueno_de_municipio(tabla, catalogue)
     municipio = tabla.cvegeo.str[:5]
     salida = tabla[tabla.ciudad == municipio.map(dueno)].copy()
     sobrantes = len(tabla) - len(salida)

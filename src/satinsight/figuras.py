@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 from rasterio.features import rasterize
 
 from satinsight import cache
-from satinsight.agebs import GRADOS
+from satinsight.agebs import GRADES
 from satinsight.pipeline import aoi_de_ciudad, canales_s1, canales_s2
 from satinsight.raster import stretch, to_db
 from satinsight.texture import FIXED_RANGES_S1, MIN_PIXELS, features_of_patch, quantise
@@ -62,10 +62,10 @@ def panel_brazos(ciudad: str, destino: Path, lado: int = 520) -> Path:
     Es la comparación que el documento sostiene en prosa: el óptico tiene la traza urbana
     nítida a 10 m, el radar la ve más basta pero en una magnitud calibrada.
     """
-    raiz = Path("data") / "compuestos"
+    root = Path("data") / "compuestos"
     paneles = []
     for sensor, titulo in (("s2", "Sentinel-2 · óptico"), ("s1", "Sentinel-1 · radar")):
-        bandas, _, etiquetas = cache.cargar(cache.ruta_compuesto(ciudad, sensor, raiz))
+        bandas, _, etiquetas = cache.cargar(cache.ruta_compuesto(ciudad, sensor, root))
         rgb = _rgb_desde_compuesto(bandas, sensor)
         alto, ancho = rgb.shape[:2]
         lado_px = min(alto, ancho)
@@ -106,16 +106,16 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
     hace falta para entender por qué el tamaño del polígono condiciona lo que se puede medir
     dentro de él.
     """
-    raiz = Path("data") / "compuestos"
+    root = Path("data") / "compuestos"
     _, agebs = aoi_de_ciudad(ciudad)
-    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, "s2", raiz))
+    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, "s2", root))
     rgb = _rgb_desde_compuesto(bandas, "s2")
     proyectadas = agebs.to_crs(malla.crs)
 
     # una etiqueta por grado, para dibujar los bordes con su color
     etiquetas = rasterize(
         [
-            (g, GRADOS.index(t) + 1)
+            (g, GRADES.index(t) + 1)
             for g, t in zip(proyectadas.geometry, proyectadas.grado, strict=True)
         ],
         out_shape=malla.shape,
@@ -129,7 +129,7 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
         borde |= np.pad(d, [(0, 1) if i == eje else (0, 0) for i in range(2)])
 
     pintado = rgb.copy()
-    for indice, grado in enumerate(GRADOS, start=1):
+    for indice, grado in enumerate(GRADES, start=1):
         mascara = _engrosar(borde & (etiquetas == indice))
         pintado[mascara] = COLOR_GRADO[grado]
 
@@ -149,7 +149,7 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
 
     dibujo = ImageDraw.Draw(imagen)
     x = 10
-    for grado in GRADOS:
+    for grado in GRADES:
         dibujo.rectangle([x, lado + 11, x + 22, lado + 19], fill=COLOR_GRADO[grado])
         _texto(imagen, (x + 28, lado + 8), grado, 11)
         x += 34 + 8 * len(grado)
@@ -181,9 +181,9 @@ def panel_contraste(ciudad: str, sensor: str, destino: Path, lado: int = 190) ->
     Debajo de cada una van su contraste y su homogeneidad medidos. Es la forma de ver qué
     está capturando la GLCM antes de creerle a un kappa.
     """
-    raiz = Path("data") / "compuestos"
+    root = Path("data") / "compuestos"
     _, agebs = aoi_de_ciudad(ciudad)
-    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, sensor, raiz))
+    bandas, malla, _ = cache.cargar(cache.ruta_compuesto(ciudad, sensor, root))
     rgb = _rgb_desde_compuesto(bandas, sensor)
     proyectadas = agebs.to_crs(malla.crs)
 
@@ -263,7 +263,7 @@ def _hex(rgb: tuple[int, int, int]) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
-def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
+def mapa_nacional(destino: Path, root: Path | None = None) -> Path:
     """Sitúa las cinco ciudades piloto dentro del país.
 
     El tamaño de cada marca es su número de AGEB y el color la proporción que está en grado
@@ -276,20 +276,20 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
     import geopandas as gpd
     import matplotlib.pyplot as plt
 
-    from satinsight.agebs import CIUDADES
+    from satinsight.agebs import CITIES
     from satinsight.download import DATA_ROOT, ensure_naturalearth
 
-    raiz = raiz or DATA_ROOT
-    estados = gpd.read_file(ensure_naturalearth(raiz))
+    root = root or DATA_ROOT
+    estados = gpd.read_file(ensure_naturalearth(root))
     mexico = estados[estados["admin"] == "Mexico"]
 
     puntos = []
-    for clave in CIUDADES:
-        area, agebs = aoi_de_ciudad(clave, raiz)
+    for clave in CITIES:
+        area, agebs = aoi_de_ciudad(clave, root)
         lon = (area.bbox[0] + area.bbox[2]) / 2
         lat = (area.bbox[1] + area.bbox[3]) / 2
         altos = float(agebs.grado.isin(("Alto", "Muy alto")).mean())
-        puntos.append((clave, CIUDADES[clave].nombre, lon, lat, len(agebs), altos))
+        puntos.append((clave, CITIES[clave].name, lon, lat, len(agebs), altos))
 
     figura, ax = plt.subplots(figsize=(11, 7), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
@@ -362,7 +362,7 @@ def mapa_nacional(destino: Path, raiz: Path | None = None) -> Path:
     return destino
 
 
-def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
+def mapa_agebs_por_ciudad(destino: Path, root: Path | None = None) -> Path:
     """El conjunto completo de AGEB de cada ciudad, teñido por grado y a escala común.
 
     Los paneles de imagen muestran recortes; este muestra la extensión entera que entra al
@@ -375,16 +375,16 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
 
-    from satinsight.agebs import CIUDADES, CRS_METRICO
+    from satinsight.agebs import CITIES, METRIC_CRS
 
-    raiz = raiz or Path("data")
-    ciudades = list(CIUDADES)
+    root = root or Path("data")
+    ciudades = list(CITIES)
     figura, ejes = plt.subplots(1, len(ciudades), figsize=(16, 3.7), dpi=150)
     figura.patch.set_facecolor(_hex(FONDO))
 
     for ax, clave in zip(ejes, ciudades, strict=True):
-        _, agebs = aoi_de_ciudad(clave, raiz)
-        metrico = agebs.to_crs(CRS_METRICO)
+        _, agebs = aoi_de_ciudad(clave, root)
+        metrico = agebs.to_crs(METRIC_CRS)
         for grado, color in COLOR_GRADO.items():
             parte = metrico[metrico.grado == grado]
             if len(parte):
@@ -400,8 +400,7 @@ def mapa_agebs_por_ciudad(destino: Path, raiz: Path | None = None) -> Path:
 
         altos = 100 * agebs.grado.isin(("Alto", "Muy alto")).mean()
         ax.set_title(
-            f"{CIUDADES[clave].nombre}\n{len(agebs)} AGEB · {altos:.0f}% high"
-            f" · {lado / 1000:.0f} km",
+            f"{CITIES[clave].name}\n{len(agebs)} AGEB · {altos:.0f}% high · {lado / 1000:.0f} km",
             color="#e6ebf1",
             fontsize=9.5,
             family="monospace",
@@ -451,7 +450,7 @@ ESTADOS_COMPOSICION = {
 
 
 def estado_de_composicion(
-    claves: list[str], raiz: Path | None = None, logs: Path | None = None
+    claves: list[str], root: Path | None = None, logs: Path | None = None
 ) -> dict[str, str]:
     """Clasifica cada ciudad según lo que hay en disco y lo que dicen los registros.
 
@@ -462,10 +461,10 @@ def estado_de_composicion(
     """
     from satinsight.download import DATA_ROOT
 
-    raiz = raiz or DATA_ROOT
-    compuestos = raiz / "compuestos"
+    root = root or DATA_ROOT
+    compuestos = root / "compuestos"
     fallidas: set[str] = set()
-    for registro in sorted((logs or raiz / "logs").glob("proceso_*.log")):
+    for registro in sorted((logs or root / "logs").glob("proceso_*.log")):
         texto = registro.read_text(errors="ignore")
         reciente = texto.rsplit("RELANZADO", 1)[-1]
         for linea in reciente.splitlines():
@@ -489,7 +488,7 @@ def estado_de_composicion(
 
 
 def mapa_ciudades_nacionales(
-    destino: Path, raiz: Path | None = None, catalogo: dict | None = None
+    destino: Path, root: Path | None = None, catalogue: dict | None = None
 ) -> Path:
     """Sitúa las ciudades del conjunto nacional y colorea cada una según su composición.
 
@@ -503,24 +502,24 @@ def mapa_ciudades_nacionales(
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
     from satinsight.download import DATA_ROOT, ensure_naturalearth
 
-    raiz = raiz or DATA_ROOT
-    catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
-    estados = estado_de_composicion(list(catalogo), raiz)
+    root = root or DATA_ROOT
+    catalogue = catalogue or cities_by_size(root=root, stratify=True)
+    estados = estado_de_composicion(list(catalogue), root)
 
     puntos = []
-    for clave, ciudad in catalogo.items():
+    for clave, ciudad in catalogue.items():
         try:
-            area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
+            area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
         except Exception:
             log.warning("sin geometría para %s", clave, exc_info=True)
             continue
         puntos.append(
             {
                 "clave": clave,
-                "nombre": ciudad.nombre,
+                "nombre": ciudad.name,
                 "lon": (area.bbox[0] + area.bbox[2]) / 2,
                 "lat": (area.bbox[1] + area.bbox[3]) / 2,
                 "agebs": len(agebs),
@@ -528,7 +527,7 @@ def mapa_ciudades_nacionales(
             }
         )
 
-    estados_lista = gpd.read_file(ensure_naturalearth(raiz))
+    estados_lista = gpd.read_file(ensure_naturalearth(root))
     mexico = estados_lista[estados_lista["admin"] == "Mexico"]
 
     figura, ax = plt.subplots(figsize=(12.5, 8), dpi=150)

@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from satinsight import cache
-from satinsight.agebs import CIUDADES, agebs_de_ciudad
+from satinsight.agebs import CITIES, agebs_of_city
 from satinsight.aoi import AOI
 from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
 from satinsight.composite import composite_s1, composite_s2
@@ -113,22 +113,22 @@ def _exigir_profundidad(clave: str, sensor: str, profundidad: int, minimo: int) 
 
 def aoi_de_ciudad(
     clave: str,
-    raiz: Path = DATA_ROOT,
+    root: Path = DATA_ROOT,
     *,
     margen_m: float = MARGEN_M,
-    catalogo: dict | None = None,
+    catalogue: dict | None = None,
 ) -> tuple[AOI, gpd.GeoDataFrame]:
     """Recuadro que envuelve a las AGEB de una ciudad, junto con esas AGEB.
 
-    `catalogo` permite trabajar sobre el conjunto nacional que devuelve
-    `agebs.ciudades_por_tamano` en vez de las cinco piloto escritas a mano.
+    `catalogue` permite trabajar sobre el conjunto nacional que devuelve
+    `agebs.cities_by_size` en vez de las cinco piloto escritas a mano.
     """
-    catalogo = catalogo or CIUDADES
-    agebs = agebs_de_ciudad(clave, raiz, catalogo=catalogo)
-    ciudad = catalogo[clave]
-    area = AOI.from_polygons(clave, ciudad.nombre, ciudad.entidad, agebs, margen_m=margen_m)
+    catalogue = catalogue or CITIES
+    agebs = agebs_of_city(clave, root, catalogue=catalogue)
+    ciudad = catalogue[clave]
+    area = AOI.from_polygons(clave, ciudad.name, ciudad.state, agebs, margen_m=margen_m)
     alto, ancho = area.approximate_shape()
-    log.info("%s: %d AGEB, recuadro ~%dx%d px @10 m", ciudad.nombre, len(agebs), ancho, alto)
+    log.info("%s: %d AGEB, recuadro ~%dx%d px @10 m", ciudad.name, len(agebs), ancho, alto)
     return area, agebs
 
 
@@ -139,15 +139,15 @@ def construir_compuesto(
     *,
     periodo: str = PERIODO_CENSO,
     max_scenes: int | None = None,
-    catalogo=None,
+    catalogue=None,
 ) -> tuple[dict[str, np.ndarray], Grid, dict]:
     """Compone una ciudad y un sensor desde el catálogo, sin consultar el disco."""
     if sensor not in SENSORES:
         raise ValueError(f"sensor desconocido: {sensor!r}. Válidos: {', '.join(SENSORES)}")
 
-    catalogo = catalogo or open_catalogue()
+    catalogue = catalogue or open_catalogue()
     coleccion = COLLECTION_S2 if sensor == "s2" else COLLECTION_S1
-    escenas = search(coleccion, area.bbox, periodo, catalogo)
+    escenas = search(coleccion, area.bbox, periodo, catalogue)
     if not escenas:
         raise RuntimeError(f"el catálogo no devolvió escenas de {sensor} para {clave}")
 
@@ -215,7 +215,7 @@ def asegurar_compuesto(
     sensor: str,
     *,
     area: AOI | None = None,
-    raiz: Path = DATA_ROOT,
+    root: Path = DATA_ROOT,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     **kwargs,
@@ -223,9 +223,9 @@ def asegurar_compuesto(
     """Devuelve el compuesto desde disco, construyéndolo la primera vez.
 
     Quien ya haya resuelto el recuadro puede pasarlo en `area` para ahorrarse una segunda
-    lectura del shapefile de la entidad, que en Ciudad de México ronda los ochenta megas.
+    lectura del shapefile de la entidad, que en City de México ronda los ochenta megas.
     """
-    destino = cache.ruta_compuesto(clave, sensor, raiz / "compuestos")
+    destino = cache.ruta_compuesto(clave, sensor, root / "compuestos")
     if destino.exists() and not forzar:
         guardado = cache.cargar(destino)
         recuadro_ok = area is None or _mismo_recuadro(guardado[2].get("bbox"), area.bbox)
@@ -237,7 +237,7 @@ def asegurar_compuesto(
         log.warning("%s/%s en caché %s; se reconstruye", clave, sensor, motivo)
 
     if area is None:
-        area, _ = aoi_de_ciudad(clave, raiz)
+        area, _ = aoi_de_ciudad(clave, root)
     bandas, malla, etiquetas = construir_compuesto(clave, sensor, area, periodo=periodo, **kwargs)
     cache.guardar(bandas, malla, destino, **etiquetas)
     return bandas, malla, etiquetas
@@ -287,23 +287,23 @@ def rasgos_de_ciudad(
     clave: str,
     sensor: str,
     *,
-    raiz: Path = DATA_ROOT,
+    root: Path = DATA_ROOT,
     periodo: str = PERIODO_CENSO,
     forzar: bool = False,
     max_scenes: int | None = None,
     escala: str = "nativa",
-    catalogo: dict | None = None,
+    catalogue: dict | None = None,
 ) -> pd.DataFrame:
     """Tabla de rasgos por AGEB para una ciudad y un sensor, con su etiqueta ordinal.
 
     `escala` elige cómo se cuantiza la textura; ver `ESCALAS`.
     """
-    area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
+    area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
     bandas, malla, _ = asegurar_compuesto(
         clave,
         sensor,
         area=area,
-        raiz=raiz,
+        root=root,
         periodo=periodo,
         forzar=forzar,
         max_scenes=max_scenes,
@@ -342,12 +342,12 @@ def rasgos_de_ciudad(
 
 def rasgos_de_todas(
     sensor: str,
-    ciudades: tuple[str, ...] = tuple(CIUDADES),
+    ciudades: tuple[str, ...] = tuple(CITIES),
     *,
-    raiz: Path = DATA_ROOT,
+    root: Path = DATA_ROOT,
     max_scenes: int | None = None,
     escala: str = "nativa",
-    catalogo: dict | None = None,
+    catalogue: dict | None = None,
 ) -> pd.DataFrame:
     """Apila las tablas de rasgos de varias ciudades para un mismo sensor.
 
@@ -359,7 +359,7 @@ def rasgos_de_todas(
         try:
             partes.append(
                 rasgos_de_ciudad(
-                    c, sensor, raiz=raiz, max_scenes=max_scenes, escala=escala, catalogo=catalogo
+                    c, sensor, root=root, max_scenes=max_scenes, escala=escala, catalogue=catalogue
                 )
             )
         except Exception:
@@ -374,9 +374,9 @@ def fiabilidad_de_ciudades(
     sensor: str,
     ciudades: tuple[str, ...] | None = None,
     *,
-    raiz: Path = DATA_ROOT,
+    root: Path = DATA_ROOT,
     escala: str = "fija",
-    catalogo: dict | None = None,
+    catalogue: dict | None = None,
 ) -> pd.DataFrame:
     """Correlación entre mitades de cada rasgo, agregada sobre muchas ciudades.
 
@@ -385,20 +385,20 @@ def fiabilidad_de_ciudades(
     particularidades: un rasgo puede reproducirse en cinco ciudades del sur y ser ruido
     en el norte, y el filtro lo dejaría pasar sin que nada avisara.
     """
-    from satinsight.agebs import ciudades_por_tamano
+    from satinsight.agebs import cities_by_size
     from satinsight.texture import split_half_reliability
 
-    catalogo = catalogo or ciudades_por_tamano(raiz=raiz, estratificar=True)
+    catalogue = catalogue or cities_by_size(root=root, stratify=True)
     claves = ciudades or tuple(
         p.stem.replace(f"_{sensor}", "")
-        for p in sorted((raiz / "compuestos").glob(f"*_{sensor}.tif"))
+        for p in sorted((root / "compuestos").glob(f"*_{sensor}.tif"))
     )
 
     partes = []
     for clave in claves:
         try:
-            area, agebs = aoi_de_ciudad(clave, raiz, catalogo=catalogo)
-            bandas, malla, _ = asegurar_compuesto(clave, sensor, area=area, raiz=raiz)
+            area, agebs = aoi_de_ciudad(clave, root, catalogue=catalogue)
+            bandas, malla, _ = asegurar_compuesto(clave, sensor, area=area, root=root)
             agebs = agebs.to_crs(malla.crs)
             canales = canales_s2(bandas) if sensor == "s2" else canales_s1(bandas)
             for nombre, banda in canales.items():
