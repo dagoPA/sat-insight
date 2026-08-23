@@ -118,7 +118,8 @@ def compuesto_s2(
 ) -> tuple[dict[str, np.ndarray], int]:
     """Mediana por píxel de las escenas Sentinel-2 más despejadas, con máscara SCL.
 
-    Devuelve las bandas compuestas y el número de escenas que aportaron píxeles.
+    Devuelve las bandas compuestas y los metadatos de la corrida, entre ellos cuántas
+    observaciones entraron a la mediana del píxel típico.
     Las escenas se recorren de la más despejada a la más nublada.
 
     Aborta si demasiadas lecturas fallan. `fraccion_fallos` en `None` desactiva esa
@@ -131,7 +132,14 @@ def compuesto_s2(
     pilas: dict[str, list[np.ndarray]] = {banda: [] for banda in bandas}
     usadas = 0
     fallidas = 0
-    seleccion = por_nubosidad(teselas_utiles(items, bbox))[:max_escenas]
+    # el tope se aplica dentro de cada tesela y no sobre la mezcla: un recuadro partido
+    # entre dos teselas necesita una pila completa a cada lado, porque cada escena solo
+    # aporta píxeles en su mitad y la mediana de la otra quedaría armada con lo que sobre
+    utiles = teselas_utiles(items, bbox)
+    por_tesela: dict[str, list] = defaultdict(list)
+    for item in utiles:
+        por_tesela[item.properties.get("s2:mgrs_tile", "?")].append(item)
+    seleccion = [e for grupo in por_tesela.values() for e in por_nubosidad(grupo)[:max_escenas]]
 
     for item in seleccion:
         try:
@@ -152,8 +160,20 @@ def compuesto_s2(
     if usadas == 0:
         raise RuntimeError("ninguna escena Sentinel-2 aportó píxeles válidos")
 
+    pila = np.dstack(pilas[bandas[0]])
+    profundidad = np.isfinite(pila).sum(axis=2)
     compuesto = {banda: np.nanmedian(np.dstack(capas), axis=2) for banda, capas in pilas.items()}
-    return compuesto, usadas
+    meta = {
+        "escenas_usadas": usadas,
+        "escenas_seleccionadas": len(seleccion),
+        "teselas": len(por_tesela),
+        # cuántas observaciones entraron a la mediana del píxel típico: es lo que fija el
+        # ruido residual, y a diferencia del número de escenas no se deja engañar por un
+        # recuadro repartido entre teselas, donde cada escena solo cubre su mitad
+        "profundidad_mediana": int(np.median(profundidad)),
+        "profundidad_minima": int(np.percentile(profundidad, 5)),
+    }
+    return compuesto, meta
 
 
 FRACCION_VALIDA = 0.80
