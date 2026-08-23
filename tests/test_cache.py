@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from satinsight.cache import cargar, existe, guardar, ruta_compuesto
-from satinsight.malla import grid_from_bbox
+from satinsight.grid import grid_from_bbox
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)
 

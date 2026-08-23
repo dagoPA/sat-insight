@@ -22,8 +22,8 @@ from satinsight.aoi import AOI
 from satinsight.catalog import COLLECTION_S1, COLLECTION_S2, open_catalogue, search
 from satinsight.cobertura import fracciones_por_ageb, mosaico
 from satinsight.composite import compuesto_s1, compuesto_s2
+from satinsight.grid import Grid, grid_from_scenes
 from satinsight.ingesta import RAIZ_DATOS
-from satinsight.malla import Grid, grid_from_scenes
 from satinsight.raster import to_db
 from satinsight.textura import RANGOS_FIJOS, RANGOS_FIJOS_S1, rasgos_por_ageb
 

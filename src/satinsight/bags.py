@@ -21,7 +21,7 @@ from satinsight.agebs import GRADOS, ORDINAL
 from satinsight.tiling import Tile, centers
 
 if TYPE_CHECKING:
-    from satinsight.malla import Grid
+    from satinsight.grid import Grid
 
 log = logging.getLogger(__name__)
 

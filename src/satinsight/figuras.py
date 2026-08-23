@@ -162,7 +162,7 @@ def panel_agebs(ciudad: str, destino: Path, lado: int = 760, ventana_px: int = 4
 
 def _recorte_de_ageb(rgb: np.ndarray, canal: np.ndarray, malla, geometria, margen: int = 6):
     """Recorta una AGEB de la imagen y del canal, con un poco de aire alrededor."""
-    from satinsight.malla import polygon_window
+    from satinsight.grid import polygon_window
 
     ventana = polygon_window(malla.transform, geometria, canal.shape)
     if ventana is None:

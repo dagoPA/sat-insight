@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import rasterio
 
-from satinsight.malla import Grid
+from satinsight.grid import Grid
 
 log = logging.getLogger(__name__)
 
