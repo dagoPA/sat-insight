@@ -125,12 +125,29 @@ def test_a_igual_cobertura_gana_la_orbita_con_mas_escenas(monkeypatch):
     assert len(seleccion) == 6
 
 
-def test_una_orbita_ilegible_cuenta_como_sin_cobertura(monkeypatch):
+def test_una_orbita_ilegible_por_completo_cuenta_como_sin_cobertura(monkeypatch):
     def leer(href, bbox, forma):
         raise OSError("403")
 
     monkeypatch.setattr(composite, "leer_ventana", leer)
     assert composite.cobertura_util([escena_sar("x")], BBOX) == 0.0
+
+
+def test_una_lectura_cortada_no_hunde_a_su_orbita(monkeypatch):
+    """El caso de Guasave: una petición perdida tumbaba una órbita que cubre todo.
+
+    Contar la lectura fallida como cobertura cero confunde que la órbita no vea la ciudad
+    con que el enlace se cortara, y bajo congestión lo segundo es frecuente.
+    """
+    escenas = [escena_sar(f"buena{i}", orbita=20) for i in range(4)]
+
+    def leer(href, bbox, forma):
+        if href.startswith("buena0"):
+            raise OSError("conexión cortada")
+        return np.ones(forma, dtype="float32")
+
+    monkeypatch.setattr(composite, "leer_ventana", leer)
+    assert composite.cobertura_util(escenas, BBOX) == pytest.approx(1.0)
 
 
 def test_un_compuesto_de_radar_con_ceros_se_rechaza():

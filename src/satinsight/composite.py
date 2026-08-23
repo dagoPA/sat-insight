@@ -231,7 +231,14 @@ def cobertura_util(
     píxeles con dato, porque la ciudad cae en el filo de la franja. Se sondean unas pocas
     escenas a baja resolución y se promedia lo que de verdad llega.
 
-    Una lectura que falle cuenta como cero, que es como la vería el compuesto.
+    Una lectura que falla queda fuera del promedio en lugar de contar como cero. Contarla
+    confunde «esta órbita no ve la ciudad» con «esta petición se cortó», y bajo un enlace
+    congestionado la segunda es frecuente: sobre Guasave una lectura perdida de cuatro
+    bastó para tumbar una órbita que cubre el recuadro entero por debajo de otra que cubre
+    la mitad, y la ciudad quedó sin compuesto de radar por un problema de red.
+
+    Se devuelve cero solo cuando ninguna lectura llegó, que sí es indistinguible de no
+    tener cobertura y el guardia del compuesto atrapa después.
 
     `leer` se resuelve al llamar y no al definir, para que sustituir `leer_ventana` en el
     módulo baste para dejar las pruebas sin red.
@@ -242,8 +249,7 @@ def cobertura_util(
         try:
             leida = leer(item.assets["vv"].href, bbox, FORMA_SONDA).astype("float32")
         except Exception:
-            log.warning("sondeo fallido en %s", item.id, exc_info=True)
-            fracciones.append(0.0)
+            log.warning("sondeo fallido en %s, se omite del promedio", item.id, exc_info=True)
             continue
         fracciones.append(float(np.isfinite(leida).mean()))
     return float(np.mean(fracciones)) if fracciones else 0.0
