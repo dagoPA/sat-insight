@@ -56,6 +56,22 @@ def _bag_weights(bags: list[Bag], n_classes: int) -> np.ndarray:
     return np.where(counts > 0, len(bags) / (n_classes * np.maximum(counts, 1)), 0.0)
 
 
+def bag_auroc(truth: np.ndarray, probability: np.ndarray) -> float:
+    """Macro area under the curve over the grades present, one against the rest.
+
+    Grades absent from the split are skipped rather than counted as zero: with four bags at
+    the top grade a fold can easily hold none, and scoring that as chance would drag the
+    average down for a reason that says nothing about the model.
+    """
+    scores = []
+    for grade in range(probability.shape[1]):
+        target = (truth == grade).astype(int)
+        if target.sum() in (0, len(target)):
+            continue
+        scores.append(float(roc_auc_score(target, probability[:, grade])))
+    return float(np.mean(scores)) if scores else float("nan")
+
+
 def train(
     train_bags: list[Bag],
     val_bags: list[Bag],
@@ -102,8 +118,22 @@ def train(
 
         scored = predict(model, val_bags, device=device)
         kappa = float(cohen_kappa_score(scored["truth"], scored["prediction"], weights="quadratic"))
-        history.append({"epoch": epoch, "loss": total / len(train_bags), "val_kappa": kappa})
-        log.info("epoch %d · loss %.4f · val kappa %.3f", epoch, total / len(train_bags), kappa)
+        auroc = bag_auroc(scored["truth"], scored["probability"])
+        history.append(
+            {
+                "epoch": epoch,
+                "loss": total / len(train_bags),
+                "val_kappa": kappa,
+                "val_auroc": auroc,
+            }
+        )
+        log.info(
+            "epoch %d · loss %.4f · val kappa %.3f · val auroc %.3f",
+            epoch,
+            total / len(train_bags),
+            kappa,
+            auroc,
+        )
 
         if kappa > best_kappa:
             best_kappa, waited = kappa, 0
