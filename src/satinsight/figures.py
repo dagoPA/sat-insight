@@ -490,26 +490,29 @@ def compositing_state(
 
 
 def national_cities_map(
-    destination: Path, root: Path | None = None, catalogue: dict | None = None
+    destination: Path, root: Path | None = None, catalogue: dict | None = None, label: int = 18
 ) -> Path:
-    """Places the cities of the national set and colours each by its compositing state.
+    """Places the cities of the national set, sized by AGEB and tinted by deprivation.
 
-    The size of the mark is the number of urban AGEB of the city. Laid over the country it
-    shows how much of the territory the sample covers and where the work done concentrates.
+    Compositing state was what this map showed while the download ran, and once every city
+    finished that variable stopped carrying information. What it shows now is the variable
+    the sample was stratified on, which is what a reader needs to judge whether the set
+    covers the country or only its comfortable half.
+
+    Only the largest `label` cities are named. Naming all 138 pushes labels off the country
+    and into the margin, which is worse than not naming them.
     """
     import matplotlib
 
     matplotlib.use("Agg")
     import geopandas as gpd
     import matplotlib.pyplot as plt
-    from matplotlib.lines import Line2D
 
     from satinsight.agebs import cities_by_size
     from satinsight.download import DATA_ROOT, ensure_naturalearth
 
     root = root or DATA_ROOT
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
-    states = compositing_state(list(catalogue), root)
 
     points = []
     for key, city in catalogue.items():
@@ -521,105 +524,96 @@ def national_cities_map(
         points.append(
             {
                 "key": key,
-                "nombre": city.name,
+                "name": city.name,
                 "lon": (area.bbox[0] + area.bbox[2]) / 2,
                 "lat": (area.bbox[1] + area.bbox[3]) / 2,
                 "agebs": len(agebs),
-                "estado": states[key],
+                "high": float(agebs.grado.isin(("Alto", "Muy alto")).mean()),
             }
         )
 
-    estados_lista = gpd.read_file(ensure_naturalearth(root))
-    mexico = estados_lista[estados_lista["admin"] == "Mexico"]
+    states = gpd.read_file(ensure_naturalearth(root))
+    mexico = states[states["admin"] == "Mexico"]
 
     figure, ax = plt.subplots(figsize=(12.5, 8), dpi=150)
     figure.patch.set_facecolor(_hex(FONDO))
     _dark_style(ax)
     mexico.plot(ax=ax, facecolor="#171d26", edgecolor="#333e4b", linewidth=0.5)
 
-    order = ["pendiente", "a medias", "fallida", "completa"]
-    for estado in order:
-        group = [p for p in points if p["estado"] == estado]
-        if not group:
-            continue
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+        "rezago",
+        [
+            _hex(GRADE_COLOUR["Muy bajo"]),
+            _hex(GRADE_COLOUR["Medio"]),
+            _hex(GRADE_COLOUR["Muy alto"]),
+        ],
+    )
+    norm = matplotlib.colors.Normalize(0, 0.6)
+    # las ciudades con más rezago se dibujan al final para que no queden tapadas por las
+    # grandes y acomodadas, que son mayoría y ocupan el centro del país
+    for point in sorted(points, key=lambda p: p["high"]):
         ax.scatter(
-            [p["lon"] for p in group],
-            [p["lat"] for p in group],
-            s=[30 + p["agebs"] * 0.2 for p in group],
-            c=COMPOSITING_STATES[estado][0],
+            point["lon"],
+            point["lat"],
+            s=18 + point["agebs"] * 0.22,
+            c=[cmap(norm(point["high"]))],
             edgecolor="#0f1319",
             linewidth=0.7,
             alpha=0.95,
-            zorder=3 + order.index(estado),
+            zorder=3,
         )
 
-    # solo se rotulan las cities ya compuestas y las que fallaron: rotular las 138
-    # leaves the map unreadable, and those two are the ones worth naming
-    labelled = sorted(
-        (p for p in points if p["estado"] != "pendiente"),
-        key=lambda p: (-p["lat"], p["lon"]),
-    )
-    # neighbouring conurbations leave their labels on top of each other —Zapopan over
-    # Guadalajara, Mexicali over Tijuana— so every label landing too close to the
-    # anterior se empuja hacia abajo hasta despejarse
+    # se rotula de mayor a menor y se salta la que caiga encima de una ya puesta. Empujar
+    # las etiquetas hasta despejarlas funciona con quince ciudades y con ciento treinta y
+    # ocho las manda fuera del país; en un mapa denso, callar un nombre es mejor que
+    # ponerlo lejos de su punto
     placed: list[tuple[float, float]] = []
-    for p in labelled:
-        dx, dy = 6, 4
-        while any(
-            abs(p["lon"] - lon) < 1.7 and abs((p["lat"] + dy / 22) - lat) < 0.42
-            for lon, lat in placed
+    for point in sorted(points, key=lambda p: -p["agebs"]):
+        if len(placed) >= label:
+            break
+        if any(
+            abs(point["lon"] - lon) < 2.4 and abs(point["lat"] - lat) < 0.7 for lon, lat in placed
         ):
-            dy -= 11
-        placed.append((p["lon"], p["lat"] + dy / 22))
+            continue
+        placed.append((point["lon"], point["lat"]))
         ax.annotate(
-            p["nombre"],
-            (p["lon"], p["lat"]),
+            point["name"],
+            (point["lon"], point["lat"]),
             textcoords="offset points",
-            xytext=(dx, dy),
-            fontsize=6.4,
+            xytext=(7, 4),
+            fontsize=7.5,
             color="#c9d3de",
             family="monospace",
             zorder=8,
         )
 
-    done = sum(1 for p in points if p["estado"] == "completa")
-    total_agebs = sum(p["agebs"] for p in points)
+    total = sum(p["agebs"] for p in points)
+    share = np.average([p["high"] for p in points], weights=[p["agebs"] for p in points])
     ax.set_xlim(-118.5, -85.5)
     ax.set_ylim(13.5, 33.5)
     ax.set_title(
-        f"The {len(points)} cities of the national set · {total_agebs:,} urban AGEB\n"
-        f"{done} with compositing finished",
+        f"The {len(points)} cities of the national set · {total:,} urban AGEB · "
+        f"{100 * share:.0f}% at high or very high deprivation\n"
+        "mark size is the number of AGEB, colour their deprived share",
         color="#e6ebf1",
-        fontsize=13,
+        fontsize=12,
         loc="left",
         pad=14,
     )
-    handles = [
-        Line2D(
-            [],
-            [],
-            marker="o",
-            linestyle="",
-            markersize=7,
-            markerfacecolor=color,
-            markeredgecolor="#0f1319",
-            label=f"{STATE_LABELS.get(estado, estado)} · {gloss}",
-        )
-        for estado, (color, gloss) in COMPOSITING_STATES.items()
-    ]
-    legend = ax.legend(
-        handles=handles,
-        loc="lower left",
-        fontsize=8,
-        framealpha=0.85,
-        facecolor="#141a22",
-        edgecolor="#3b4653",
+    bar = figure.colorbar(
+        matplotlib.cm.ScalarMappable(norm, cmap),
+        ax=ax,
+        orientation="horizontal",
+        fraction=0.032,
+        pad=0.02,
+        aspect=45,
     )
-    for texto in legend.get_texts():
-        texto.set_color("#c9d3de")
+    bar.set_label("share of AGEB at high or very high deprivation", color="#a8b3c0", fontsize=9)
+    bar.ax.tick_params(colors="#a8b3c0", labelsize=8)
+    bar.outline.set_edgecolor("#3b4653")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(destination, facecolor=figure.get_facecolor(), bbox_inches="tight")
     plt.close(figure)
-    log.info("mapa del split nacional: %s", destination)
+    log.info("national map: %s", destination)
     return destination

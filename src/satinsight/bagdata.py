@@ -34,6 +34,14 @@ class Bag:
     instances: np.ndarray
     cvegeo: np.ndarray
     ordinal: int
+    y0: np.ndarray
+    x0: np.ndarray
+    """Pixel position of every instance on the city grid.
+
+    It travels with the bag because a fused bag drops the instances with no counterpart in
+    the other modality, so the rows no longer line up with the parquet they came from.
+    Rebuilding the positions later by index would silently pair attention with the wrong
+    ground."""
 
     def __len__(self) -> int:
         return len(self.instances)
@@ -85,6 +93,8 @@ def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = Fa
                 instances=vectors[group.index.to_numpy()],
                 cvegeo=group.cvegeo.to_numpy(),
                 ordinal=int(grades[municipality]),
+                y0=group.y0.to_numpy(),
+                x0=group.x0.to_numpy(),
             )
         )
     return bags

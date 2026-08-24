@@ -25,8 +25,8 @@ def test_the_rare_grade_gets_the_heaviest_weight():
     Sin reponderar, predecir la clase mayoritaria en todas partes es un óptimo local que el
     modelo alcanza en dos épocas y del que no sale.
     """
-    bags = [Bag("c", "m", np.zeros((1, 2)), np.array(["a"]), 1)] * 90
-    bags += [Bag("c", "m", np.zeros((1, 2)), np.array(["a"]), 4)] * 10
+    bags = [Bag("c", "m", np.zeros((1, 2)), np.array(["a"]), 1, np.zeros(1), np.zeros(1))] * 90
+    bags += [Bag("c", "m", np.zeros((1, 2)), np.array(["a"]), 4, np.zeros(1), np.zeros(1))] * 10
     w = _bag_weights(bags, 5)
     assert w[4] > w[1]
     assert w[0] == 0.0  # una clase ausente no recibe peso
@@ -34,7 +34,8 @@ def test_the_rare_grade_gets_the_heaviest_weight():
 
 def _bag(city, keys, n_por_clave=1):
     claves = np.repeat(keys, n_por_clave)
-    return Bag(city, "m", np.zeros((len(claves), 2)), claves, 2)
+    n = len(claves)
+    return Bag(city, "m", np.zeros((n, 2)), claves, 2, np.zeros(n), np.zeros(n))
 
 
 def test_the_heatmap_scores_perfectly_when_attention_follows_the_grade():
