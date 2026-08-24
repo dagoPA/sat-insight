@@ -29,7 +29,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-plots = ["matplotlib>=3.11.1"]
+plots = [
+    "matplotlib>=3.11.1",
+    "seaborn>=0.13",
+]
 mil = [
     "torch>=2.6",
     "torchgeo>=0.7",
