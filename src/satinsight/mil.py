@@ -62,9 +62,18 @@ def build(dim_in: int, n_classes: int = 5, hidden: int = HIDDEN, attention: int 
             self.gate = nn.Sequential(nn.Linear(hidden, attention), nn.Sigmoid())
             self.weigh = nn.Linear(attention, 1)
             self.classify = nn.Linear(hidden, n_classes)
+            self.instance_head = nn.Linear(hidden, 2)
+            """Tells apart the instances the attention ranks high from those it ranks low.
+
+            Two outputs and not `n_classes`: the constraint asks whether an instance is
+            evidence for the bag label or against it, which is a binary question whatever
+            the bag scale happens to be."""
 
         def forward(self, instances):
-            """Takes (n_instances, dim_in) and returns the logits and the attention.
+            """Takes (n_instances, dim_in) and returns logits, attention and the projections.
+
+            The projections come back because the clustering constraint classifies
+            individual instances, and recomputing them outside would run the encoder twice.
 
             One bag at a time rather than batched: bags run from 32 to 13,298 instances, and
             padding them to a common length would spend most of the compute on padding and
@@ -74,9 +83,34 @@ def build(dim_in: int, n_classes: int = 5, hidden: int = HIDDEN, attention: int 
             scores = self.weigh(self.attend(h) * self.gate(h)).squeeze(-1)
             weights = torch.softmax(scores, dim=0)
             bag = weights @ h
-            return self.classify(bag), weights
+            return self.classify(bag), weights, h
 
     return GatedAttentionMIL()
+
+
+def clustering_targets(weights, k: int):
+    """Indices of the most and least attended instances, with their pseudo-labels.
+
+    This is the CLAM clustering constraint. The instances the attention ranks highest are
+    called evidence for the bag label and the lowest are called against it, and a small
+    head is trained to tell them apart. It is the piece the plain attention MIL lacks: a
+    gradient that reaches the attention without passing through the bag average.
+
+    The pseudo-labels are the model's own ranking, so nothing outside the bag label enters.
+    What the constraint buys is that the ranking has to be self-consistent —the instances
+    it calls evidence must actually look different from the ones it dismisses— and a
+    ranking scattered at random cannot be.
+    """
+    import torch
+
+    k = min(k, len(weights) // 2)
+    if k < 1:
+        return None
+    order = torch.argsort(weights, descending=True)
+    top, bottom = order[:k], order[-k:]
+    indices = torch.cat([top, bottom])
+    labels = torch.cat([torch.ones(k, dtype=torch.long), torch.zeros(k, dtype=torch.long)])
+    return indices, labels.to(weights.device)
 
 
 def attention_per_ageb(weights: np.ndarray, cvegeo: np.ndarray) -> dict[str, float]:
