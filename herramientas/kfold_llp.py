@@ -1,4 +1,10 @@
-"""Grouped k-fold of the label-proportion model. Usage: kfold_llp.py [folds] [epochs]"""
+"""Grouped k-fold of the label-proportion model.
+
+Usage: kfold_llp.py [folds] [epochs] [radius]
+
+A radius above zero widens every instance with the mean of the tokens around it before
+scoring. Radius 1 is the eight neighbours, 480 m of ground; radius 2 is 800 m.
+"""
 
 import json
 import logging
@@ -12,18 +18,19 @@ logging.basicConfig(
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
-from scipy.stats import spearmanr  # noqa: E402
-from sklearn.metrics import roc_auc_score  # noqa: E402
 
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
-from satinsight.llp import build, instance_scores  # noqa: E402
+from satinsight.context import adjacency  # noqa: E402
+from satinsight.llp import build, evaluate_map  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
 
 FOLDS = int(sys.argv[1]) if len(sys.argv) > 1 else 5
 EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+RADIUS = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 SEED, PATIENCE = 0, 8
+OUT = f"data/llp_kfold_r{RADIUS}.csv" if RADIUS else "data/llp_kfold.csv"
 
 
 def grades_of(cities, catalogue):
@@ -37,47 +44,24 @@ def grades_of(cities, catalogue):
     return out
 
 
-def evaluate(model, bags, grades, torch, device):
-    """Bag error and whether the instance scores find the deprived AGEB.
+def neighbours(bags, torch, device):
+    """Adjacency of every bag, built once and kept on the device.
 
-    The map is scored twice on purpose, and the two answer different questions.
-
-    Pooling every instance of every bag measures whether the model orders AGEB across the
-    whole country. Much of that is easy: knowing a municipality is deprived on average
-    already ranks its AGEB above those of a comfortable one, and no disaggregation is
-    involved.
-
-    Averaging the correlation computed inside each bag measures what the project claims:
-    telling apart the deprived parts of one municipality from its comfortable parts. That
-    is the honest figure for the contribution, and it is the lower of the two.
+    The neighbourhood of a token does not change between epochs, and rebuilding it inside
+    the loop would cost more than the forward pass it feeds.
     """
-    model.eval()
-    bag_true, bag_pred, scores, truths, within = [], [], [], [], []
-    with torch.inference_mode():
-        for bag in bags:
-            shares, per_instance = model(torch.from_numpy(bag.instances).float().to(device))
-            bag_true.append(bag.shares)
-            bag_pred.append(shares.cpu().numpy())
-            g = np.array([grades.get(c, -1) for c in bag.cvegeo])
-            keep = g >= 0
-            if not keep.any():
-                continue
-            s = instance_scores(per_instance.cpu().numpy())[keep]
-            scores.extend(s)
-            truths.extend(g[keep])
-            # una bolsa cuyas AGEB comparten grado no tiene orden interno que recuperar
-            if len(set(g[keep])) > 1 and len(s) >= 20:
-                within.append(float(spearmanr(s, g[keep]).statistic))
-    bag_true, bag_pred = np.vstack(bag_true), np.vstack(bag_pred)
-    scores, truths = np.array(scores), np.array(truths)
-    return {
-        "bag_mae": float(np.abs(bag_true - bag_pred).mean()),
-        "auroc_high": float(roc_auc_score((truths >= 3).astype(int), scores)),
-        "spearman_pooled": float(spearmanr(scores, truths).statistic),
-        "spearman_within": float(np.mean(within)) if within else float("nan"),
-        "bags_scored": len(within),
-        "instances": len(truths),
-    }
+    if not RADIUS:
+        return [(None, None)] * len(bags)
+    out = []
+    for bag in bags:
+        src, dst = adjacency(bag.y0, bag.x0, radius=RADIUS)
+        out.append(
+            (
+                torch.from_numpy(src).to(device),
+                torch.from_numpy(dst).to(device),
+            )
+        )
+    return out
 
 
 def main() -> None:
@@ -87,7 +71,7 @@ def main() -> None:
     partition = pd.read_csv("data/partition.csv")
     cities = sorted(cities_of(partition, "train"))
     catalogue = cities_by_size(stratify=True)
-    print(f"{len(cities)} training cities · {FOLDS} folds", flush=True)
+    print(f"{len(cities)} training cities · {FOLDS} folds · radius {RADIUS}", flush=True)
 
     rng = np.random.default_rng(SEED)
     shuffled = list(cities)
@@ -107,9 +91,11 @@ def main() -> None:
         train_bags = load_split(rest, "s2", fuse=True)
         val_bags = load_split(held, "s2", fuse=True)
         grades = grades_of(held, catalogue)
+        train_links = neighbours(train_bags, torch, device)
+        val_links = neighbours(val_bags, torch, device)
 
         torch.manual_seed(SEED + k)
-        model = build(train_bags[0].instances.shape[1]).to(device)
+        model = build(train_bags[0].instances.shape[1], radius=RADIUS).to(device)
         optimiser = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-4)
         criterion = nn.MSELoss()
         best, waited, best_state = np.inf, 0, None
@@ -119,13 +105,15 @@ def main() -> None:
             total = 0.0
             for index in rng.permutation(len(train_bags)):
                 bag = train_bags[index]
+                src, dst = train_links[index]
                 optimiser.zero_grad()
-                shares, _ = model(torch.from_numpy(bag.instances).float().to(device))
+                x = torch.from_numpy(bag.instances).float().to(device)
+                shares, _ = model(x, src, dst)
                 loss = criterion(shares, torch.from_numpy(bag.shares).float().to(device))
                 loss.backward()
                 optimiser.step()
                 total += float(loss)
-            scored = evaluate(model, val_bags, grades, torch, device)
+            scored = evaluate_map(model, val_bags, val_links, grades, torch, device)
             log.info(
                 "fold %d epoch %d · loss %.5f · bag MAE %.4f · map AUROC %.3f · rho %+.3f",
                 k,
@@ -145,10 +133,21 @@ def main() -> None:
 
         model.load_state_dict(best_state)
         results.append(
-            {"fold": k, "bags": len(val_bags), **evaluate(model, val_bags, grades, torch, device)}
+            {
+                "fold": k,
+                "bags": len(val_bags),
+                "radius": RADIUS,
+                **{
+                    key: value
+                    for key, value in evaluate_map(
+                        model, val_bags, val_links, grades, torch, device
+                    ).items()
+                    if key != "per_bag"
+                },
+            }
         )
         print(json.dumps(results[-1], default=float), flush=True)
-        pd.DataFrame(results).to_csv("data/llp_kfold.csv", index=False)
+        pd.DataFrame(results).to_csv(OUT, index=False)
 
     r = pd.DataFrame(results)
     print("\n===== SUMMARY =====", flush=True)
