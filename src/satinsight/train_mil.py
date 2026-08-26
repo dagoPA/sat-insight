@@ -28,6 +28,20 @@ LEARNING_RATE = 2e-4
 WEIGHT_DECAY = 1e-4
 SEED = 0
 
+ENTROPY_WEIGHT = 0.0
+"""How hard the attention is pushed to spread out.
+
+The loss subtracts this times the entropy of the attention, so a larger value buys a
+flatter map. It defaults to off because it is an ablation: the first runs showed the
+attention concentrating on a handful of instances scattered with no spatial pattern, and
+whether forcing it to spread recovers the geography of deprivation is exactly the question
+being asked.
+
+The extreme cases bracket what it can do. At zero the attention is free to collapse; large
+enough it becomes uniform, the bag vector becomes the plain mean of its instances, and the
+map carries no information at all. Any value that helps lives between those.
+"""
+
 PATIENCE = 6
 """Epochs without improving the validation kappa before stopping.
 
@@ -110,6 +124,7 @@ def train(
     n_classes: int = 5,
     epochs: int = EPOCHS,
     learning_rate: float = LEARNING_RATE,
+    entropy_weight: float = ENTROPY_WEIGHT,
     patience: int = PATIENCE,
     seed: int = SEED,
 ):
@@ -149,13 +164,19 @@ def train(
         for index in rng.permutation(len(train_bags)):
             bag = train_bags[index]
             optimiser.zero_grad()
-            logits, _ = model(as_tensor(bag))
+            logits, attention = model(as_tensor(bag))
             if objective == "classes":
                 target = torch.tensor([bag.ordinal], device=device)
                 loss = criterion(logits.unsqueeze(0), target)
             else:
                 target = torch.from_numpy(bag.shares).float().to(device)
                 loss = criterion(logits, target)
+            if entropy_weight:
+                # se resta la entropía, de modo que minimizar la pérdida la maximiza y la
+                # atención se reparte. Se normaliza por la entropía de la uniforme para que
+                # el mismo peso signifique lo mismo en bolsas de 32 y de 13,298 instancias
+                entropy = -(attention * torch.log(attention.clamp_min(1e-12))).sum()
+                loss = loss - entropy_weight * entropy / np.log(len(bag))
             loss.backward()
             optimiser.step()
             total += float(loss)
