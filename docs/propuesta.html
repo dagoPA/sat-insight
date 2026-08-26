@@ -694,9 +694,10 @@
           El segundo sale de invertir la composición. Prediciendo cada instancia y promediando las
           predicciones, en lugar de promediar características y predecir, el mapa pasa a 0.761 de
           área bajo la curva y a una correlación de Spearman de +0.165 dentro de cada municipio.
-          Un oráculo supervisado instancia por instancia alcanza +0.223 sobre los mismos vectores,
-          así que la supervisión débil recupera el 74% de lo alcanzable y el techo mismo resulta
-          bajo: el límite está en la representación de 160 metros antes que en la supervisión.
+          Un oráculo supervisado instancia por instancia alcanza +0.194 sobre los mismos vectores,
+          así que la supervisión débil recupera el 73% de lo alcanzable. Dar a cada tesela el
+          promedio de sus vecinas lleva ese techo a +0.239 y deja el modelo débilmente supervisado
+          donde estaba, lo que sitúa el límite en cuántas restricciones aporta la etiqueta.
         </p>
         <p class="keywords">
           <b>Palabras clave</b> aprendizaje de instancias múltiples · supervisión débil · radar de
@@ -2139,7 +2140,7 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
 
       <p>
         El resultado se sostiene sobre una comprobación previa. Un oráculo entrenado con la etiqueta
-        del AGEB instancia por instancia alcanza 0.832 de área bajo la curva sobre esas mismas
+        del AGEB instancia por instancia alcanza 0.831 de área bajo la curva sobre esas mismas
         instancias, así que la señal está en los vectores y ninguna de las cuatro configuraciones la
         encontró. Lo que las une es que el gradiente que llega a la atención siempre pasa por una
         tarea que el promedio ya resuelve.
@@ -2163,38 +2164,107 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
       <div class="tablewrap">
         <table>
           <thead>
-            <tr><th>Cinco pliegues agrupados por ciudad</th><th>Spearman dentro del municipio</th><th>Spearman agrupado</th><th>AUROC del mapa</th></tr>
+            <tr><th>Cinco pliegues agrupados por ciudad · 110 de entrenamiento</th><th>Spearman dentro del municipio</th><th>Spearman agrupado</th><th>AUROC del mapa</th></tr>
           </thead>
           <tbody>
             <tr><td>MIL con atención con compuerta</td><td class="num">—</td><td class="num">−0.107</td><td class="num">0.463</td></tr>
             <tr><td>Proporciones de etiqueta</td><td class="num">+0.165</td><td class="num">+0.414</td><td class="num">0.761</td></tr>
-            <tr><td>Oráculo con supervisión por instancia</td><td class="num">+0.223</td><td class="num">+0.496</td><td class="num">0.832</td></tr>
           </tbody>
         </table>
       </div>
       <div class="thesis">
         <p>
-          <strong>La supervisión débil recupera el 74% de lo alcanzable, y el techo mismo es
-          bajo.</strong> Con un solo escalar por municipio, el modelo llega a +0.165 de correlación
-          dentro del municipio contra los +0.223 que obtiene un oráculo al que se le dice la
-          respuesta AGEB por AGEB. La brecha entre ambos es lo que cuesta la supervisión débil; la
-          distancia entre el oráculo y una correlación fuerte es otra cosa, y es la que decide qué
-          se puede prometer.
+          <strong>Invertir la composición saca el mapa del azar.</strong> El mismo modelo
+          fundacional, las mismas bolsas y la misma etiqueta por municipio, con la predicción
+          hecha tesela por tesela, llevan el área bajo la curva de 0.463 a 0.761. La atención
+          desaparece del método y con ella el objeto que había que interpretar.
         </p>
       </div>
-      <div class="caveat">
-        <span class="etiqueta">El límite está en la representación, no en la supervisión</span>
+      <h3>El contexto vecinal, y quién puede usarlo</h3>
+      <p>
+        Cada tesela se puntúa aislada. Una parcela de techos de 160 metros es ambigua por sí sola
+        mientras que su vecindario la sitúa, y el rezago está espacialmente autocorrelacionado, así
+        que los tokens contiguos llevan información sobre el que se está puntuando. La medición que
+        motivó la prueba dice que hay vecindad de sobra para usarla: la AGEB mediana contiene diez
+        teselas, y el cuartil inferior cinco.
+      </p>
+      <p>
+        El promedio de los ocho tokens contiguos se concatena a la representación oculta antes de
+        puntuar, dentro de la bolsa y sobre la rejilla de teselas. La composición del modelo se
+        mantiene intacta: la predicción de la bolsa sigue siendo el promedio de las predicciones por
+        instancia. Cambia cuánto terreno ve cada instancia antes de comprometerse con un número.
+      </p>
+      <p>
+        La validación cruzada sobre las ciudades de entrenamiento dio <span class="term">+0.030</span>
+        de Spearman dentro del municipio, ganando en los cinco pliegues. El resultado se evaporó al
+        medirlo sobre las ciudades retenidas. Con 33 municipios puntuables, el error estándar de la
+        media ronda 0.05, holgado para producir una racha de cinco pliegues por azar, de modo que la
+        comparación pasó a aparearse municipio por municipio y a repetirse con tres semillas. Las
+        cifras de abajo son las de ese procedimiento.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>14 ciudades retenidas · 33 municipios apareados · 3 semillas</th><th>Sin contexto</th><th>Vecindad de 480 m</th><th>Diferencia apareada</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Oráculo con supervisión por instancia</td><td class="num">+0.194</td><td class="num">+0.239</td><td class="num">+0.045 ± 0.017</td></tr>
+            <tr><td>Proporciones de etiqueta</td><td class="num">+0.142</td><td class="num">+0.140</td><td class="num">−0.001 ± 0.007</td></tr>
+            <tr><td>Fracción del techo recuperada</td><td class="num">73%</td><td class="num">59%</td><td class="num">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="gate-note">
+        Spearman promedio dentro del municipio. El oráculo gana en 29 de 33 municipios
+        (Wilcoxon, p &lt; 0.0001); el modelo débilmente supervisado en 18 de 33, que es lo que
+        produce una moneda (p = 0.79). Una vecindad de 800 metros degrada el mapa: a ese radio el
+        promedio cruza varias AGEB y borra la distinción interna que se está midiendo.
+      </p>
+      <div class="thesis">
         <p>
-          Aun diciéndole la respuesta instancia por instancia, ordenar las AGEB dentro de un mismo
-          municipio llega apenas a +0.223 de Spearman. Ninguna mejora del método de agregación va a
-          superar eso, porque no es el agregador el que se queda corto: son los vectores de 160
-          metros, que no resuelven bien la diferencia entre una colonia y la de al lado.
+          <strong>La información del vecindario existe, y la supervisión débil no la
+          extrae.</strong> Con la respuesta dada AGEB por AGEB, mirar alrededor sube la correlación
+          un 23%. Con un solo vector de cuatro números por municipio, el mismo cambio deja el mapa
+          donde estaba. El techo se movió y el modelo se quedó, así que la fracción recuperada cae
+          de 73% a 59%.
+        </p>
+      </div>
+      <p>
+        Es la patología de la atención un nivel más abajo. El promedio de las predicciones puede
+        acertar la etiqueta de la bolsa sin que las predicciones individuales acierten, y ensanchar
+        la entrada de la cabeza le da más capacidad que gastar en llegar al mismo promedio por otro
+        camino. La supervisión que llega desde la etiqueta ordena el promedio y deja libre todo lo
+        demás.
+      </p>
+      <p>
+        Una hipótesis más barata quedó descartada en el camino. La etiqueta de la bolsa pondera por
+        población y el modelo promedia por área, que es una inconsistencia real del planteamiento.
+        Medida sobre las ciudades retenidas vale 0.029 de discrepancia media contra un error de
+        bolsa de 0.110, así que explica una parte menor de lo que al modelo le falta.
+      </p>
+
+      <div class="caveat">
+        <span class="etiqueta">Dónde está el límite, después de haberlo movido</span>
+        <p>
+          El techo del oráculo se leía como una propiedad de los vectores de 160 metros: aun
+          diciéndole la respuesta instancia por instancia, ordenar las AGEB dentro de un municipio
+          llegaba a +0.194 de Spearman, y de ahí salía la conclusión de que la palanca era el
+          tamaño de la instancia. El contexto vecinal desmiente esa lectura a medias. Con la misma
+          extracción de características y el mismo tamaño de token, mirar alrededor lleva el techo a
+          +0.239. Los vectores llevaban más de lo que el modelo estaba leyendo de ellos.
         </p>
         <p style="margin-top: 10px;">
-          La palanca que queda es la instancia antes que el modelo. Un token de 160 m sobre suelo
-          urbano mezcla manzanas de calidad distinta, y el modelo fundacional lo describe como una
-          sola cosa. Bajar el tamaño efectivo de la instancia, o buscar una representación de mayor
-          resolución, es la dirección que este resultado señala.
+          Lo que quedó fijo es la supervisión débil, y ahí pasa a estar el cuello de botella. La
+          etiqueta aporta 333 bolsas de cuatro números cada una, 1,332 restricciones en total, para
+          427 mil instancias. La dirección que este resultado señala es multiplicar las bolsas antes
+          que refinar el modelo: México publica el Grado de Rezago Social para unos 2,470
+          municipios, y el pipeline que armó las 138 ciudades sirve tal cual para el resto.
+        </p>
+        <p style="margin-top: 10px;">
+          Sobre el techo absoluto la conclusión se sostiene. Un +0.239 de correlación dentro del
+          municipio ordena el territorio de forma útil para priorizar, y queda lejos de leer barrio
+          por barrio. Eso acota lo que el proyecto puede prometer, con independencia de cuánta
+          supervisión se le agregue.
         </p>
       </div>
 
@@ -2254,6 +2324,14 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
               menos. <b>Resultó no ser el problema:</b> la mediana es de 754 instancias y el MIL con
               atención predice la bolsa muy bien. Lo que falla es la localización, y su causa es que
               la etiqueta se resuelve con el promedio.</td>
+            </tr>
+            <tr>
+              <td>Pocas bolsas</td>
+              <td>Un municipio aporta cuatro números y hay 333 en entrenamiento: 1,332 restricciones
+              para 427 mil instancias. <b>Medido, y es el cuello de botella actual:</b> el contexto
+              vecinal sube el techo del oráculo 0.045 y el modelo débilmente supervisado se queda
+              donde estaba. La mitigación es extender las bolsas hacia los cerca de 2,470 municipios
+              con Grado de Rezago Social publicado.</td>
             </tr>
           </tbody>
         </table>
@@ -2326,13 +2404,21 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         Invertir la composición lo resuelve. Prediciendo cada instancia y promediando las
         predicciones, el mapa pasa de 0.463 a 0.761 de área bajo la curva y de −0.107 a +0.165 de
         correlación dentro del municipio. Un oráculo supervisado instancia por instancia alcanza
-        +0.223, de modo que la supervisión débil recupera el 74% de lo alcanzable.
+        +0.194 sobre las ciudades retenidas, de modo que la supervisión débil recupera el 73% de lo
+        alcanzable.
       </p>
       <p>
-        Y ese techo acota lo que el proyecto puede prometer. Ordenar AGEB dentro de un mismo
-        municipio llega apenas a +0.223 aun con la respuesta servida por instancia: el límite está
-        en la representación de 160 metros antes que en la supervisión débil, y la palanca que queda
-        es la instancia antes que el modelo.
+        Dar a cada tesela el promedio de sus ocho vecinas separa a los dos modelos. El oráculo sube
+        a +0.239, ganando en 29 de 33 municipios apareados; el modelo débilmente supervisado se
+        queda en +0.140, con una diferencia de −0.001 que una moneda explica. La información del
+        vecindario existe y la supervisión débil no la extrae, así que el cuello de botella pasa a
+        ser cuántas restricciones aporta la etiqueta: 333 bolsas de cuatro números para 427 mil
+        instancias.
+      </p>
+      <p>
+        Y el techo acota lo que el proyecto puede prometer. Ordenar AGEB dentro de un mismo
+        municipio llega a +0.239 con la respuesta servida por instancia, que ordena el territorio de
+        forma útil para priorizar y queda lejos de leer barrio por barrio.
       </p>
       <p>
         Tres correcciones de la etapa 1 conviene retenerlas porque ninguna producía síntoma visible: las
@@ -2392,7 +2478,8 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
               token y el grado del AGEB donde cayó. Es el resultado central del artículo.
               <b>Cerrada con dos resultados:</b> el MIL con atención no localiza y se aisló por qué,
               y predecir la instancia para promediar después lleva el mapa a 0.761 de área bajo la
-              curva y +0.165 dentro del municipio, contra un techo de +0.223.
+              curva y +0.165 dentro del municipio, contra un techo de +0.194 que el contexto vecinal
+              eleva a +0.239 sin que el modelo lo siga.
             </p>
             <p class="gate">→ Criterio de admisión: si el mapa no correlaciona con el rezago por AGEB, la premisa de interpretabilidad cae. <b>Se cumple</b>, con la familia de proporciones de etiqueta y no con el MIL de atención, y con una magnitud que el techo del oráculo acota.</p>
           </div>
@@ -2403,9 +2490,10 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             <p class="phase-t">Ablaciones y transferencia</p>
             <p class="phase-d">
               Barrido de las tres configuraciones de entrada y evaluación zero-shot en Brasil y
-              Colombia contra sus respectivas etiquetas desagregadas. Se le suma la dirección que el
-              techo del oráculo señala: bajar el tamaño efectivo de la instancia o buscar una
-              representación de mayor resolución, que es donde queda el margen.
+              Colombia contra sus respectivas etiquetas desagregadas. Se le suma la dirección que
+              deja la etapa 3: multiplicar las bolsas hacia los cerca de 2,470 municipios con Grado
+              de Rezago Social publicado, porque la etapa cerró con la supervisión como cuello de
+              botella y el pipeline de las 138 ciudades sirve tal cual para el resto.
             </p>
           </div>
         </div>
