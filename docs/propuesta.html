@@ -670,13 +670,21 @@
           intermedios.
         </p>
         <p>
-          La etapa que sigue entrega un resultado partido. Con supervisión estrictamente más pobre
-          —un escalar por municipio en lugar de una etiqueta por AGEB— un MIL con atención con
-          compuerta predice el grado municipal con kappa de 0.621, por encima del baseline de
-          textura. Su mapa de atención, en cambio, no recupera dónde está el rezago: 0.463 de área
-          bajo la curva contra el grado del AGEB retenido, con los cinco pliegues de acuerdo. La
-          atención selecciona, y lo que selecciona no coincide con la geografía de la privación.
-          Ese es el resultado que decide el proyecto, y quedan dos causas identificadas por probar.
+          La etapa que sigue entrega dos resultados. El primero es negativo y viene con diagnóstico:
+          un MIL con atención con compuerta predice el grado municipal con kappa de 0.621, por
+          encima del baseline de textura, y su mapa de atención no recupera dónde está el rezago
+          —0.463 de área bajo la curva, con los cinco pliegues de acuerdo—. La causa se aisló: la
+          etiqueta agregada se resuelve con el promedio simple de las instancias, de modo que la
+          atención nunca recibe un gradiente que le pida localizar. Aplanarla hasta volverla
+          uniforme no cuesta desempeño alguno.
+        </p>
+        <p>
+          El segundo sale de invertir la composición. Prediciendo cada instancia y promediando las
+          predicciones, en lugar de promediar características y predecir, el mapa pasa a 0.761 de
+          área bajo la curva y a una correlación de Spearman de +0.165 dentro de cada municipio.
+          Un oráculo supervisado instancia por instancia alcanza +0.223 sobre los mismos vectores,
+          así que la supervisión débil recupera el 74% de lo alcanzable y el techo mismo resulta
+          bajo: el límite está en la representación de 160 metros antes que en la supervisión.
         </p>
         <p class="keywords">
           <b>Palabras clave</b> aprendizaje de instancias múltiples · supervisión débil · radar de
@@ -1302,7 +1310,7 @@
       <h3>Ablaciones</h3>
       <ul>
         <li>Entrada: S1 · S2 · S1+S2.</li>
-        <li>Pooling: atención con compuerta · media · máximo.</li>
+        <li>Agregación: promedio de predicciones por instancia · atención con compuerta · máximo.</li>
         <li>Restricción de clustering: activada · desactivada.</li>
         <li>Pérdida: ordinal CORAL · cross-entropy.</li>
         <li>Tamaño de parche y backbone congelado (SSL4EO-S12 frente a un foundation model tipo DOFA).</li>
@@ -2037,42 +2045,60 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
   <section class="section">
     <div class="rail"><span class="rail-n">05</span>Discusión</div>
     <div class="body">
-      <h2>El MIL con atención y su mapa de calor</h2>
+      <h2>El mapa de calor: un resultado negativo y el cambio que lo resuelve</h2>
       <p class="lead-in">
         La etapa 3 es donde el proyecto deja de recibir la etiqueta desagregada. El modelo lee los
-        cientos o miles de tokens de un municipio, le asigna un peso a cada uno, los combina en una
-        sola predicción, y la compara contra el único número que ese municipio tiene. Nadie le dice
-        nunca qué token explica la etiqueta. Lo que vale ese aprendizaje se decide después, al
-        agregar la atención por AGEB y correlacionarla contra un grado que se retuvo del
-        entrenamiento por completo.
+        cientos o miles de tokens de un municipio y tiene que predecir el único número que ese
+        municipio tiene, sin que nadie le diga qué token lo explica. Lo que vale ese aprendizaje se
+        decide después, midiendo si lo que el modelo dice de cada token coincide con el grado del
+        AGEB donde cayó, un grado que se retuvo del entrenamiento por completo.
+      </p>
+
+      <h3>Qué se mide, y por qué la métrica agrupada engaña</h3>
+      <p>
+        Correlacionar todas las instancias del país contra su grado mezcla dos preguntas. Ordenar
+        AGEB <em class="term">entre</em> municipios es en buena parte fácil: saber que un municipio
+        es rezagado en promedio ya coloca sus AGEB por encima de las de uno acomodado, y ahí no hay
+        desagregación de por medio. Ordenarlas <em class="term">dentro</em> de un mismo municipio es
+        lo que el proyecto promete. Las dos cifras difieren por un factor de dos y medio, así que
+        todo lo que sigue reporta la segunda.
+      </p>
+
+      <h3>El MIL con atención no localiza</h3>
+      <p>
+        La primera arquitectura fue atención con compuerta, en la forma que Ilse y sus coautores le
+        dieron en 2018: cada instancia recibe un peso, los pesos suman uno, y el vector de bolsa es
+        su promedio ponderado. Ese peso es el mapa. Predice la etiqueta municipal bien —kappa de
+        0.621 con validación cruzada de cinco pliegues agrupados por ciudad, por encima del 0.544
+        que obtiene el baseline de textura recibiendo la etiqueta ya desagregada— y su mapa da 0.463
+        de área bajo la curva, por debajo del azar.
       </p>
       <p>
-        La arquitectura es atención con compuerta, en la forma que Ilse y sus coautores le dieron en
-        2018. Se arranca ahí y no en CLAM porque su rama de atención por clase habría que colapsarla
-        de algún modo para producir un mapa por bolsa, y un mapa que resulta de cómo se fusionaron
-        las ramas es más difícil de defender que uno que el modelo produjo directo. La validación es
-        cruzada de cinco pliegues agrupados por ciudad sobre las 110 de entrenamiento, con las 14 de
-        prueba intactas.
+        Cuatro configuraciones no lo movieron: la etiqueta redondeada a cinco clases, la etiqueta
+        acumulada en cuatro proporciones, la regularización de entropía sobre la atención y la
+        restricción de agrupamiento por instancia de CLAM. El barrido de entropía es el que da el
+        diagnóstico.
       </p>
       <div class="tablewrap">
         <table>
           <thead>
-            <tr><th>Cinco pliegues · 110 ciudades de entrenamiento</th><th>Media</th><th>Rango entre pliegues</th></tr>
+            <tr><th>Peso de la entropía</th><th>AUROC del mapa</th><th>Spearman</th><th>AUROC de bolsa</th></tr>
           </thead>
           <tbody>
-            <tr><td>Kappa de la bolsa</td><td class="num">0.621</td><td class="num">0.468 – 0.709</td></tr>
-            <tr><td>AUROC de la bolsa</td><td class="num">0.828</td><td class="num">0.785 – 0.880</td></tr>
-            <tr><td>AUROC del mapa de atención</td><td class="num">0.463</td><td class="num">0.397 – 0.515</td></tr>
-            <tr><td>Spearman del mapa de atención</td><td class="num">−0.107</td><td class="num">−0.252 – −0.063</td></tr>
+            <tr><td>0.0</td><td class="num">0.453</td><td class="num">−0.122</td><td class="num">0.899</td></tr>
+            <tr><td>0.05</td><td class="num">0.466</td><td class="num">−0.103</td><td class="num">0.897</td></tr>
+            <tr><td>0.2</td><td class="num">0.490</td><td class="num">−0.070</td><td class="num">0.897</td></tr>
+            <tr><td>0.5</td><td class="num">0.499</td><td class="num">−0.059</td><td class="num">0.895</td></tr>
           </tbody>
         </table>
       </div>
       <div class="thesis">
         <p>
-          <strong>El modelo predice la etiqueta de la bolsa mejor que el baseline que la recibe ya
-          desagregada, y su mapa de atención no recupera dónde está el rezago.</strong> Kappa de
-          0.621 contra 0.544, con supervisión estrictamente más pobre. Y un AUROC del mapa de 0.463,
-          por debajo del azar, con los cinco pliegues de acuerdo en el signo.
+          <strong>Aplanar la atención hasta volverla casi uniforme no cuesta desempeño alguno.</strong>
+          El área bajo la curva de bolsa se mueve de 0.899 a 0.895 mientras el mapa converge a 0.5,
+          que es el azar. La etiqueta agregada se resuelve con el promedio simple de las instancias,
+          de modo que la atención nunca recibe un gradiente que le pida localizar. La correlación
+          negativa que se venía observando era un artefacto del colapso, no señal invertida.
         </p>
       </div>
       <figure>
@@ -2082,44 +2108,73 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             loading="lazy">
         </div>
         <figcaption>
-          Los cinco pliegues, con la banda del rango entre ellos. Las curvas se interpolan sobre una
-          rejilla común de tasa de falsos positivos antes de promediarse, porque cada pliegue produce
-          la suya en sus propios umbrales. El panel central es el resultado: las tres curvas del mapa
-          de atención quedan por debajo de la diagonal y sus bandas apenas la tocan.
+          <b>El resultado negativo, con la banda del rango entre los cinco pliegues.</b> Las curvas
+          se interpolan sobre una rejilla común de tasa de falsos positivos antes de promediarse,
+          porque cada pliegue produce la suya en sus propios umbrales. El panel izquierdo muestra
+          que la etiqueta de bolsa se predice bien; el central, que el mapa de atención queda por
+          debajo de la diagonal con las bandas apenas tocándola. Es el contraste que motivó cambiar
+          de familia.
         </figcaption>
       </figure>
-      <h3>Qué se descartó antes de creerle al resultado</h3>
+
       <p>
-        La explicación cómoda sería que la atención está plana y el modelo promedia sin mirar. No lo
-        está: su concentración media es de 0.657 instancias efectivas por instancia disponible, y la
-        más atendida de cada bolsa recibe entre dos y siete veces el peso uniforme. El modelo
-        selecciona. Lo que selecciona no es el rezago.
+        El resultado se sostiene sobre una comprobación previa. Un oráculo entrenado con la etiqueta
+        del AGEB instancia por instancia alcanza 0.832 de área bajo la curva sobre esas mismas
+        instancias, así que la señal está en los vectores y ninguna de las cuatro configuraciones la
+        encontró. Lo que las une es que el gradiente que llega a la atención siempre pasa por una
+        tarea que el promedio ya resuelve.
+      </p>
+
+      <h3>Predecir la instancia y promediar las predicciones</h3>
+      <p>
+        El diagnóstico dicta el cambio: en lugar de agregar características y predecir del vector
+        agregado, se predice cada instancia y la predicción de la bolsa es el promedio de ellas. La
+        etiqueta restringe ese promedio directamente, así que toda instancia tiene que
+        comprometerse con un número, y la única forma de que el promedio salga bien en bolsas de
+        composición muy distinta es que los números individuales lo estén.
       </p>
       <p>
-        Inspeccionadas bolsa por bolsa, las instancias que concentran la atención aparecen dispersas
-        y sin agrupamiento espacial, mientras el grado del AGEB sí tiene geografía clara. El Spearman
-        de bolsas individuales ronda el cero —+0.010, +0.002, −0.016 en tres de cuatro casos con los
-        cinco grados dentro— y la media negativa la arrastra una minoría de bolsas.
+        Eso deja de ser aprendizaje de instancias múltiples y pasa a ser aprendizaje a partir de
+        proporciones de etiqueta, un escenario con literatura propia. Las etiquetas de este proyecto
+        son proporciones en sentido literal: la fracción de la población de un municipio que vive en
+        AGEB de grado k o superior. Y desaparece la atención como objeto a interpretar: lo que el
+        modelo dice de un token es lo que se dibuja.
       </p>
-      <div class="caveat">
-        <span class="etiqueta">La puerta de la etapa 3 no se pasa con esta configuración</span>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Cinco pliegues agrupados por ciudad</th><th>Spearman dentro del municipio</th><th>Spearman agrupado</th><th>AUROC del mapa</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>MIL con atención con compuerta</td><td class="num">—</td><td class="num">−0.107</td><td class="num">0.463</td></tr>
+            <tr><td>Proporciones de etiqueta</td><td class="num">+0.165</td><td class="num">+0.414</td><td class="num">0.761</td></tr>
+            <tr><td>Oráculo con supervisión por instancia</td><td class="num">+0.223</td><td class="num">+0.496</td><td class="num">0.832</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="thesis">
         <p>
-          El criterio escrito en el plan es que la atención correlacione con el grado del AGEB. No lo
-          hace. Antes de concluir que la premisa de interpretabilidad cae, quedan dos causas
-          identificadas y baratas de probar.
+          <strong>La supervisión débil recupera el 74% de lo alcanzable, y el techo mismo es
+          bajo.</strong> Con un solo escalar por municipio, el modelo llega a +0.165 de correlación
+          dentro del municipio contra los +0.223 que obtiene un oráculo al que se le dice la
+          respuesta AGEB por AGEB. La brecha entre ambos es lo que cuesta la supervisión débil; la
+          distancia entre el oráculo y una correlación fuerte es otra cosa, y es la que decide qué
+          se puede prometer.
+        </p>
+      </div>
+      <div class="caveat">
+        <span class="etiqueta">El límite está en la representación, no en la supervisión</span>
+        <p>
+          Aun diciéndole la respuesta instancia por instancia, ordenar las AGEB dentro de un mismo
+          municipio llega apenas a +0.223 de Spearman. Ninguna mejora del método de agregación va a
+          superar eso, porque no es el agregador el que se queda corto: son los vectores de 160
+          metros, que no resuelven bien la diferencia entre una colonia y la de al lado.
         </p>
         <p style="margin-top: 10px;">
-          La primera es la etiqueta de la bolsa. Redondear la media municipal a cinco clases deja el
-          80% de las bolsas en grado «Bajo» y solo cuatro en «Muy alto», de modo que a la atención le
-          conviene describir el municipio típico antes que buscar su fracción rezagada. Las cuatro
-          proporciones acumuladas —qué parte de la población del municipio vive en AGEB de grado
-          mayor o igual que k— dejarían 123 bolsas con señal en el umbral alto en lugar de cuatro.
-        </p>
-        <p style="margin-top: 10px;">
-          La segunda es el propio mecanismo. Una atención con softmax sobre quinientas a mil
-          instancias tiende a colapsar en unas pocas cuando la tarea se resuelve sin localizar nada,
-          y la dispersión observada es compatible con eso. Regular la entropía de la atención, o
-          templar el softmax, obliga a repartirla.
+          La palanca que queda es la instancia antes que el modelo. Un token de 160 m sobre suelo
+          urbano mezcla manzanas de calidad distinta, y el modelo fundacional lo describe como una
+          sola cosa. Bajar el tamaño efectivo de la instancia, o buscar una representación de mayor
+          resolución, es la dirección que este resultado señala.
         </p>
       </div>
 
@@ -2175,7 +2230,10 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             </tr>
             <tr>
               <td>Bolsas demasiado pequeñas</td>
-              <td>CLAM opera con miles de instancias por bolsa; un municipio da órdenes de magnitud menos. Ajustar tamaño de parche y solapamiento, o subir la bolsa a nivel zona metropolitana.</td>
+              <td>CLAM opera con miles de instancias por bolsa; un municipio da órdenes de magnitud
+              menos. <b>Resultó no ser el problema:</b> la mediana es de 754 instancias y el MIL con
+              atención predice la bolsa muy bien. Lo que falla es la localización, y su causa es que
+              la etiqueta se resuelve con el promedio.</td>
             </tr>
           </tbody>
         </table>
@@ -2238,19 +2296,23 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         a la siguiente etapa.
       </p>
       <p>
-        La etapa 3 arroja un resultado partido en dos. Con supervisión estrictamente más pobre —un
-        escalar por municipio en lugar de una etiqueta por AGEB— el MIL con atención predice el grado
-        municipal con kappa de 0.621, por encima del 0.544 del baseline de textura. Y su mapa de
-        atención no recupera dónde está el rezago: 0.463 de área bajo la curva, por debajo del azar,
-        con los cinco pliegues de acuerdo. La atención no está plana ni es uniforme; selecciona
-        instancias dispersas que no coinciden con la geografía del rezago.
+        La etapa 3 arroja dos resultados. El MIL con atención predice el grado municipal con kappa
+        de 0.621, por encima del 0.544 del baseline de textura, y su mapa no recupera dónde está el
+        rezago. La causa quedó aislada: la etiqueta agregada se resuelve con el promedio simple de
+        las instancias, y aplanar la atención hasta volverla uniforme no cuesta desempeño. Un
+        mecanismo de atención sin presión para localizar no localiza.
       </p>
       <p>
-        Esa segunda mitad es la que decide el proyecto, porque el mapa de calor es la contribución.
-        Quedan dos causas identificadas y baratas de probar antes de concluir que la premisa cae: la
-        etiqueta de bolsa redondeada a cinco clases, que deja el 80% de las bolsas en un solo grado,
-        y el colapso de la atención sobre unas pocas instancias cuando la tarea se resuelve sin
-        localizar nada.
+        Invertir la composición lo resuelve. Prediciendo cada instancia y promediando las
+        predicciones, el mapa pasa de 0.463 a 0.761 de área bajo la curva y de −0.107 a +0.165 de
+        correlación dentro del municipio. Un oráculo supervisado instancia por instancia alcanza
+        +0.223, de modo que la supervisión débil recupera el 74% de lo alcanzable.
+      </p>
+      <p>
+        Y ese techo acota lo que el proyecto puede prometer. Ordenar AGEB dentro de un mismo
+        municipio llega apenas a +0.223 aun con la respuesta servida por instancia: el límite está
+        en la representación de 160 metros antes que en la supervisión débil, y la palanca que queda
+        es la instancia antes que el modelo.
       </p>
       <p>
         Tres correcciones de la etapa 1 conviene retenerlas porque ninguna producía síntoma visible: las
@@ -2306,12 +2368,13 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
           <div>
             <p class="phase-t">MIL ordinal y validación del mapa de atención</p>
             <p class="phase-d">
-              Atención con compuerta sobre las bolsas municipales. Aquí se calcula por primera vez el
-              Spearman atención-vs-AGEB. Es el resultado central del artículo. <b>Primera corrida:</b>
-              la bolsa se predice con kappa de 0.621, por encima del baseline que recibe la etiqueta
-              ya desagregada, y el mapa de atención da −0.107.
+              Aquí se calcula por primera vez la correlación entre lo que el modelo dice de cada
+              token y el grado del AGEB donde cayó. Es el resultado central del artículo.
+              <b>Cerrada con dos resultados:</b> el MIL con atención no localiza y se aisló por qué,
+              y predecir la instancia para promediar después lleva el mapa a 0.761 de área bajo la
+              curva y +0.165 dentro del municipio, contra un techo de +0.223.
             </p>
-            <p class="gate">→ Criterio de admisión: si la atención no correlaciona con el rezago por AGEB, la premisa de interpretabilidad cae. <b>No se cumple todavía</b>, con dos causas identificadas: la etiqueta redondeada a cinco clases y el colapso de la atención.</p>
+            <p class="gate">→ Criterio de admisión: si el mapa no correlaciona con el rezago por AGEB, la premisa de interpretabilidad cae. <b>Se cumple</b>, con la familia de proporciones de etiqueta y no con el MIL de atención, y con una magnitud que el techo del oráculo acota.</p>
           </div>
         </div>
         <div class="phase">
@@ -2319,10 +2382,10 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
           <div>
             <p class="phase-t">Ablaciones y transferencia</p>
             <p class="phase-d">
-              Barrido de las tres configuraciones, de la etiqueta de bolsa y del mecanismo de
-              atención, más evaluación zero-shot en Brasil y Colombia contra sus respectivas
-              etiquetas desagregadas. Las dos primeras ablaciones dejaron de ser opcionales: son las
-              candidatas a explicar por qué el mapa de calor no correlaciona.
+              Barrido de las tres configuraciones de entrada y evaluación zero-shot en Brasil y
+              Colombia contra sus respectivas etiquetas desagregadas. Se le suma la dirección que el
+              techo del oráculo señala: bajar el tamaño efectivo de la instancia o buscar una
+              representación de mayor resolución, que es donde queda el margen.
             </p>
           </div>
         </div>
