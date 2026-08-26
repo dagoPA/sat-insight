@@ -34,7 +34,15 @@ HIDDEN = 256
 DROPOUT = 0.25
 
 
-def build(dim_in: int, n_thresholds: int = 4, hidden: int = HIDDEN, *, radius: int = 0):
+def build(
+    dim_in: int,
+    n_thresholds: int = 4,
+    hidden: int = HIDDEN,
+    *,
+    radius: int = 0,
+    dropout: float = DROPOUT,
+    standardize: bool = False,
+):
     """Builds the per-instance predictor. Torch is imported here, not at module level."""
     import torch
     from torch import nn
@@ -49,10 +57,22 @@ def build(dim_in: int, n_thresholds: int = 4, hidden: int = HIDDEN, *, radius: i
 
         def __init__(self) -> None:
             super().__init__()
-            self.project = nn.Sequential(nn.Linear(dim_in, hidden), nn.ReLU(), nn.Dropout(DROPOUT))
+            self.register_buffer("centre", torch.zeros(dim_in))
+            self.register_buffer("spread", torch.ones(dim_in))
+            self.standardize = standardize
+            self.project = nn.Sequential(nn.Linear(dim_in, hidden), nn.ReLU(), nn.Dropout(dropout))
             self.neighbourhood = build_layer(hidden) if radius else None
             width = self.neighbourhood.out_features if radius else hidden
             self.score = nn.Linear(width, n_thresholds)
+
+        def fit_scaler(self, mean, deviation):
+            """Stores the per-feature centre and spread of the training instances.
+
+            They are buffers and not parameters: they belong to the data the model was fit
+            on, they travel with the state dictionary, and no gradient touches them.
+            """
+            self.centre.copy_(torch.as_tensor(mean, dtype=self.centre.dtype))
+            self.spread.copy_(torch.as_tensor(deviation, dtype=self.spread.dtype).clamp(min=1e-6))
 
         def forward(self, instances, src=None, dst=None):
             """Takes (n_instances, dim_in) and returns the bag shares and the instance ones.
@@ -67,6 +87,8 @@ def build(dim_in: int, n_thresholds: int = 4, hidden: int = HIDDEN, *, radius: i
             predictions either way: the composition does not change, only how much ground
             each instance sees.
             """
+            if self.standardize:
+                instances = (instances - self.centre) / self.spread
             h = self.project(instances)
             if self.neighbourhood is not None:
                 if src is None:

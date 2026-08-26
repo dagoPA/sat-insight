@@ -5,7 +5,11 @@ put the weakly supervised map and the instance-supervised ceiling on the same gr
 ceiling is measured on the validation cities, and comparing the two across different sets
 of cities compares two things at once.
 
-Usage: llp_val.py [epochs] [radius] [seed]
+Usage: llp_val.py [epochs] [radius] [seed] [tuned]
+
+With `tuned` the head standardises its input and fits with binary cross entropy, which is
+what won the sweep over the training folds. The sweep never looked at these cities: they
+are opened once, with the winner already chosen.
 """
 
 import logging
@@ -30,6 +34,7 @@ from satinsight.splits import cities_of  # noqa: E402
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+TUNED = bool(int(sys.argv[4])) if len(sys.argv) > 4 else False
 PATIENCE = 8
 
 log = logging.getLogger("llp-val")
@@ -81,9 +86,13 @@ def main() -> None:
     val_links = links_of(val_bags, torch, device)
 
     torch.manual_seed(SEED)
-    model = build(train_bags[0].instances.shape[1], radius=RADIUS).to(device)
+    model = build(train_bags[0].instances.shape[1], radius=RADIUS, standardize=TUNED).to(device)
+    if TUNED:
+        rng_stats = np.random.default_rng(SEED)
+        sample = np.vstack([b.instances[rng_stats.permutation(len(b))[:200]] for b in train_bags])
+        model.fit_scaler(sample.mean(axis=0), sample.std(axis=0))
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-4)
-    criterion = nn.MSELoss()
+    criterion = nn.BCELoss() if TUNED else nn.MSELoss()
     rng = np.random.default_rng(SEED)
     # el criterio de parada es el error de bolsa, que es la única señal que la supervisión
     # débil tiene derecho a mirar: elegir la época por la calidad del mapa sería usar la
@@ -122,18 +131,20 @@ def main() -> None:
     model.load_state_dict(best_state)
     scored = evaluate_map(model, val_bags, val_links, grades, torch, device)
     per_bag = scored.pop("per_bag")
-    final = {"radius": RADIUS, "seed": SEED, **scored}
+    final = {"radius": RADIUS, "seed": SEED, "tuned": TUNED, **scored}
     print("\n===== VALIDATION =====", flush=True)
     print(
-        f"radius {RADIUS} · map AUROC {final['auroc_high']:.3f} · "
+        f"radius {RADIUS} · tuned {TUNED} · map AUROC {final['auroc_high']:.3f} · "
         f"within-bag {final['spearman_within']:+.3f} over {final['bags_scored']} bags · "
         f"pooled {final['spearman_pooled']:+.3f} · bag MAE {final['bag_mae']:.4f}",
         flush=True,
     )
-    pd.DataFrame([final]).to_csv(f"data/llp_val_r{RADIUS}_s{SEED}.csv", index=False)
-    pd.DataFrame(per_bag, columns=["municipality", "rho"]).assign(radius=RADIUS, seed=SEED).to_csv(
-        f"data/llp_val_bags_r{RADIUS}_s{SEED}.csv", index=False
+    pd.DataFrame([final]).to_csv(
+        f"data/llp_val_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False
     )
+    pd.DataFrame(per_bag, columns=["municipality", "rho"]).assign(
+        radius=RADIUS, seed=SEED, tuned=TUNED
+    ).to_csv(f"data/llp_val_bags_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False)
 
 
 if __name__ == "__main__":
