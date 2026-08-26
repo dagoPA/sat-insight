@@ -34,6 +34,12 @@ class Bag:
     instances: np.ndarray
     cvegeo: np.ndarray
     ordinal: int
+    shares: np.ndarray
+    """Share of the municipality's population in AGEB of grade k or above, for k in 1..4.
+
+    Carried beside the rounded grade because which of the two supervises is an open
+    ablation, and recomputing them per experiment would mean rebuilding every bag."""
+
     y0: np.ndarray
     x0: np.ndarray
     """Pixel position of every instance on the city grid.
@@ -82,6 +88,15 @@ def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = Fa
         vectors = np.hstack([vectors[keep], other_vectors[np.array(rows)[keep]]])
 
     grades = dict(zip(labels.municipio, labels.ordinal, strict=True))
+    columns = [f"p{k}" for k in range(1, 5)]
+    shares = (
+        {
+            row.municipio: np.array([getattr(row, c) for c in columns], dtype="float32")
+            for row in labels.itertuples()
+        }
+        if all(c in labels.columns for c in columns)
+        else {}
+    )
     bags = []
     for municipality, group in instances.groupby("municipio", observed=True):
         if municipality not in grades:
@@ -93,6 +108,7 @@ def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = Fa
                 instances=vectors[group.index.to_numpy()],
                 cvegeo=group.cvegeo.to_numpy(),
                 ordinal=int(grades[municipality]),
+                shares=shares.get(municipality, np.zeros(4, dtype="float32")),
                 y0=group.y0.to_numpy(),
                 x0=group.x0.to_numpy(),
             )

@@ -1,6 +1,6 @@
 """Grouped k-fold of the attention MIL over the training cities.
 
-Usage: kfold_mil.py [folds] [epochs]
+Usage: kfold_mil.py [folds] [epochs] [objective]
 
 Folds are cut by city, never by bag: two bags of the same conurbation share urban fabric
 and acquisition geometry, so splitting them would let the model recognise the place rather
@@ -28,12 +28,16 @@ from satinsight.train_mil import SEED, predict, score_heatmap, train  # noqa: E4
 
 FOLDS = int(sys.argv[1]) if len(sys.argv) > 1 else 5
 EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+OBJECTIVE = sys.argv[3] if len(sys.argv) > 3 else "classes"
 SENSOR = "s2"
 FUSE = True
 
 partition = pd.read_csv("data/partition.csv")
 cities = sorted(cities_of(partition, "train"))
-print(f"{len(cities)} training cities · {FOLDS} folds · {EPOCHS} epochs max", flush=True)
+print(
+    f"{len(cities)} training cities · {FOLDS} folds · {EPOCHS} epochs max · objective {OBJECTIVE}",
+    flush=True,
+)
 
 catalogue = cities_by_size(stratify=True)
 grades: dict[str, int] = {}
@@ -57,11 +61,11 @@ for k, held_out in enumerate(folds):
     train_bags = load_split(rest, SENSOR, fuse=FUSE)
     val_bags = load_split(held_out, SENSOR, fuse=FUSE)
 
-    model, history = train(train_bags, val_bags, epochs=EPOCHS, seed=SEED + k)
+    model, history = train(train_bags, val_bags, epochs=EPOCHS, seed=SEED + k, objective=OBJECTIVE)
     history["fold"] = k
     histories.append(history)
 
-    scored = predict(model, val_bags)
+    scored = predict(model, val_bags, objective=OBJECTIVE)
     heat = score_heatmap(val_bags, scored["attention"], grades)
     results.append(
         {
@@ -77,8 +81,8 @@ for k, held_out in enumerate(folds):
         }
     )
     print(json.dumps(results[-1], default=float), flush=True)
-    pd.concat(histories, ignore_index=True).to_csv("data/mil_history.csv", index=False)
-    pd.DataFrame(results).to_csv("data/mil_kfold.csv", index=False)
+    pd.concat(histories, ignore_index=True).to_csv(f"data/mil_history_{OBJECTIVE}.csv", index=False)
+    pd.DataFrame(results).to_csv(f"data/mil_kfold_{OBJECTIVE}.csv", index=False)
 
 r = pd.DataFrame(results)
 print("\n===== SUMMARY =====", flush=True)
