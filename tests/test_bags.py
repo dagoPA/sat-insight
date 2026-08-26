@@ -122,3 +122,43 @@ def test_build_fails_when_nothing_lands_inside():
     )
     with pytest.raises(ValueError, match="no patch landed"):
         build(tiles, malla, lejos, "prueba")
+
+
+def test_the_cumulative_shares_are_population_weighted():
+    """La proporción de población que vive en AGEB de grado k o más.
+
+    Es el agregado que un dato municipal de verdad conoce, y el único de los tres que
+    obliga a localizar: predecir que un décimo de la población vive en AGEB rezagada exige
+    identificar cuál décimo.
+    """
+    agebs = gpd.GeoDataFrame(
+        {
+            "cvegeo": ["0710100010001", "0710100010002", "0710100010003"],
+            "ordinal": [0, 2, 4],
+            "poblacion": [800, 100, 100],
+            "geometry": [box(0, 0, 1, 1), box(1, 0, 2, 1), box(2, 0, 3, 1)],
+        },
+        crs=CRS,
+    )
+    fila = municipal_labels(agebs).iloc[0]
+    assert fila.p1 == pytest.approx(0.2)
+    assert fila.p3 == pytest.approx(0.1)
+    assert fila.p4 == pytest.approx(0.1)
+    # el redondeo aplasta esa estructura a una sola clase y pierde que un décimo de la
+    # población vive en el grado más alto
+    assert fila.ordinal == 1
+
+
+def test_the_shares_fall_as_the_threshold_rises():
+    agebs = gpd.GeoDataFrame(
+        {
+            "cvegeo": [f"071010001000{i}" for i in range(5)],
+            "ordinal": [0, 1, 2, 3, 4],
+            "poblacion": [100] * 5,
+            "geometry": [box(i, 0, i + 1, 1) for i in range(5)],
+        },
+        crs=CRS,
+    )
+    fila = municipal_labels(agebs).iloc[0]
+    assert fila.p1 > fila.p2 > fila.p3 > fila.p4
+    assert fila.p1 == pytest.approx(0.8)

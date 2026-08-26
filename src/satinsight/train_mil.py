@@ -72,10 +72,41 @@ def bag_auroc(truth: np.ndarray, probability: np.ndarray) -> float:
     return float(np.mean(scores)) if scores else float("nan")
 
 
+OBJECTIVES = ("classes", "cumulative")
+"""What the bag label demands of the model.
+
+`classes` predicts the rounded grade with cross entropy. It is the official scale and it
+costs: four fifths of the bags share one grade, so describing the typical municipality
+already predicts it, and the attention is never pushed to find anything.
+
+`cumulative` predicts the four population shares living at grade k or above, with binary
+cross entropy per threshold. It is the aggregate a municipal figure actually knows, and it
+is the one that demands localisation: getting the share right means identifying which part
+of the municipality it refers to.
+"""
+
+
+def cumulative_auroc(truth: np.ndarray, shares: np.ndarray) -> float:
+    """Mean area under the curve of the thresholds, one head against its own target.
+
+    The k-th head answers whether the bag sits at grade k or above, so it is scored against
+    exactly that. Averaging the four gives a figure comparable to the macro area of the
+    class objective without pretending the two parameterisations are the same thing.
+    """
+    scores = []
+    for k in range(shares.shape[1]):
+        target = (truth >= k + 1).astype(int)
+        if target.sum() in (0, len(target)):
+            continue
+        scores.append(float(roc_auc_score(target, shares[:, k])))
+    return float(np.mean(scores)) if scores else float("nan")
+
+
 def train(
     train_bags: list[Bag],
     val_bags: list[Bag],
     *,
+    objective: str = "classes",
     n_classes: int = 5,
     epochs: int = EPOCHS,
     learning_rate: float = LEARNING_RATE,
@@ -90,12 +121,21 @@ def train(
     import torch
     from torch import nn
 
+    if objective not in OBJECTIVES:
+        raise KeyError(f"unknown objective {objective!r}, expected one of {OBJECTIVES}")
     torch.manual_seed(seed)
     device = _device(torch)
-    model = build(train_bags[0].instances.shape[1], n_classes).to(device)
+    # el objetivo acumulado tiene una salida por umbral y no una por clase: son K-1
+    outputs = n_classes if objective == "classes" else n_classes - 1
+    model = build(train_bags[0].instances.shape[1], outputs).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=WEIGHT_DECAY)
-    weights = torch.tensor(_bag_weights(train_bags, n_classes), dtype=torch.float32).to(device)
-    criterion = nn.CrossEntropyLoss(weight=weights)
+    if objective == "classes":
+        weights = torch.tensor(_bag_weights(train_bags, n_classes), dtype=torch.float32).to(device)
+        criterion = nn.CrossEntropyLoss(weight=weights)
+    else:
+        # sin reponderar: el objetivo blando ya lleva la escasez del extremo dentro, y
+        # pesar además por clase la contaría dos veces
+        criterion = nn.BCEWithLogitsLoss()
     rng = np.random.default_rng(seed)
 
     def as_tensor(bag: Bag):
@@ -110,15 +150,23 @@ def train(
             bag = train_bags[index]
             optimiser.zero_grad()
             logits, _ = model(as_tensor(bag))
-            target = torch.tensor([bag.ordinal], device=device)
-            loss = criterion(logits.unsqueeze(0), target)
+            if objective == "classes":
+                target = torch.tensor([bag.ordinal], device=device)
+                loss = criterion(logits.unsqueeze(0), target)
+            else:
+                target = torch.from_numpy(bag.shares).float().to(device)
+                loss = criterion(logits, target)
             loss.backward()
             optimiser.step()
             total += float(loss)
 
-        scored = predict(model, val_bags, device=device)
+        scored = predict(model, val_bags, device=device, objective=objective)
         kappa = float(cohen_kappa_score(scored["truth"], scored["prediction"], weights="quadratic"))
-        auroc = bag_auroc(scored["truth"], scored["probability"])
+        auroc = (
+            bag_auroc(scored["truth"], scored["probability"])
+            if objective == "classes"
+            else cumulative_auroc(scored["truth"], scored["probability"])
+        )
         history.append(
             {
                 "epoch": epoch,
@@ -149,8 +197,15 @@ def train(
     return model, pd.DataFrame(history)
 
 
-def predict(model, bags: list[Bag], *, device: str | None = None) -> dict[str, np.ndarray]:
-    """Bag-level predictions, with the attention of every instance kept alongside."""
+def predict(
+    model, bags: list[Bag], *, device: str | None = None, objective: str = "classes"
+) -> dict[str, np.ndarray]:
+    """Bag-level predictions, with the attention of every instance kept alongside.
+
+    Both objectives report a predicted grade so the two can be compared on the same
+    metric. Under `cumulative` it is how many thresholds the model puts above a half,
+    which is the ordinal decoding the cumulative parameterisation implies.
+    """
     import torch
 
     device = device or _device(torch)
@@ -159,8 +214,13 @@ def predict(model, bags: list[Bag], *, device: str | None = None) -> dict[str, n
     with torch.inference_mode():
         for bag in bags:
             logits, weights = model(torch.from_numpy(bag.instances).float().to(device))
-            probabilities.append(torch.softmax(logits, dim=0).cpu().numpy())
-            predictions.append(int(logits.argmax()))
+            if objective == "classes":
+                probabilities.append(torch.softmax(logits, dim=0).cpu().numpy())
+                predictions.append(int(logits.argmax()))
+            else:
+                shares = torch.sigmoid(logits).cpu().numpy()
+                probabilities.append(shares)
+                predictions.append(int((shares >= 0.5).sum()))
             truths.append(bag.ordinal)
             attentions.append(weights.cpu().numpy())
     return {

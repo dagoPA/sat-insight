@@ -85,8 +85,24 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     the labels the attention map is scored against, so a gap between the two cannot be
     blamed on two different indices disagreeing.
 
-    The aggregate is the population-weighted mean of the ordinal grade, rounded. Weighting
-    by population rather than by area stops a large empty AGEB from outvoting a dense one.
+    Three aggregates come out, because they demand different things of the model and which
+    one to train on is an open ablation.
+
+    `ordinal` is the population-weighted mean of the grade, rounded. It keeps the official
+    five-class scale, and it costs: four fifths of the bags land in one grade and only four
+    of 412 reach the top, so describing the typical municipality already predicts it well.
+
+    `ordinal_continuo` is the same mean without rounding, which keeps the gradation the
+    rounding destroys.
+
+    `p1` to `p4` are the share of the municipality's population living in AGEB of grade k
+    or above. This is the aggregate a municipal figure actually knows, and it is the only
+    one of the three that demands localisation: predicting that a tenth of the population
+    lives in deprived AGEB requires identifying which tenth, whereas a single class can be
+    read off the dominant fabric.
+
+    Weighting by population rather than by area stops a large empty AGEB from outvoting a
+    dense one.
     """
     missing = {"cvegeo", "ordinal", "poblacion"} - set(agebs.columns)
     if missing:
@@ -104,11 +120,16 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
         weight = group.poblacion.to_numpy(dtype="float64")
         if weight.sum() <= 0:
             weight = np.ones(len(group))
-        middle = float(np.average(group.ordinal.to_numpy(dtype="float64"), weights=weight))
+        grades = group.ordinal.to_numpy(dtype="float64")
+        middle = float(np.average(grades, weights=weight))
+        shares = {
+            f"p{k}": float(np.average(grades >= k, weights=weight)) for k in range(1, len(GRADES))
+        }
         return pd.Series(
             {
                 "ordinal": int(np.clip(round(middle), 0, len(GRADES) - 1)),
                 "ordinal_continuo": middle,
+                **shares,
                 "poblacion": float(weight.sum()),
                 "agebs": len(group),
             }
