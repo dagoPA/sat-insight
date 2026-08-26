@@ -14,6 +14,9 @@
     --s1-soft:     #F6E6D2;
     --s2:          #116E72;
     --s2-soft:     #D6E9E8;
+    --warn:        #B4400C;
+    --warn-soft:   #FDF1E7;
+    --warn-ink:    #4A2510;
 
     --font-serif: "Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -35,6 +38,9 @@
       --s1-soft:     #3A2A16;
       --s2:          #4CBFC2;
       --s2-soft:     #113330;
+      --warn:        #E8763C;
+      --warn-soft:   #2A1810;
+      --warn-ink:    #F2D9C8;
     }
   }
 
@@ -51,6 +57,9 @@
     --s1-soft:     #3A2A16;
     --s2:          #4CBFC2;
     --s2-soft:     #113330;
+    --warn:        #E8763C;
+    --warn-soft:   #2A1810;
+    --warn-ink:    #F2D9C8;
   }
 
   body {
@@ -261,9 +270,12 @@
 
   .thesis p { margin: 0; max-width: none; }
   .caveat {
-    border: 1px solid #c2410c;
-    border-left: 3px solid #c2410c;
-    background: #fff7ed;
+    /* el fondo y la tinta van juntos en tokens: con el fondo fijo en crema y la tinta
+       heredada del tema, el modo oscuro dejaba texto claro sobre fondo claro */
+    border: 1px solid var(--warn);
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+    color: var(--warn-ink);
     padding: 18px 22px;
     max-width: var(--measure);
     font-size: 0.98rem;
@@ -275,7 +287,7 @@
     display: block;
     font-variant: all-small-caps;
     letter-spacing: 0.06em;
-    color: #9a3412;
+    color: var(--warn);
     margin-bottom: 6px;
   }
 
@@ -665,9 +677,9 @@
           kappa, con intervalos por remuestreo de ciudades que apenas se rozan, y fusionar ambas
           aporta 0.024 sobre la óptica sola con intervalos que se solapan casi enteros. Y en el
           umbral que separa el rezago severo del resto, las tres configuraciones quedan
-          indistinguibles entre 0.860 y 0.870 de área bajo la curva, cifra que la densidad construida
-          sola alcanza en 0.828: el aporte de la textura se concentra en ordenar los grados
-          intermedios.
+          indistinguibles entre 0.747 y 0.773 de área bajo la curva promediada por ciudad, con la
+          peor de las catorce cayendo a 0.486: el aporte de la textura se concentra en ordenar los
+          grados intermedios.
         </p>
         <p>
           La etapa que sigue entrega dos resultados. El primero es negativo y viene con diagnóstico:
@@ -1782,20 +1794,28 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         correlación y anisotropía caen enteras en ambas modalidades, y en radar cae también el canal
         VH completo, cuya información sobrevive solo como razón VV/VH.
       </p>
+      <p>
+        El área bajo la curva se promedia por ciudad y no se calcula sobre todas las AGEB juntas.
+        Agrupar mezcla dos preguntas: ordenar AGEB <em class="term">entre</em> ciudades es en buena
+        parte fácil, porque saber que una ciudad es rezagada en promedio ya coloca sus AGEB por
+        encima de las de otra acomodada. Lo que interesa es ordenarlas dentro de cada ciudad, y las
+        dos cifras difieren: 0.860 agrupado contra 0.747 por ciudad en la modalidad óptica. La misma
+        distinción reaparece en la etapa 3 y se reporta ahí con el mismo criterio.
+      </p>
       <div class="tablewrap">
         <table>
           <thead>
-            <tr><th>Validación · 14 ciudades · 2,822 AGEB</th><th>Kappa</th><th>IC 95%</th><th>AUROC macro</th><th>AUROC ≥ Alto</th></tr>
+            <tr><th>Validación · 14 ciudades · 2,822 AGEB</th><th>Kappa</th><th>IC 95%</th><th>AUROC macro</th><th>AUROC ≥ Alto<br><span style="font-weight:400">por ciudad</span></th></tr>
           </thead>
           <tbody>
-            <tr><td>Óptica · completo</td><td class="num">0.507</td><td class="num">0.434 – 0.564</td><td class="num">0.776</td><td class="num">0.860</td></tr>
-            <tr><td>Óptica · intensidad</td><td class="num">0.440</td><td class="num">0.365 – 0.525</td><td class="num">0.741</td><td class="num">0.830</td></tr>
-            <tr><td>Óptica · textura</td><td class="num">0.388</td><td class="num">0.303 – 0.474</td><td class="num">0.706</td><td class="num">0.765</td></tr>
-            <tr><td>Óptica · cobertura</td><td class="num">0.318</td><td class="num">0.235 – 0.416</td><td class="num">0.699</td><td class="num">0.828</td></tr>
-            <tr><td>Radar · completo</td><td class="num">0.453</td><td class="num">0.367 – 0.534</td><td class="num">0.750</td><td class="num">0.870</td></tr>
-            <tr><td>Radar · intensidad</td><td class="num">0.324</td><td class="num">0.231 – 0.430</td><td class="num">0.711</td><td class="num">0.837</td></tr>
-            <tr><td>Radar · textura</td><td class="num">0.270</td><td class="num">0.171 – 0.378</td><td class="num">0.689</td><td class="num">0.836</td></tr>
-            <tr><td>Fusión · completo</td><td class="num">0.531</td><td class="num">0.475 – 0.578</td><td class="num">0.775</td><td class="num">0.863</td></tr>
+            <tr><td>Óptica · completo</td><td class="num">0.507</td><td class="num">0.434 – 0.564</td><td class="num">0.776</td><td class="num">0.747</td></tr>
+            <tr><td>Óptica · intensidad</td><td class="num">0.440</td><td class="num">0.365 – 0.525</td><td class="num">0.741</td><td class="num">—</td></tr>
+            <tr><td>Óptica · textura</td><td class="num">0.388</td><td class="num">0.303 – 0.474</td><td class="num">0.706</td><td class="num">—</td></tr>
+            <tr><td>Óptica · cobertura</td><td class="num">0.318</td><td class="num">0.235 – 0.416</td><td class="num">0.699</td><td class="num">—</td></tr>
+            <tr><td>Radar · completo</td><td class="num">0.453</td><td class="num">0.367 – 0.534</td><td class="num">0.750</td><td class="num">0.773</td></tr>
+            <tr><td>Radar · intensidad</td><td class="num">0.324</td><td class="num">0.231 – 0.430</td><td class="num">0.711</td><td class="num">—</td></tr>
+            <tr><td>Radar · textura</td><td class="num">0.270</td><td class="num">0.171 – 0.378</td><td class="num">0.689</td><td class="num">—</td></tr>
+            <tr><td>Fusión · completo</td><td class="num">0.531</td><td class="num">0.475 – 0.578</td><td class="num">0.775</td><td class="num">0.771</td></tr>
           </tbody>
         </table>
       </div>
@@ -1832,9 +1852,9 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
       <div class="caveat">
         <span class="etiqueta">El aporte de la textura es acotado</span>
         <p>
-          En la columna del umbral que separa el rezago severo del resto, las tres configuraciones
-          quedan indistinguibles entre 0.860 y 0.870, y la densidad construida de un producto externo
-          alcanza 0.828 por sí sola. Para detectar dónde está el rezago severo, esa capa ya basta.
+          En el umbral que separa el rezago severo del resto, las tres configuraciones quedan
+          indistinguibles: 0.747, 0.773 y 0.771 promediando por ciudad. Y la cifra depende mucho de
+          cuál ciudad toque: la peor de las catorce cae a 0.486, o sea al azar.
         </p>
         <p style="margin-top: 10px;">
           La importancia por permutación lo confirma: la fracción construida de WorldCover encabeza
