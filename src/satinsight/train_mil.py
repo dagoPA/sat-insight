@@ -19,7 +19,7 @@ from scipy.stats import spearmanr
 from sklearn.metrics import cohen_kappa_score, roc_auc_score
 
 from satinsight.bagdata import Bag
-from satinsight.mil import attention_per_ageb, build
+from satinsight.mil import attention_per_ageb, build, clustering_targets
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +41,22 @@ The extreme cases bracket what it can do. At zero the attention is free to colla
 enough it becomes uniform, the bag vector becomes the plain mean of its instances, and the
 map carries no information at all. Any value that helps lives between those.
 """
+
+CLUSTER_WEIGHT = 0.0
+"""How hard the instance-level clustering constraint pulls, the CLAM term.
+
+Off by default, like the entropy weight, because it is the ablation the previous runs
+pointed at. Sweeping the entropy showed the bag task is solvable from the plain mean of
+the instances, so the attention receives no gradient asking it to localise anything. This
+term supplies one that does not pass through the average.
+"""
+
+CLUSTER_K = 16
+"""Instances taken from each end of the attention ranking to build the pseudo-labels.
+
+Small against bags of hundreds: the constraint is meant to sharpen the extremes of the
+ranking, and taking a large slice would call most of a bag evidence and most of it noise
+at once."""
 
 PATIENCE = 6
 """Epochs without improving the validation kappa before stopping.
@@ -125,6 +141,7 @@ def train(
     epochs: int = EPOCHS,
     learning_rate: float = LEARNING_RATE,
     entropy_weight: float = ENTROPY_WEIGHT,
+    cluster_weight: float = CLUSTER_WEIGHT,
     patience: int = PATIENCE,
     seed: int = SEED,
 ):
@@ -164,13 +181,20 @@ def train(
         for index in rng.permutation(len(train_bags)):
             bag = train_bags[index]
             optimiser.zero_grad()
-            logits, attention = model(as_tensor(bag))
+            logits, attention, projections = model(as_tensor(bag))
             if objective == "classes":
                 target = torch.tensor([bag.ordinal], device=device)
                 loss = criterion(logits.unsqueeze(0), target)
             else:
                 target = torch.from_numpy(bag.shares).float().to(device)
                 loss = criterion(logits, target)
+            if cluster_weight:
+                targets = clustering_targets(attention, CLUSTER_K)
+                if targets is not None:
+                    indices, pseudo = targets
+                    loss = loss + cluster_weight * nn.functional.cross_entropy(
+                        model.instance_head(projections[indices]), pseudo
+                    )
             if entropy_weight:
                 # se resta la entropía, de modo que minimizar la pérdida la maximiza y la
                 # atención se reparte. Se normaliza por la entropía de la uniforme para que
@@ -234,7 +258,7 @@ def predict(
     predictions, truths, probabilities, attentions = [], [], [], []
     with torch.inference_mode():
         for bag in bags:
-            logits, weights = model(torch.from_numpy(bag.instances).float().to(device))
+            logits, weights, _ = model(torch.from_numpy(bag.instances).float().to(device))
             if objective == "classes":
                 probabilities.append(torch.softmax(logits, dim=0).cpu().numpy())
                 predictions.append(int(logits.argmax()))
