@@ -695,9 +695,10 @@
           predicciones, en lugar de promediar características y predecir, el mapa pasa a 0.761 de
           área bajo la curva y a una correlación de Spearman de +0.165 dentro de cada municipio.
           Un oráculo supervisado instancia por instancia alcanza +0.194 sobre los mismos vectores,
-          así que la supervisión débil recupera el 73% de lo alcanzable. Dar a cada tesela el
-          promedio de sus vecinas lleva ese techo a +0.239 y deja el modelo débilmente supervisado
-          donde estaba, lo que sitúa el límite en cuántas restricciones aporta la etiqueta.
+          y +0.239 si a cada tesela se le da el promedio de sus vecinas. Barrer los hiperparámetros
+          de la cabeza, que nunca se habían comparado con nada, lleva el mapa a +0.182 dentro del
+          municipio y a 0.808 de área bajo la curva, con lo que la supervisión débil recupera el 77%
+          de lo alcanzable.
         </p>
         <p class="keywords">
           <b>Palabras clave</b> aprendizaje de instancias múltiples · supervisión débil · radar de
@@ -2169,6 +2170,7 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
           <tbody>
             <tr><td>MIL con atención con compuerta</td><td class="num">—</td><td class="num">−0.107</td><td class="num">0.463</td></tr>
             <tr><td>Proporciones de etiqueta</td><td class="num">+0.165</td><td class="num">+0.414</td><td class="num">0.761</td></tr>
+            <tr><td>Proporciones de etiqueta, con los hiperparámetros barridos</td><td class="num">+0.196</td><td class="num">+0.437</td><td class="num">0.771</td></tr>
           </tbody>
         </table>
       </div>
@@ -2222,11 +2224,12 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
       </p>
       <div class="thesis">
         <p>
-          <strong>La información del vecindario existe, y la supervisión débil no la
-          extrae.</strong> Con la respuesta dada AGEB por AGEB, mirar alrededor sube la correlación
-          un 23%. Con un solo vector de cuatro números por municipio, el mismo cambio deja el mapa
-          donde estaba. El techo se movió y el modelo se quedó, así que la fracción recuperada cae
-          de 73% a 59%.
+          <strong>La información del vecindario existe, y esta cabeza no la extrae.</strong>
+          Con la respuesta dada AGEB por AGEB, mirar alrededor sube la correlación un 23%. Con un
+          solo vector de cuatro números por municipio, el mismo cambio deja el mapa donde estaba. El
+          techo se movió y el modelo se quedó, así que la fracción recuperada cae de 73% a 59%. La
+          subsección siguiente califica esa lectura: el modelo que desperdició el contexto era
+          también un modelo cuyos hiperparámetros nunca se habían barrido.
         </p>
       </div>
       <p>
@@ -2243,28 +2246,103 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         bolsa de 0.110, así que explica una parte menor de lo que al modelo le falta.
       </p>
 
-      <div class="caveat">
-        <span class="etiqueta">Dónde está el límite, después de haberlo movido</span>
+      <h3>Los hiperparámetros que nunca se barrieron</h3>
+      <p>
+        Los tres barridos del proyecto —peso de entropía, restricción de agrupamiento por
+        instancia, etiqueta acumulada— se corrieron sobre el MIL con atención. Al cambiar de
+        familia, la cabeza de proporciones heredó para cada uno de sus parámetros el primer valor
+        que se escribió, y recibió una sola ablación arquitectónica, la del radio de contexto. Eso
+        vuelve circular la conclusión anterior: la brecha contra el techo se estaba atribuyendo a
+        falta de supervisión, y una parte podía ser una tasa de aprendizaje que nadie comparó nunca
+        contra ninguna otra.
+      </p>
+      <p>
+        Catorce configuraciones sobre pliegues de las 110 ciudades de entrenamiento, una segunda
+        ronda combinando lo que sobrevivió, y una sola apertura de las 14 retenidas con el ganador
+        ya elegido. Ganó estandarizar la entrada característica por característica y ajustar con
+        entropía cruzada sobre las proporciones, que están acotadas en el intervalo unitario y
+        sesgadas hacia cero.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>14 ciudades retenidas · 3 semillas</th><th>Spearman dentro</th><th>Spearman agrupado</th><th>AUROC del mapa</th><th>Error de bolsa</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Como estaba</td><td class="num">+0.142</td><td class="num">+0.408</td><td class="num">0.791</td><td class="num">0.1126</td></tr>
+            <tr><td>Como estaba, con vecindad de 480 m</td><td class="num">+0.140</td><td class="num">+0.425</td><td class="num">0.791</td><td class="num">0.1097</td></tr>
+            <tr><td>Barrida</td><td class="num">+0.175</td><td class="num">+0.445</td><td class="num">0.798</td><td class="num">0.1054</td></tr>
+            <tr><td>Barrida, con vecindad de 480 m</td><td class="num">+0.182</td><td class="num">+0.478</td><td class="num">0.808</td><td class="num">0.0999</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="gate-note">
+        Diferencias apareadas sobre los mismos 33 municipios: el barrido aporta +0.036 ± 0.019
+        (p = 0.058) y el barrido con vecindad +0.044 ± 0.024 (p = 0.053) sobre la configuración
+        original. Ambas rozan el umbral convencional con 33 municipios, de modo que la evidencia
+        más firme del cambio es el error de bolsa, que baja de 0.1126 a 0.0999 con una desviación
+        entre semillas de 0.002 y sin tocar las etiquetas AGEB.
+      </p>
+      <div class="thesis">
         <p>
-          El techo del oráculo se leía como una propiedad de los vectores de 160 metros: aun
-          diciéndole la respuesta instancia por instancia, ordenar las AGEB dentro de un municipio
-          llegaba a +0.194 de Spearman, y de ahí salía la conclusión de que la palanca era el
-          tamaño de la instancia. El contexto vecinal desmiente esa lectura a medias. Con la misma
-          extracción de características y el mismo tamaño de token, mirar alrededor lleva el techo a
-          +0.239. Los vectores llevaban más de lo que el modelo estaba leyendo de ellos.
+          <strong>La mayor parte de la brecha contra el techo era el ajuste.</strong> Lo recuperado
+          del techo sin contexto pasa de 72% a 91% barriendo cuatro decisiones que nunca se habían
+          comparado con nada. Y el contexto vecinal, que la cabeza original desperdiciaba por
+          completo, con la cabeza barrida aporta: +0.008 de correlación apareada, el área bajo la
+          curva de 0.798 a 0.808 y el error de bolsa de 0.1054 a 0.0999.
+        </p>
+      </div>
+      <div class="caveat">
+        <span class="etiqueta">Elegir hiperparámetros con supervisión honesta va casi a ciegas</span>
+        <p>
+          Las configuraciones se ordenaron por error de bolsa, que es la única señal que la
+          supervisión débil tiene derecho a mirar. Ordenarlas por la calidad del mapa usaría las
+          etiquetas AGEB que el proyecto sostiene haber retenido, y ese uso, aunque sea más débil
+          que entrenar con ellas, debilitaría la afirmación central.
         </p>
         <p style="margin-top: 10px;">
-          Lo que quedó fijo es la supervisión débil, y ahí pasa a estar el cuello de botella. La
-          etiqueta aporta 333 bolsas de cuatro números cada una, 1,332 restricciones en total, para
-          427 mil instancias. La dirección que este resultado señala es multiplicar las bolsas antes
-          que refinar el modelo: México publica el Grado de Rezago Social para unos 2,470
-          municipios, y el pipeline que armó las 138 ciudades sirve tal cual para el resto.
+          Las métricas del mapa se registraron de todos modos, para comprobar si el criterio
+          disponible sigue al que interesa. Entre las catorce configuraciones de la primera ronda,
+          la correlación de rangos entre el error de bolsa y el Spearman dentro del municipio es
+          −0.14, y contra el área bajo la curva es +0.62, un signo que apunta a que minimizar el
+          error de bolsa tiende a elegir mapas peores. El ganador mejoró los tres números a la vez,
+          así que el conflicto no se materializó aquí. Queda declarado como decisión de diseño, al
+          igual que la elección multimodal de la etapa 1.
+        </p>
+      </div>
+
+      <div class="caveat">
+        <span class="etiqueta">Dónde queda el límite, después de moverlo dos veces</span>
+        <p>
+          El techo del oráculo empezó leyéndose como una propiedad de los vectores de 160 metros:
+          aun con la respuesta servida instancia por instancia, ordenar las AGEB dentro de un
+          municipio llegaba a +0.194, y de ahí salía que la palanca era el tamaño del token. El
+          contexto vecinal desmintió esa lectura, porque con la misma extracción de características
+          mirar alrededor lleva el techo a +0.239. El paso siguiente desmintió la que vino después:
+          la brecha entre el modelo y ese techo se atribuyó a falta de supervisión, y el barrido la
+          redujo de 28 puntos a 9 sin agregar una sola etiqueta.
         </p>
         <p style="margin-top: 10px;">
-          Sobre el techo absoluto la conclusión se sostiene. Un +0.239 de correlación dentro del
-          municipio ordena el territorio de forma útil para priorizar, y queda lejos de leer barrio
-          por barrio. Eso acota lo que el proyecto puede prometer, con independencia de cuánta
-          supervisión se le agregue.
+          Lo que queda es acotado y se puede nombrar con precisión. Contra el techo con contexto, el
+          mejor modelo recupera 77%, así que hay margen para más supervisión y es menor que el que
+          parecía. La etiqueta aporta 333 bolsas de cuatro números, 1,332 restricciones para 427 mil
+          instancias, y México publica el Grado de Rezago Social para unos 2,470 municipios: la
+          expansión sigue siendo una vía razonable, con un rendimiento esperado que este barrido
+          rebajó.
+        </p>
+        <p style="margin-top: 10px;">
+          Sobre el techo absoluto la conclusión se sostiene y es la que acota lo que el proyecto
+          puede prometer. Un +0.239 de correlación dentro del municipio ordena el territorio de
+          forma útil para priorizar, y queda lejos de leer barrio por barrio. Ninguna cantidad de
+          supervisión adicional cruza ese punto mientras la instancia sea un token de 160 metros
+          con su vecindad inmediata.
+        </p>
+        <p style="margin-top: 10px;">
+          La lección de procedimiento vale tanto como el número. Dos conclusiones consecutivas sobre
+          dónde estaba el límite resultaron ser propiedades de una configuración sin barrer, y las
+          dos se sostenían sobre mediciones correctas. Un techo medido acota lo que el modelo
+          alcanza; atribuir la distancia hasta él a una causa concreta exige haber descartado las
+          otras.
         </p>
       </div>
 
@@ -2328,10 +2406,11 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             <tr>
               <td>Pocas bolsas</td>
               <td>Un municipio aporta cuatro números y hay 333 en entrenamiento: 1,332 restricciones
-              para 427 mil instancias. <b>Medido, y es el cuello de botella actual:</b> el contexto
-              vecinal sube el techo del oráculo 0.045 y el modelo débilmente supervisado se queda
-              donde estaba. La mitigación es extender las bolsas hacia los cerca de 2,470 municipios
-              con Grado de Rezago Social publicado.</td>
+              para 427 mil instancias. <b>Menos apremiante de lo que parecía:</b> con la cabeza sin
+              barrer el modelo recuperaba 72% del techo y parecía hambriento de etiquetas; barrida,
+              recupera 91%. Queda 23% de margen contra el techo con contexto, y la mitigación
+              disponible es extender las bolsas hacia los cerca de 2,470 municipios con Grado de
+              Rezago Social publicado.</td>
             </tr>
           </tbody>
         </table>
@@ -2404,16 +2483,17 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         Invertir la composición lo resuelve. Prediciendo cada instancia y promediando las
         predicciones, el mapa pasa de 0.463 a 0.761 de área bajo la curva y de −0.107 a +0.165 de
         correlación dentro del municipio. Un oráculo supervisado instancia por instancia alcanza
-        +0.194 sobre las ciudades retenidas, de modo que la supervisión débil recupera el 73% de lo
-        alcanzable.
+        +0.194 sobre las ciudades retenidas, de modo que la supervisión débil recupera de entrada el
+        72% de lo alcanzable.
       </p>
       <p>
-        Dar a cada tesela el promedio de sus ocho vecinas separa a los dos modelos. El oráculo sube
-        a +0.239, ganando en 29 de 33 municipios apareados; el modelo débilmente supervisado se
-        queda en +0.140, con una diferencia de −0.001 que una moneda explica. La información del
-        vecindario existe y la supervisión débil no la extrae, así que el cuello de botella pasa a
-        ser cuántas restricciones aporta la etiqueta: 333 bolsas de cuatro números para 427 mil
-        instancias.
+        Dar a cada tesela el promedio de sus ocho vecinas sube el techo del oráculo a +0.239,
+        ganando en 29 de 33 municipios apareados, y deja la cabeza original en +0.140. Esa brecha
+        resultó ser en buena parte ajuste. La cabeza de proporciones heredó valores por defecto al
+        cambiar de familia, y barrer catorce configuraciones sobre las ciudades de entrenamiento
+        —con una sola apertura de las retenidas— la lleva a +0.182 con vecindad, 0.808 de área bajo
+        la curva y un error de bolsa que baja de 0.1126 a 0.0999. Lo recuperado del techo sin
+        contexto pasa de 72% a 91%.
       </p>
       <p>
         Y el techo acota lo que el proyecto puede prometer. Ordenar AGEB dentro de un mismo
@@ -2477,9 +2557,9 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
               Aquí se calcula por primera vez la correlación entre lo que el modelo dice de cada
               token y el grado del AGEB donde cayó. Es el resultado central del artículo.
               <b>Cerrada con dos resultados:</b> el MIL con atención no localiza y se aisló por qué,
-              y predecir la instancia para promediar después lleva el mapa a 0.761 de área bajo la
-              curva y +0.165 dentro del municipio, contra un techo de +0.194 que el contexto vecinal
-              eleva a +0.239 sin que el modelo lo siga.
+              y predecir la instancia para promediar después lleva el mapa a 0.808 de área bajo la
+              curva y +0.182 dentro del municipio una vez barridos los hiperparámetros, contra un
+              techo de +0.239 con contexto vecinal.
             </p>
             <p class="gate">→ Criterio de admisión: si el mapa no correlaciona con el rezago por AGEB, la premisa de interpretabilidad cae. <b>Se cumple</b>, con la familia de proporciones de etiqueta y no con el MIL de atención, y con una magnitud que el techo del oráculo acota.</p>
           </div>
@@ -2490,10 +2570,11 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             <p class="phase-t">Ablaciones y transferencia</p>
             <p class="phase-d">
               Barrido de las tres configuraciones de entrada y evaluación zero-shot en Brasil y
-              Colombia contra sus respectivas etiquetas desagregadas. Se le suma la dirección que
-              deja la etapa 3: multiplicar las bolsas hacia los cerca de 2,470 municipios con Grado
-              de Rezago Social publicado, porque la etapa cerró con la supervisión como cuello de
-              botella y el pipeline de las 138 ciudades sirve tal cual para el resto.
+              Colombia contra sus respectivas etiquetas desagregadas. Queda pendiente de la etapa 3
+              la ablación de modalidad sobre el mapa, que se midió para predecir el grado y nunca
+              para localizarlo. Y como vía de mayor aliento, multiplicar las bolsas hacia los cerca
+              de 2,470 municipios con Grado de Rezago Social publicado, con el rendimiento esperado
+              que el barrido rebajó.
             </p>
           </div>
         </div>
