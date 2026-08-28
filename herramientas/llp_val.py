@@ -5,7 +5,7 @@ put the weakly supervised map and the instance-supervised ceiling on the same gr
 ceiling is measured on the validation cities, and comparing the two across different sets
 of cities compares two things at once.
 
-Usage: llp_val.py [epochs] [radius] [seed] [tuned]
+Usage: llp_val.py [epochs] [radius] [seed] [tuned] [modality]
 
 With `tuned` the head standardises its input and fits with binary cross entropy, which is
 what won the sweep over the training folds. The sweep never looked at these cities: they
@@ -35,7 +35,10 @@ EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 TUNED = bool(int(sys.argv[4])) if len(sys.argv) > 4 else False
+MODALITY = sys.argv[5] if len(sys.argv) > 5 else "fused"
 PATIENCE = 8
+SENSOR = {"fused": "s2", "optical": "s2", "radar": "s1"}[MODALITY]
+FUSE = MODALITY == "fused"
 
 log = logging.getLogger("llp-val")
 
@@ -70,10 +73,13 @@ def main() -> None:
     val_cities = sorted(cities_of(partition, "val"))
     catalogue = cities_by_size(stratify=True)
 
-    train_bags = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    train_bags = load_split(train_cities, SENSOR, fuse=FUSE)
+    val_bags = load_split(val_cities, SENSOR, fuse=FUSE)
     grades = grades_of(val_cities, catalogue)
-    print(f"radius {RADIUS} · {len(train_bags)} training bags · {len(val_bags)} held", flush=True)
+    print(
+        f"{MODALITY} · radius {RADIUS} · {len(train_bags)} training bags · {len(val_bags)} held",
+        flush=True,
+    )
 
     device = (
         "cuda"
@@ -131,20 +137,23 @@ def main() -> None:
     model.load_state_dict(best_state)
     scored = evaluate_map(model, val_bags, val_links, grades, torch, device)
     per_bag = scored.pop("per_bag")
-    final = {"radius": RADIUS, "seed": SEED, "tuned": TUNED, **scored}
+    final = {"modality": MODALITY, "radius": RADIUS, "seed": SEED, "tuned": TUNED, **scored}
     print("\n===== VALIDATION =====", flush=True)
     print(
-        f"radius {RADIUS} · tuned {TUNED} · map AUROC {final['auroc_high']:.3f} · "
+        f"{MODALITY} · radius {RADIUS} · tuned {TUNED} · map AUROC {final['auroc_high']:.3f} · "
         f"within-bag {final['spearman_within']:+.3f} over {final['bags_scored']} bags · "
         f"pooled {final['spearman_pooled']:+.3f} · bag MAE {final['bag_mae']:.4f}",
         flush=True,
     )
     pd.DataFrame([final]).to_csv(
-        f"data/llp_val_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False
+        f"data/llp_val_{MODALITY}_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False
     )
     pd.DataFrame(per_bag, columns=["municipality", "rho"]).assign(
-        radius=RADIUS, seed=SEED, tuned=TUNED
-    ).to_csv(f"data/llp_val_bags_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False)
+        modality=MODALITY, radius=RADIUS, seed=SEED, tuned=TUNED
+    ).to_csv(
+        f"data/llp_val_bags_{MODALITY}_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv",
+        index=False,
+    )
 
 
 if __name__ == "__main__":
