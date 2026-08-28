@@ -698,7 +698,9 @@
           y +0.239 si a cada tesela se le da el promedio de sus vecinas. Barrer los hiperparámetros
           de la cabeza, que nunca se habían comparado con nada, lleva el mapa a +0.182 dentro del
           municipio y a 0.808 de área bajo la curva, con lo que la supervisión débil recupera el 77%
-          de lo alcanzable.
+          de lo alcanzable. La disociación reaparece entre sensores: el radar, la mejor modalidad
+          individual para predecir el grado, deja el mapa en el azar con +0.006 dentro del
+          municipio.
         </p>
         <p class="keywords">
           <b>Palabras clave</b> aprendizaje de instancias múltiples · supervisión débil · radar de
@@ -2311,6 +2313,56 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         </p>
       </div>
 
+      <h3>Qué modalidad localiza</h3>
+      <p>
+        La etapa 1 comparó las tres configuraciones de entrada para predecir el grado del municipio y
+        cerró declarando la fusión. Esa comparación nunca se repitió para la otra tarea. El modelo de
+        proporciones corrió siempre con la fusión, de modo que qué modalidad sostiene el mapa quedó
+        sin medir hasta aquí.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>14 ciudades retenidas · cabeza barrida · vecindad 480 m · 3 semillas</th><th>Spearman dentro</th><th>AUROC del mapa</th><th>Error de bolsa</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Fusión</td><td class="num">+0.181</td><td class="num">0.808</td><td class="num">0.0998</td></tr>
+            <tr><td>Óptico</td><td class="num">+0.183</td><td class="num">0.812</td><td class="num">0.1092</td></tr>
+            <tr><td>Radar</td><td class="num">+0.006</td><td class="num">0.640</td><td class="num">0.1347</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="gate-note">
+        Diferencias apareadas sobre los mismos 33 municipios. Radar contra cualquiera de las otras
+        dos cae 0.177 con p &lt; 0.0001. Fusión y óptico quedan a +0.001 con p = 0.86.
+      </p>
+      <div class="thesis">
+        <p>
+          <strong>La modalidad que mejor predice es la que no localiza.</strong> En la etapa 1 el
+          radar era la mejor de las tres individuales para ordenar municipios. Dentro del municipio
+          su mapa queda en el azar: +0.006 de Spearman y 0.640 de área bajo la curva. La disociación
+          entre predecir y localizar, que hasta aquí se había mostrado entre modelos, aparece también
+          entre sensores.
+        </p>
+      </div>
+      <p>
+        El fallo es del contenido de los vectores y no de los datos que los produjeron. Las 768
+        dimensiones del brazo de radar llegan sin valores ausentes, sin rasgos constantes y con una
+        dispersión comparable a la del brazo óptico, sobre más bolsas e instancias que este último
+        porque el radar pierde menos teselas por falta de píxeles observados. Concuerda con el
+        handicap que ya estaba medido antes de elegir el diseño: 20 por 22 metros de resolución real
+        contra los 10 de la óptica. Ordenar municipios enteros tolera esa grosería. Distinguir una
+        colonia de la contigua ocurre justo en la escala que el radar borra.
+      </p>
+      <p>
+        Fusión y óptico empatan en el mapa, así que la elección entre ambos se decide por lo que sí
+        los separa. La fusión tiene un tercio de la varianza entre semillas —0.008 de desviación en
+        el área bajo la curva contra 0.028— y un error de bolsa de 0.0998 contra 0.1092, que es el
+        criterio del que la supervisión débil dispone. El brazo de radar se gana el lugar por
+        estabilidad y por la tarea de bolsa, con un aporte al mapa que esta medición no distingue de
+        cero.
+      </p>
+
       <div class="caveat">
         <span class="etiqueta">Dónde queda el límite, después de moverlo dos veces</span>
         <p>
@@ -2351,7 +2403,9 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         La inversión entre modalidades es el resultado con contenido. En el sensor que mide geometría, el
         arreglo espacial de la señal aporta sobre su intensidad. En el sensor que mide reflectancia,
         la intensidad basta y la textura estorba. Eso concuerda con el argumento físico que justificó
-        incluir el radar, y llega desde una dirección que el diseño no forzaba.
+        incluir el radar, y llega desde una dirección que el diseño no forzaba. La etapa 3 le pone un
+        límite preciso: ese aporte del radar vive en la escala del municipio y desaparece por
+        completo dentro de él.
       </p>
       <p>
         La magnitud pide cautela, y la muestra nacional la corrigió. Con cinco ciudades la textura de
@@ -2496,6 +2550,15 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         contexto pasa de 72% a 91%.
       </p>
       <p>
+        Y la disociación entre predecir y localizar separa también a los sensores. El radar, la mejor
+        de las tres modalidades individuales para ordenar municipios en la etapa 1, deja el mapa en
+        el azar dentro del municipio: +0.006 de Spearman y 0.640 de área bajo la curva, contra +0.183
+        y 0.812 de la óptica. Sus vectores llegan sanos, así que el límite es la resolución real de
+        20 por 22 metros, que basta para ordenar municipios y borra la escala en la que una colonia
+        se distingue de la contigua. Fusión y óptica empatan en el mapa; la fusión se conserva por
+        tener un tercio de la varianza entre semillas y mejor error de bolsa.
+      </p>
+      <p>
         Y el techo acota lo que el proyecto puede prometer. Ordenar AGEB dentro de un mismo
         municipio llega a +0.239 con la respuesta servida por instancia, que ordena el territorio de
         forma útil para priorizar y queda lejos de leer barrio por barrio.
@@ -2570,11 +2633,11 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
             <p class="phase-t">Ablaciones y transferencia</p>
             <p class="phase-d">
               Barrido de las tres configuraciones de entrada y evaluación zero-shot en Brasil y
-              Colombia contra sus respectivas etiquetas desagregadas. Queda pendiente de la etapa 3
-              la ablación de modalidad sobre el mapa, que se midió para predecir el grado y nunca
-              para localizarlo. Y como vía de mayor aliento, multiplicar las bolsas hacia los cerca
-              de 2,470 municipios con Grado de Rezago Social publicado, con el rendimiento esperado
-              que el barrido rebajó.
+              Colombia contra sus respectivas etiquetas desagregadas, y antes de eso zonas
+              adicionales de México, que mantienen fija la definición de la etiqueta y cambian solo
+              la forma urbana. Como vía de mayor aliento, multiplicar las bolsas hacia los cerca de
+              2,470 municipios con Grado de Rezago Social publicado, con el rendimiento esperado que
+              el barrido rebajó.
             </p>
           </div>
         </div>
