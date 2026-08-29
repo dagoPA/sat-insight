@@ -1,0 +1,4 @@
+process 0: 1 municipalities · 11.5 GB used
+06:36:23 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 87, EPSG:32612: 29); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK cuauhtemoc08017 (1/1) 149 AGEB in 10.8 min · 11.6 GB
+END process 0: 1 done, 0 failed []

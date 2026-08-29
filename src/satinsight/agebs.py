@@ -297,6 +297,56 @@ of them adding 5,302 AGEB, among them Ocosingo with 96.6% of its territory at hi
 """
 
 
+MIN_AGEBS_EXTRA = 30
+"""Floor for the expansion beyond the 138 of the national set.
+
+The selected 138 hold 28,073 AGEB and 14.4% of them at high grade. The 2,331 municipalities
+left out hold 33,357 and 30.5%, so the sample the project has been training and measuring
+on is the well-off half of urban Mexico. Everything below thirty AGEB is a handful of
+blocks whose bag carries almost no internal order to recover; above it there are 292
+municipalities and 17,160 AGEB.
+"""
+
+
+def cities_extra(
+    min_agebs: int = MIN_AGEBS_EXTRA, root: Path = DATA_ROOT, **kwargs
+) -> dict[str, City]:
+    """Municipalities outside the national set, keyed so the existing ones never move.
+
+    The keys of `cities_by_size` are disambiguated against the selected set, which makes
+    them a function of the selection. Widening the floor to thirty AGEB introduces homonyms
+    of five cities already on disk — Cancún, La Paz, Matamoros, Tonalá and Cuauhtémoc — and
+    every one of them would come back with a suffix it did not have before. Their
+    composites are named after the old key, the partition refers to the old key, and
+    nothing would raise: the cities would quietly be downloaded again as new ground.
+
+    So the base keys are inherited whole, and only what the base does not already contain
+    gets a key of its own.
+    """
+    base = cities_by_size(root=root, stratify=True)
+    known = {city.municipality for city in base.values()}
+    wide = cities_by_size(min_agebs=min_agebs, root=root, stratify=True, **kwargs)
+    extra: dict[str, City] = {}
+    for key, city in wide.items():
+        if city.municipality in known:
+            continue
+        # a key of the wide set cannot equal a base key, because a municipality sharing a
+        # name with one of the base is a homonym there too and both come back suffixed.
+        # the guard stays anyway: the cost of being wrong is silent, and it is 12 GB.
+        if key in base or key in extra:
+            key = f"{key}{city.municipality}"
+        extra[key] = city
+    log.info("%d municipalities beyond the national set", len(extra))
+    return extra
+
+
+def catalogue_with_extra(
+    min_agebs: int = MIN_AGEBS_EXTRA, root: Path = DATA_ROOT
+) -> dict[str, City]:
+    """The national set plus the expansion, under one set of stable keys."""
+    return {**cities_by_size(root=root, stratify=True), **cities_extra(min_agebs, root=root)}
+
+
 def cities_by_size(
     min_agebs: int = MIN_AGEBS_PER_CITY,
     root: Path = DATA_ROOT,
