@@ -18,6 +18,7 @@ composite run did.
 """
 
 import logging
+import shutil
 import sys
 import time
 import warnings
@@ -34,13 +35,24 @@ from satinsight.dataset import build_city  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 from satinsight.pipeline import city_aoi, ensure_composite  # noqa: E402
 
-DISK_CEILING_GB = 30
-"""The budget the project was given. Reaching it stops the run and says so; nothing is
-deleted, because which city to drop is not a decision this script gets to make."""
+FREE_FLOOR_GB = 20
+"""What the run leaves untouched on the volume.
+
+The guard used to be a 30 GB budget for the data directory. The budget was the constraint
+while it was the binding one; with a terabyte free, stopping a multi-day run because the
+project passed an arbitrary line would throw away work for nothing. What matters is the
+volume filling up, so the guard watches free space instead. It stops and says so, and
+deletes nothing: which city to drop is not a decision this script gets to make.
+"""
 
 
 def disk_used_gb() -> float:
     return sum(f.stat().st_size for f in DATA_ROOT.rglob("*") if f.is_file()) / 1024**3
+
+
+def disk_free_gb() -> float:
+    usage = shutil.disk_usage(DATA_ROOT)
+    return usage.free / 1024**3
 
 
 def main() -> int:
@@ -57,13 +69,17 @@ def main() -> int:
         label = "run"
 
     encoder = DofaEncoder()
-    print(f"{label}: {len(keys)} municipalities · {disk_used_gb():.1f} GB used", flush=True)
+    print(
+        f"{label}: {len(keys)} municipalities · "
+        f"{disk_used_gb():.1f} GB used · {disk_free_gb():.1f} GB free",
+        flush=True,
+    )
 
     failed, done, rows = [], 0, []
     for n, key in enumerate(keys, start=1):
-        used = disk_used_gb()
-        if used >= DISK_CEILING_GB:
-            print(f"STOP: {used:.1f} GB reaches the {DISK_CEILING_GB} GB budget", flush=True)
+        free = disk_free_gb()
+        if free <= FREE_FLOOR_GB:
+            print(f"STOP: {free:.1f} GB free is under the {FREE_FLOOR_GB} GB floor", flush=True)
             break
         start = time.time()
         try:
