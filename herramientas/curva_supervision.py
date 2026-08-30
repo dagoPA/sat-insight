@@ -14,7 +14,10 @@ does not come out all comfortable by chance, and nested: the bags of a smaller N
 contained in every larger N of the same seed. Nesting removes sampling noise from the
 shape of the curve, which is the object of interest.
 
-Usage: curva_supervision.py [epochs]
+Usage: curva_supervision.py [epochs] [radius] [sizes]
+
+Radius sweeps the context sensitivity on the expanded pool. Sizes "full" runs only the
+whole-pool point, which is what the radius sensitivity needs.
 """
 
 import logging
@@ -37,10 +40,11 @@ from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
 
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-SIZES = (50, 100, 200, 400, None)  # None = every bag available
+RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
 SEEDS = (0, 1, 2)
-RADIUS, PATIENCE = 1, 8
-OUT = "data/curva_supervision.csv"
+PATIENCE = 8
+OUT = f"data/curva_supervision_r{RADIUS}.csv" if RADIUS != 1 else "data/curva_supervision.csv"
 
 log = logging.getLogger("curve")
 
@@ -156,7 +160,7 @@ def main() -> None:
             chosen = order if size is None else order[:size]
             bags = [pool[i] for i in chosen]
             scored = train_once(bags, val_bags, val_links, grades, seed, torch, device)
-            results.append({"seed": seed, "bags": len(bags), **scored})
+            results.append({"seed": seed, "bags": len(bags), "radius": RADIUS, **scored})
             log.info(
                 "seed %d · %4d bags · map AUROC %.3f · within %+.3f · bag MAE %.4f",
                 seed,

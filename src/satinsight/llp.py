@@ -162,3 +162,28 @@ def evaluate_map(model, bags, links, grades, torch, device):
         "instances": len(truths),
         "per_bag": within,
     }
+
+
+def bootstrap_within(per_bag, city_of, n_resamples: int = 2000, seed: int = 0):
+    """Clustered bootstrap of the mean within-bag correlation, resampling cities.
+
+    Municipalities of one city share ground, weather and history, so resampling them as if
+    independent understates the uncertainty. Cities are the sampling unit of the design —
+    the partition splits by city — and the bootstrap follows the design.
+
+    Takes the `per_bag` pairs of `evaluate_map` and a mapping from municipality to city;
+    returns the mean and the half-width of the 95% interval.
+    """
+    import numpy as np
+
+    by_city: dict = {}
+    for municipality, rho in per_bag:
+        by_city.setdefault(city_of[municipality], []).append(rho)
+    groups = [np.array(v) for v in by_city.values()]
+    rng = np.random.default_rng(seed)
+    means = np.empty(n_resamples)
+    for i in range(n_resamples):
+        chosen = rng.integers(0, len(groups), len(groups))
+        means[i] = float(np.concatenate([groups[j] for j in chosen]).mean())
+    low, high = np.percentile(means, [2.5, 97.5])
+    return float(np.mean([r for _, r in per_bag])), float((high - low) / 2)
