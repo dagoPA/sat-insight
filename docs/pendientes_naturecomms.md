@@ -13,20 +13,22 @@ borrando. `[~]` marca herramienta escrita y encolada; `[x]` hecho.
 - [~] **A2. Eje de granularidad de la etiqueta.** Reagregar el GRS a estado y a nacional,
       re-entrenar, medir la pérdida. Herramienta por escribir; corre sobre vectores ya
       extraídos.
-- [ ] **A3. Eje de resolución.** Re-extraer el brazo óptico degradado a 20×22 m y repetir
+- [~] **A3. Eje de resolución.** Re-extraer el brazo óptico degradado a 20×22 m y repetir
       la curva. Confirma o refuta que el fallo del radar es la resolución. Es el eje más
       caro: re-extracción completa de vectores.
 - [~] **A4. Techo del oráculo sobre el pool ampliado.** El +0.239 se midió con las 110
       ciudades; con 292 municipios más, el techo y la fracción recuperada se recalculan
       una vez para que la curva tenga denominador propio.
-- [ ] **A5. Modelo del proceso de agregación.** Peso poblacional, orden de clases y
+- [~] **A5. Modelo del proceso de agregación.** Peso poblacional, orden de clases y
       redondeo dentro de la pérdida. Capítulo metodológico; si mejora, entra a la curva
       como configuración; si no, se reporta como ablación negativa.
-- [ ] **A6. Transferencia a Brasil.** Módulo de etiquetas IBGE (aglomerados subnormais,
-      binaria), 2–3 ciudades para el circuito completo, luego ampliar. Zero-shot del
-      modelo mexicano; métrica contra su propio azar dentro de ciudad.
-- [ ] **A7. Transferencia a Colombia.** Módulo DANE (estrato 1–6 por manzana), mismas
-      condiciones que Brasil.
+- [~] **A6. Transferencia a Brasil.** Etiquetas descargadas y verificadas: 13,151
+      polígonos AGSN 2019 del IBGE, módulo `transfer.py` con columnas fijadas. Falta el
+      circuito de imagen (AOI desde las etiquetas, compuestos, vectores) y la puntuación
+      zero-shot.
+- [~] **A7. Transferencia a Colombia.** Estratificación de Bogotá descargada: estrato 1–6
+      por manzana en GPKG oficial del distrito. Mismo faltante que Brasil: el circuito de
+      imagen y la puntuación.
 - [ ] **A8. Apertura única del conjunto de prueba.** Al final, con configuración y curva
       congeladas. Decisión pendiente del usuario; véase la memoria del 28/08/2026.
 
