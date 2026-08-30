@@ -1,0 +1,211 @@
+process 0: 73 municipalities · 11.6 GB used
+OK cuauhtemoc08017 (1/73) 149 AGEB in 0.0 min · 11.6 GB
+OK manzanillo (2/73) 140 AGEB in 36.5 min · 11.7 GB
+OK chimalhuacan (3/73) 423 AGEB in 56.4 min · 12.0 GB
+OK ciudadvalles (4/73) 125 AGEB in 21.3 min · 12.1 GB
+09:29:57 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 136, EPSG:32614: 31); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK elsalto (5/73) 452 AGEB in 74.6 min · 12.5 GB
+OK xochimilco (6/73) 714 AGEB in 98.8 min · 12.9 GB
+11:49:21 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32612: 87, EPSG:32611: 31); compositing uses only EPSG:32612 so that misaligned grids are not stacked
+OK puertopenasco (7/73) 119 AGEB in 19.8 min · 13.0 GB
+OK navojoa (8/73) 110 AGEB in 30.0 min · 13.2 GB
+12:54:45 S1 scene skipped: S1A_IW_GRDH_1SDV_20200808T122506_20200808T122531_033815_03EBA8_rtc
+rasterio._err.CPLE_AppDefinedError: TIFFFillTile:Read error at row 9216, col 13824, tile 1834; got 52456 bytes, expected 857440
+
+The above exception was the direct cause of the following exception:
+
+rasterio._err.CPLE_AppDefinedError: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "rasterio/_io.pyx", line 897, in rasterio._io.DatasetReaderBase._read
+  File "rasterio/_io.pyx", line 173, in rasterio._io.io_multi_band
+  File "rasterio/_io.pyx", line 179, in rasterio._io.io_multi_band
+  File "rasterio/_err.pyx", line 325, in rasterio._err.StackChecker.exc_wrap_int
+rasterio._err.CPLE_AppDefinedError: iw-vh.rtc.tiff?st=2026-08-28T16%3A39%3A43Z&se=2026-08-29T17%3A24%3A43Z&sp=rl&sv=2025-07-05&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2026-08-29T15%3A34%3A51Z&ske=2026-09-05T15%3A34%3A51Z&sks=b&skv=2025-07-05&sig=8hBPVnYNMNrgh4wjY7tDkhhcqg0US3TRHjJg39HK3UY%3D, band 1: IReadBlock failed at X offset 19, Y offset 33: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/composite.py", line 305, in composite_s1
+    polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/raster.py", line 45, in read_window
+    data = source.read(
+           ^^^^^^^^^^^^
+  File "rasterio/_io.pyx", line 614, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 615, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 900, in rasterio._io.DatasetReaderBase._read
+rasterio.errors.RasterioIOError: Read failed. See previous exception for details.
+OK tampico (9/73) 249 AGEB in 33.2 min · 13.3 GB
+13:26:22 CPLE_AppDefined:Request for 1103426972-1106862084 failed with response_code=206
+OK santacatarina (10/73) 199 AGEB in 37.5 min · 13.5 GB
+OK doloreshidalgocunadelaindependencianacional (11/73) 103 AGEB in 23.6 min · 13.6 GB
+OK jiutepec (12/73) 318 AGEB in 67.1 min · 14.0 GB
+OK tuxpan (13/73) 96 AGEB in 16.8 min · 14.1 GB
+OK tala (14/73) 75 AGEB in 29.1 min · 14.2 GB
+16:34:00 S1 scene skipped: S1B_IW_GRDH_1SDV_20201130T122530_20201130T122555_024494_02E966_rtc
+rasterio._err.CPLE_AppDefinedError: TIFFFillTile:Read error at row 7168, col 14336, tile 835; got 0 bytes, expected 857806
+
+The above exception was the direct cause of the following exception:
+
+rasterio._err.CPLE_AppDefinedError: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "rasterio/_io.pyx", line 897, in rasterio._io.DatasetReaderBase._read
+  File "rasterio/_io.pyx", line 173, in rasterio._io.io_multi_band
+  File "rasterio/_io.pyx", line 179, in rasterio._io.io_multi_band
+  File "rasterio/_err.pyx", line 325, in rasterio._err.StackChecker.exc_wrap_int
+rasterio._err.CPLE_AppDefinedError: zZ6inRqYeqOB6TJW6oLqWn9tdQ%3D, band 1: IReadBlock failed at X offset 10, Y offset 15: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/composite.py", line 305, in composite_s1
+    polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/raster.py", line 45, in read_window
+    data = source.read(
+           ^^^^^^^^^^^^
+  File "rasterio/_io.pyx", line 614, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 615, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 900, in rasterio._io.DatasetReaderBase._read
+rasterio.errors.RasterioIOError: Read failed. See previous exception for details.
+OK lapaz15070 (15/73) 444 AGEB in 53.6 min · 14.5 GB
+OK ciudadmadero (16/73) 232 AGEB in 37.3 min · 14.7 GB
+OK sombrerete (17/73) 58 AGEB in 10.4 min · 14.7 GB
+18:11:14 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 136, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK cordoba (18/73) 124 AGEB in 53.4 min · 14.9 GB
+OK yautepec (19/73) 199 AGEB in 73.4 min · 15.3 GB
+OK metepec (20/73) 303 AGEB in 60.8 min · 15.6 GB
+20:43:08 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32616: 123, EPSG:32615: 123); compositing uses only EPSG:32616 so that misaligned grids are not stacked
+20:51:15 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32615: 31, EPSG:32616: 1); compositing uses only EPSG:32615 so that misaligned grids are not stacked
+OK kanasin (21/73) 287 AGEB in 26.7 min · 15.7 GB
+22:02:49 S1 scene skipped: S1A_IW_GRDH_1SDV_20201124T122558_20201124T122623_035390_0422A6_rtc
+rasterio._err.CPLE_AppDefinedError: TIFFFillTile:Read error at row 13312, col 13312, tile 1757; got 504600 bytes, expected 849391
+
+The above exception was the direct cause of the following exception:
+
+rasterio._err.CPLE_AppDefinedError: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "rasterio/_io.pyx", line 897, in rasterio._io.DatasetReaderBase._read
+  File "rasterio/_io.pyx", line 173, in rasterio._io.io_multi_band
+  File "rasterio/_io.pyx", line 179, in rasterio._io.io_multi_band
+  File "rasterio/_err.pyx", line 325, in rasterio._err.StackChecker.exc_wrap_int
+rasterio._err.CPLE_AppDefinedError: iw-vh.rtc.tiff?st=2026-08-29T01%3A47%3A39Z&se=2026-08-30T02%3A32%3A39Z&sp=rl&sv=2025-07-05&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2026-08-29T21%3A30%3A53Z&ske=2026-09-05T21%3A30%3A53Z&sks=b&skv=2025-07-05&sig=SOJJRvwTLVAlm3qzYZpmnQPrUqGHJDvbhbUctXESeh8%3D, band 1: IReadBlock failed at X offset 21, Y offset 31: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/composite.py", line 305, in composite_s1
+    polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/raster.py", line 45, in read_window
+    data = source.read(
+           ^^^^^^^^^^^^
+  File "rasterio/_io.pyx", line 614, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 615, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 900, in rasterio._io.DatasetReaderBase._read
+rasterio.errors.RasterioIOError: Read failed. See previous exception for details.
+OK tlaxcala (22/73) 212 AGEB in 78.5 min · 16.1 GB
+OK cortazar (23/73) 77 AGEB in 17.1 min · 16.2 GB
+OK huixquilucan (24/73) 195 AGEB in 32.5 min · 16.4 GB
+23:23:50 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32612: 59, EPSG:32613: 58); compositing uses only EPSG:32612 so that misaligned grids are not stacked
+OK buenaventura (25/73) 33 AGEB in 9.8 min · 16.4 GB
+OK sabinashidalgo (26/73) 56 AGEB in 9.6 min · 16.5 GB
+OK eloro (27/73) 56 AGEB in 5.9 min · 16.5 GB
+OK sanpedrogarzagarcia (28/73) 355 AGEB in 37.5 min · 16.7 GB
+OK lamagdalenacontreras (29/73) 366 AGEB in 33.3 min · 16.8 GB
+OK chapala (30/73) 77 AGEB in 38.5 min · 16.9 GB
+OK elota (31/73) 49 AGEB in 12.7 min · 16.9 GB
+OK apizaco (32/73) 153 AGEB in 53.5 min · 17.3 GB
+OK valparaiso (33/73) 48 AGEB in 10.3 min · 17.3 GB
+02:49:07 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32615: 116, EPSG:32614: 116); compositing uses only EPSG:32615 so that misaligned grids are not stacked
+02:55:09 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 60, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK cosamaloapandecarpio (34/73) 51 AGEB in 12.4 min · 17.3 GB
+03:31:05 S1 scene skipped: S1A_IW_GRDH_1SDV_20201209T004025_20201209T004050_035602_042A00_rtc
+rasterio._err.CPLE_AppDefinedError: TIFFFillTile:Read error at row 16896, col 18944, tile 1679; got 389225 bytes, expected 851830
+
+The above exception was the direct cause of the following exception:
+
+rasterio._err.CPLE_AppDefinedError: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "rasterio/_io.pyx", line 897, in rasterio._io.DatasetReaderBase._read
+  File "rasterio/_io.pyx", line 173, in rasterio._io.io_multi_band
+  File "rasterio/_io.pyx", line 179, in rasterio._io.io_multi_band
+  File "rasterio/_err.pyx", line 325, in rasterio._err.StackChecker.exc_wrap_int
+rasterio._err.CPLE_AppDefinedError: iw-vh.rtc.tiff?st=2026-08-29T07%3A23%3A13Z&se=2026-08-30T08%3A08%3A13Z&sp=rl&sv=2025-07-05&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2026-08-30T06%3A54%3A31Z&ske=2026-09-06T06%3A54%3A31Z&sks=b&skv=2025-07-05&sig=R9Rt4su68K6GwdkYz6D8zoHjTdp0BkdcYkx2BJ8JUJQ%3D, band 1: IReadBlock failed at X offset 29, Y offset 30: TIFFReadEncodedTile() failed.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/composite.py", line 305, in composite_s1
+    polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/raster.py", line 45, in read_window
+    data = source.read(
+           ^^^^^^^^^^^^
+  File "rasterio/_io.pyx", line 614, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 615, in rasterio._io.DatasetReaderBase.read
+  File "rasterio/_io.pyx", line 900, in rasterio._io.DatasetReaderBase._read
+rasterio.errors.RasterioIOError: Read failed. See previous exception for details.
+OK tecamachalco (35/73) 85 AGEB in 49.0 min · 17.6 GB
+OK ayala (36/73) 115 AGEB in 39.0 min · 17.7 GB
+OK cienegadeflores (37/73) 76 AGEB in 17.1 min · 17.7 GB
+04:54:51 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK atotonilcoelalto (38/73) 24 AGEB in 18.5 min · 17.9 GB
+OK tepejidelriodeocampo (39/73) 81 AGEB in 43.7 min · 18.0 GB
+06:01:16 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 62, EPSG:32613: 30); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK frontera (40/73) 146 AGEB in 31.6 min · 18.1 GB
+OK meoqui (41/73) 41 AGEB in 14.1 min · 18.2 GB
+OK venustianocarranza07106 (42/73) 21 AGEB in 5.9 min · 18.2 GB
+06:54:53 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 62, EPSG:32613: 29); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK jesusmaria (43/73) 155 AGEB in 33.0 min · 18.4 GB
+OK tultepec (44/73) 340 AGEB in 32.1 min · 18.5 GB
+08:07:20 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 61, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK medellindebravo (45/73) 123 AGEB in 30.9 min · 18.6 GB
+OK huejutladereyes (46/73) 31 AGEB in 11.7 min · 18.6 GB
+08:39:37 Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)'))': /api/stac/v1
+OK tepeapulco (47/73) 44 AGEB in 18.0 min · 18.8 GB
+09:14:24 CPLE_AppDefined:Request for 219285326-220037376 failed with response_code=0
+OK sanpedrocholula (48/73) 216 AGEB in 63.6 min · 19.0 GB
+OK nazas (49/73) 39 AGEB in 9.9 min · 19.0 GB
+OK puebloviejo (50/73) 43 AGEB in 14.6 min · 19.1 GB
+FAIL laindependencia (51/73): ValueError: laindependencia: no patch landed inside an AGEB
+OK berriozabal (52/73) 36 AGEB in 11.3 min · 19.2 GB
+OK arcelia (53/73) 37 AGEB in 8.4 min · 19.2 GB
+FAIL comalcalco (54/73): RuntimeError: comalcalco/s2: the typical pixel was composited from 6 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+11:10:06 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 59, EPSG:32614: 31); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK nochistlandemejia (55/73) 37 AGEB in 5.6 min · 19.2 GB
+OK tamazuladegordiano (56/73) 27 AGEB in 8.7 min · 19.3 GB
+11:25:04 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK teocaltiche (57/73) 34 AGEB in 9.2 min · 19.3 GB
+OK tlaltizapandezapata (58/73) 76 AGEB in 30.0 min · 19.4 GB
+11:59:18 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 73); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+12:08:32 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK abasolo (59/73) 29 AGEB in 11.3 min · 19.4 GB
+12:10:38 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 145, EPSG:32612: 73); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK guadalupeycalvo (60/73) 28 AGEB in 7.0 min · 19.5 GB
+OK salinasvictoria (61/73) 106 AGEB in 43.0 min · 19.7 GB
+OK latrinitaria (62/73) 14 AGEB in 11.9 min · 19.7 GB
+OK elcarmen (63/73) 130 AGEB in 33.6 min · 19.8 GB
+OK teloloapan (64/73) 34 AGEB in 7.9 min · 19.9 GB
+OK tlaxco (65/73) 30 AGEB in 10.9 min · 19.9 GB
+OK allende19004 (66/73) 33 AGEB in 11.8 min · 20.0 GB
+14:23:03 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 90, EPSG:32615: 61); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK santamariahuatulco (67/73) 19 AGEB in 7.7 min · 20.0 GB
+OK sanblas (68/73) 12 AGEB in 3.6 min · 20.0 GB
+OK tihuatlan (69/73) 17 AGEB in 5.9 min · 20.0 GB
+OK tulum (70/73) 31 AGEB in 5.0 min · 20.0 GB
+OK cuajimalpademorelos (71/73) 268 AGEB in 13.0 min · 20.1 GB
+14:51:59 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 72); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK charcas (72/73) 31 AGEB in 3.4 min · 20.1 GB

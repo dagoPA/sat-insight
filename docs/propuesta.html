@@ -2579,6 +2579,60 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         de densidad.
       </p>
 
+      <h2>El programa: la curva de eficiencia de la supervisión agregada</h2>
+      <p class="lead-in">
+        Casi todos los países publican estadística social agregada por municipio o distrito, y casi
+        ninguno la publica a nivel de barrio. La pregunta abierta que este proyecto puede calibrar:
+        ¿cuánto mapa fino se extrae legítimamente de un agregado grueso más imágenes satelitales?
+        México es de los pocos lugares con la verdad en los dos niveles a la vez, y ese accidente
+        del dato es la ventaja comparativa del proyecto entero.
+      </p>
+      <p>
+        El resultado titular es una curva: la fracción del techo con supervisión completa que la
+        supervisión agregada recupera, en función de cuántas bolsas hay, de qué tamaño y a qué
+        nivel se agrega la etiqueta. Se mide donde existe verdad fina y viaja a donde no existe,
+        que es exactamente el papel de Brasil y Colombia en la etapa 4: primera aplicación del
+        método, ya no demostración.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Eje de la curva</th><th>Barrido</th><th>Qué establece</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cantidad de agregados</td><td>50, 100, 200, 400 y todas las bolsas, muestreo anidado y estratificado por grado</td><td>Cuántos agregados municipales compran cuánto mapa</td></tr>
+            <tr><td>Granularidad de la etiqueta</td><td>Municipio → estado → nacional</td><td>Qué pierde una oficina de estadística por publicar más grueso</td></tr>
+            <tr><td>Resolución del sensor</td><td>Óptico nativo → óptico degradado a 20×22 m</td><td>Si el fallo del radar es la resolución, queda medido el piso físico para desagregar variables sociales</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Cada punto de la curva se entrena sobre bolsas muestreadas de las ciudades de entrenamiento
+        más la expansión, y se evalúa siempre sobre las mismas 14 ciudades retenidas, con el
+        conjunto de prueba cerrado hasta el final. El muestreo anidado —las bolsas de un punto chico
+        están contenidas en el grande de la misma semilla— saca el ruido de muestreo de la forma de
+        la curva, que es el objeto de interés.
+      </p>
+      <p>
+        Dos piezas acompañan a la curva. Un modelo del proceso de agregación, porque la etiqueta del
+        GRS es literalmente una media ponderada por población de las unidades y ningún método de
+        proporciones de etiqueta existente explota esa estructura —el peso poblacional, el orden de
+        las clases, el redondeo—: es la contribución metodológica que le pertenece a este dato de
+        forma natural. Y un benchmark congelado: los vectores del modelo fundacional, las etiquetas,
+        las particiones y el protocolo de techo y fracción recuperada, publicados juntos. Pesan unos
+        pocos gigabytes, así que cualquier laboratorio entrena una cabeza en minutos sin pipeline
+        satelital, y todo método nuevo de esta familia tiene dónde compararse contra verdad
+        terrestre fina retenida a escala nacional.
+      </p>
+      <div class="thesis">
+        <p>
+          <strong>La cantidad titular es un tipo de cambio.</strong> Con N agregados de tamaño M se
+          recupera X% del mapa que daría un censo por barrio. Ese número le dice a cualquier oficina
+          de estadística del planeta cuánto mapa puede prometer con los datos que ya publica, y
+          sigue vigente cuando el modelo que lo midió quede obsoleto.
+        </p>
+      </div>
+
       <h2>Etapas y criterios de admisión</h2>
       <p>
         El orden responde a las dependencias: cada etapa establece la condición que la siguiente
@@ -2630,14 +2684,13 @@ uv run satinsight baseline s1  # reparto 80/10/10 por ciudad</pre>
         <div class="phase">
           <div class="phase-n">Etapa 4</div>
           <div>
-            <p class="phase-t">Ablaciones y transferencia</p>
+            <p class="phase-t">La curva de eficiencia y la transferencia</p>
             <p class="phase-d">
-              Barrido de las tres configuraciones de entrada y evaluación zero-shot en Brasil y
-              Colombia contra sus respectivas etiquetas desagregadas, y antes de eso zonas
-              adicionales de México, que mantienen fija la definición de la etiqueta y cambian solo
-              la forma urbana. Como vía de mayor aliento, multiplicar las bolsas hacia los cerca de
-              2,470 municipios con Grado de Rezago Social publicado, con el rendimiento esperado que
-              el barrido rebajó.
+              La expansión más allá del conjunto nacional está descargada: 292 municipios que llevan
+              la muestra hacia la mitad rezagada del México urbano que las 138 dejaban fuera. Sobre
+              ese pool corre la curva de eficiencia de la supervisión agregada, eje por eje, con la
+              evaluación fija en las 14 ciudades retenidas. Después Brasil y Colombia como primera
+              aplicación del método calibrado, y el benchmark congelado como entregable público.
             </p>
           </div>
         </div>
