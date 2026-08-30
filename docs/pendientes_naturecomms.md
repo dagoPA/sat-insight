@@ -79,3 +79,29 @@ borrando. `[~]` marca herramienta escrita y encolada; `[x]` hecho.
 
 A1 → A4 → A2 → B1/B2 (paralelo) → A5 → A3 → A6/A7 → A8 → C todo → envío.
 A3 puede correr en paralelo desde ya porque solo compite por disco y GPU con la curva.
+
+## E. Paquete adoptado el 30/08/2026 (panel de 5 lentes + 3 jueces; prioridad por impacto, no por costo)
+
+- [~] **E1. Eficiencia de focalización.** Simular asignación de presupuesto: agregado solo
+      vs mapa vs censo; reportar el % de la brecha que el mapa cierra. Herramienta escrita,
+      encolada tras las predicciones persistidas. (Precedente: Aiken et al., Nature 2022.)
+- [~] **E2. Benchmark de incumbentes.** RWI de Meta medido bajo nuestro protocolo:
+      +0.107 ± 0.082 dentro del municipio contra +0.182 del mapa (25 municipios, bootstrap
+      agrupado). Faltan GHSL y luces nocturnas VIIRS (VIIRS pide registro en EOG).
+- [~] **E3. Replicación CONAPO.** IMU 2020 descargado: IM continuo + GM por AGEB, 50,790
+      claves que cruzan al 100%. Herramienta escrita, encolada.
+- [ ] **E4. Suite de falsificación.** Discontinuidad en fronteras municipales dentro de
+      metrópolis + batería de placebos. La pieza creativa; necesita las predicciones
+      persistidas y las geometrías de frontera.
+- [ ] **E5. Capa de incertidumbre.** Ensamble calibrado + conformal agrupado; auditoría
+      nombrada de fallos (la peor ciudad).
+- [ ] **E6. Mapa nacional urbano como entregable.** Correr el modelo final sobre todas las
+      ciudades y publicarlo con la incertidumbre de E5.
+- [ ] **E7. Recalibración test-time con un número nacional.** Pieza de método para la
+      transferencia.
+- [ ] **E8. Validación sub-AGEB con entorno urbano INEGI por manzana.**
+- [ ] **E9. Brasil y Colombia como calibraciones duales completas.** Adoptado sin límite de
+      costo: verificar renda por setor (IBGE 2022) y agregar estrato por UPZ en Bogotá para
+      medir la curva allá. Si replica, el titular sube de caso a regularidad.
+- [~] **E0. Infraestructura de predicciones.** predicciones_val.parquet + pesos del modelo
+      final por semilla, que E1, E3, E4, E5 y E6 consumen. Encolada.
