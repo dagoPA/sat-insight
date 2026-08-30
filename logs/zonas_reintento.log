@@ -62,3 +62,10 @@ OK playasderosarito (60/292) 169 AGEB in 0.0 min · 20.1 GB
 OK ciudadmadero (61/292) 232 AGEB in 0.0 min · 20.1 GB
 15:11:10 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 73); compositing uses only EPSG:32614 so that misaligned grids are not stacked
 FAIL lagosdemoreno (62/292): RuntimeError: lagosdemoreno/s2: the typical pixel was composited from 0 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+FAIL hidalgodelparral (63/292): RuntimeError: hidalgodelparral/s2: the typical pixel was composited from 6 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+OK sabinas (64/292) 122 AGEB in 0.0 min · 20.1 GB
+OK sombrerete (65/292) 58 AGEB in 0.0 min · 20.1 GB
+FAIL elmarques (66/292): RuntimeError: elmarques/s2: the typical pixel was composited from 7 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+OK matehuala (67/292) 81 AGEB in 0.0 min · 20.1 GB
+OK temixco (68/292) 239 AGEB in 0.0 min · 20.1 GB
+OK cordoba (69/292) 124 AGEB in 0.0 min · 20.1 GB

@@ -9,7 +9,11 @@ The comparison that matters is against the attention map of the weakly supervise
 which reached 0.463 of area under the curve. The gap between that and this ceiling is what
 the weak supervision is costing.
 
-Usage: oraculo.py [epochs] [radius] [seed]
+Usage: oraculo.py [epochs] [radius] [seed] [pool]
+
+Pool "expanded" trains on the 110 national training cities plus the expansion beyond the
+national set. The ceiling is the denominator of the supervision-efficiency curve, and a
+curve trained on the expanded pool needs a ceiling measured on the same pool.
 
 With a radius the ceiling is measured on instances widened with their neighbourhood, which
 answers a different question than the weakly supervised run does. If context lifts the
@@ -33,7 +37,7 @@ import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
-from satinsight.agebs import cities_by_size  # noqa: E402
+from satinsight.agebs import catalogue_with_extra, cities_by_size, cities_extra  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency, build_layer  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
@@ -42,6 +46,7 @@ from satinsight.splits import cities_of  # noqa: E402
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 6
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+POOL = sys.argv[4] if len(sys.argv) > 4 else "base"
 BATCH = 4096
 
 
@@ -132,7 +137,11 @@ def main() -> None:
     partition = pd.read_csv("data/partition.csv")
     train_cities = sorted(cities_of(partition, "train"))
     val_cities = sorted(cities_of(partition, "val"))
-    catalogue = cities_by_size(stratify=True)
+    if POOL == "expanded":
+        train_cities += sorted(cities_extra())
+        catalogue = catalogue_with_extra()
+    else:
+        catalogue = cities_by_size(stratify=True)
 
     train_bags = load_split(train_cities, "s2", fuse=True)
     val_bags = load_split(val_cities, "s2", fuse=True)
@@ -140,7 +149,9 @@ def main() -> None:
     val_truth = labelled(val_bags, grades_of(val_cities, catalogue))
     counts = np.bincount(np.concatenate(train_truth).clip(min=0), minlength=5).astype("float64")
     total_labelled = int(sum(int((g >= 0).sum()) for g in train_truth))
-    print(f"radius {RADIUS} · {total_labelled} labelled training instances", flush=True)
+    print(
+        f"{POOL} pool · radius {RADIUS} · {total_labelled} labelled training instances", flush=True
+    )
     print("grade distribution:", counts.astype(int).tolist(), flush=True)
 
     device = (
@@ -217,14 +228,15 @@ def main() -> None:
             {
                 "radius": RADIUS,
                 "seed": SEED,
+                "pool": POOL,
                 "auroc": auroc,
                 "pooled": rho,
                 "within": float(np.mean([r for _, r in within])),
             }
         ]
-    ).to_csv(f"data/oraculo_r{RADIUS}_s{SEED}.csv", index=False)
+    ).to_csv(f"data/oraculo_{POOL}_r{RADIUS}_s{SEED}.csv", index=False)
     pd.DataFrame(within, columns=["municipality", "rho"]).assign(radius=RADIUS, seed=SEED).to_csv(
-        f"data/oraculo_bags_r{RADIUS}_s{SEED}.csv", index=False
+        f"data/oraculo_bags_{POOL}_r{RADIUS}_s{SEED}.csv", index=False
     )
 
 
