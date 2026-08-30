@@ -1,0 +1,109 @@
+process 2: 73 municipalities · 11.6 GB used
+07:45:59 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 181, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK oaxacadejuarez (1/73) 334 AGEB in 87.5 min · 11.9 GB
+OK atizapandezaragoza (2/73) 571 AGEB in 70.3 min · 12.3 GB
+OK monclova (3/73) 194 AGEB in 34.0 min · 12.5 GB
+OK cuernavaca (4/73) 312 AGEB in 63.9 min · 12.8 GB
+11:42:03 Retrying (Retry(total=8, connect=None, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/sas/v1/token/sentinel1euwestrtc/sentinel1-grd-rtc
+OK miguelhidalgo (5/73) 772 AGEB in 53.8 min · 13.1 GB
+OK piedrasnegras (6/73) 135 AGEB in 21.6 min · 13.2 GB
+12:35:22 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK tepatitlandemorelos (7/73) 66 AGEB in 19.7 min · 13.3 GB
+13:06:23 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 89, EPSG:32614: 61); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK acuna (8/73) 111 AGEB in 30.3 min · 13.4 GB
+OK iztacalco (9/73) 803 AGEB in 31.9 min · 13.6 GB
+OK tizayuca (10/73) 111 AGEB in 36.8 min · 13.8 GB
+OK benitojuarez09014 (11/73) 820 AGEB in 32.1 min · 13.9 GB
+14:51:18 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32612: 146, EPSG:32611: 146); compositing uses only EPSG:32612 so that misaligned grids are not stacked
+15:03:38 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32611: 91, EPSG:32612: 30); compositing uses only EPSG:32611 so that misaligned grids are not stacked
+OK mulege (12/73) 27 AGEB in 14.5 min · 14.0 GB
+OK elmante (13/73) 90 AGEB in 23.2 min · 14.1 GB
+OK cuautla (14/73) 160 AGEB in 66.4 min · 14.4 GB
+16:43:42 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 62, EPSG:32613: 58); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK muzquiz (15/73) 40 AGEB in 11.6 min · 14.5 GB
+FAIL hidalgodelparral (16/73): RuntimeError: hidalgodelparral/s2: the typical pixel was composited from 6 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+OK matehuala (17/73) 81 AGEB in 27.7 min · 14.6 GB
+OK vallehermoso (18/73) 66 AGEB in 13.3 min · 14.7 GB
+17:32:04 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 73); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+17:40:17 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 148, EPSG:32613: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK uriangato (19/73) 156 AGEB in 12.1 min · 14.7 GB
+OK coacalcodeberriozabal (20/73) 377 AGEB in 41.6 min · 14.9 GB
+OK sanmigueldeallende (21/73) 63 AGEB in 8.6 min · 14.9 GB
+18:34:23 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 145, EPSG:32615: 144); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK salinacruz (22/73) 66 AGEB in 20.7 min · 15.0 GB
+OK xochitepec (23/73) 172 AGEB in 41.0 min · 15.2 GB
+OK ocotlan (24/73) 72 AGEB in 16.7 min · 15.3 GB
+20:16:02 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 61, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+20:21:10 CPLE_AppDefined:Request for 1171101218-1173613803 failed with response_code=206
+OK bocadelrio (25/73) 228 AGEB in 35.8 min · 15.5 GB
+20:28:41 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32616: 145, EPSG:32615: 145); compositing uses only EPSG:32616 so that misaligned grids are not stacked
+20:41:10 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32615: 31, EPSG:32616: 1); compositing uses only EPSG:32615 so that misaligned grids are not stacked
+OK progreso (26/73) 52 AGEB in 29.7 min · 15.7 GB
+OK santiagoixcuintla (27/73) 20 AGEB in 8.9 min · 15.7 GB
+OK santiago (28/73) 72 AGEB in 35.1 min · 15.9 GB
+OK sanandrescholula (29/73) 428 AGEB in 73.7 min · 16.2 GB
+22:56:04 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 73); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+23:03:05 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK cueramaro (30/73) 49 AGEB in 10.6 min · 16.3 GB
+23:24:52 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 62, EPSG:32613: 58); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK sanjuandesabinas (31/73) 70 AGEB in 23.0 min · 16.4 GB
+23:35:04 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 92, EPSG:32613: 28); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK nava (32/73) 33 AGEB in 7.8 min · 16.5 GB
+OK ojinaga (33/73) 48 AGEB in 7.0 min · 16.5 GB
+OK ometepec (34/73) 50 AGEB in 19.3 min · 16.5 GB
+OK sanjoseiturbide (35/73) 42 AGEB in 7.6 min · 16.6 GB
+00:11:27 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 73); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+00:20:36 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK purisimadelrincon (36/73) 88 AGEB in 14.4 min · 16.7 GB
+00:36:17 CPLE_AppDefined:Request for 1485715064-1487415358 failed with response_code=206
+OK miguelaleman (37/73) 44 AGEB in 11.2 min · 16.7 GB
+OK camargo (38/73) 43 AGEB in 14.2 min · 16.7 GB
+00:51:14 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 73, EPSG:32613: 71); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK petatlan (39/73) 43 AGEB in 17.8 min · 16.8 GB
+01:09:03 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 146, EPSG:32613: 145); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+01:47:10 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 146, EPSG:32613: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK tarimbaro (40/73) 233 AGEB in 66.6 min · 17.1 GB
+OK buenavista (41/73) 25 AGEB in 13.3 min · 17.1 GB
+OK sanpedro (42/73) 28 AGEB in 15.3 min · 17.3 GB
+OK jocotepec (43/73) 44 AGEB in 21.7 min · 17.4 GB
+OK labarca (44/73) 33 AGEB in 8.0 min · 17.4 GB
+OK rioverde (45/73) 55 AGEB in 22.3 min · 17.5 GB
+03:41:21 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 59, EPSG:32614: 31); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK villanueva (46/73) 32 AGEB in 8.2 min · 17.5 GB
+04:36:55 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 214, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK ixtaczoquitlan (47/73) 152 AGEB in 76.6 min · 17.8 GB
+05:08:47 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK loreto32024 (48/73) 39 AGEB in 12.1 min · 17.9 GB
+OK vicenteguerrero (49/73) 39 AGEB in 21.3 min · 17.9 GB
+OK nahuatzen (50/73) 56 AGEB in 20.0 min · 18.0 GB
+OK tonala07097 (51/73) 27 AGEB in 8.2 min · 18.1 GB
+OK pedroescobedo (52/73) 48 AGEB in 39.8 min · 18.2 GB
+OK ixtlahuacandelosmembrillos (53/73) 74 AGEB in 50.1 min · 18.5 GB
+07:42:11 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 92, EPSG:32613: 28); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK allende05003 (54/73) 48 AGEB in 12.9 min · 18.5 GB
+OK tepeaca (55/73) 87 AGEB in 57.9 min · 18.7 GB
+09:03:50 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 59, EPSG:32614: 31); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK jalpa (56/73) 36 AGEB in 23.5 min · 18.8 GB
+OK coyucadebenitez (57/73) 20 AGEB in 7.6 min · 18.8 GB
+FAIL amozoc (58/73): RuntimeError: amozoc/s2: the typical pixel was composited from 4 observations, fewer than the 8 required. Comparing cities built at different depths mixes signal with sampling noise, and validation splits precisely by city.
+09:39:55 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32613: 59, EPSG:32614: 31); compositing uses only EPSG:32613 so that misaligned grids are not stacked
+OK morelos (59/73) 57 AGEB in 13.3 min · 18.9 GB
+OK tantoyuca (60/73) 35 AGEB in 8.5 min · 19.0 GB
+10:00:58 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32612: 59, EPSG:32613: 58); compositing uses only EPSG:32612 so that misaligned grids are not stacked
+OK namiquipa (61/73) 27 AGEB in 13.0 min · 19.0 GB
+OK paracho (62/73) 23 AGEB in 10.8 min · 19.1 GB
+OK huatabampo (63/73) 31 AGEB in 7.1 min · 19.1 GB
+10:35:31 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 31, EPSG:32613: 29); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK villagonzalezortega (64/73) 22 AGEB in 14.4 min · 19.1 GB
+OK autlandenavarro (65/73) 33 AGEB in 10.8 min · 19.2 GB
+OK jiquilpan (66/73) 47 AGEB in 10.7 min · 19.2 GB
+OK guachochi (67/73) 32 AGEB in 7.3 min · 19.2 GB
+OK losreyes (68/73) 37 AGEB in 9.6 min · 19.3 GB
+OK chemax (69/73) 18 AGEB in 8.2 min · 19.3 GB
+OK atlacomulco (70/73) 48 AGEB in 73.5 min · 19.6 GB
+12:45:42 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 62, EPSG:32613: 59); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK parras (71/73) 31 AGEB in 11.2 min · 19.6 GB
+OK ocoyucan (72/73) 178 AGEB in 38.2 min · 19.7 GB
+13:33:40 the box crosses a UTM zone and scenes arrive in 2 systems (EPSG:32614: 60, EPSG:32615: 60); compositing uses only EPSG:32614 so that misaligned grids are not stacked
+OK lomabonita (73/73) 30 AGEB in 9.8 min · 19.8 GB
+END process 2: 71 done, 2 failed ['hidalgodelparral', 'amozoc']
