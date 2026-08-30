@@ -124,6 +124,7 @@ def train_once(train_bags, val_bags, val_links, grades, seed, torch, device):
                 break
 
     model.load_state_dict(best_state)
+    train_once.last_model = model
     final = evaluate_map(model, val_bags, val_links, grades, torch, device)
     final.pop("per_bag")
     return final
