@@ -1,0 +1,33 @@
+===== TARGETING =====
+        aggregate        map     oracle  gap_closed
+budget                                             
+0.05    37341.786   35428.35   75915.85      -0.050
+0.10    45952.082   59529.20   99192.40       0.255
+0.20    61966.654   89432.00  141612.00       0.345
+0.30    78338.782  117710.30  169136.10       0.434
+
+per-city median of the ratio:
+budget
+0.05    0.316
+0.10    0.488
+0.20    0.478
+0.30    0.544
+
+city-budget cells where the map loses to the aggregate: 10/56
+  comonfort @ 5%
+  comonfort @ 20%
+  comonfort @ 30%
+  ecatepecdemorelos @ 5%
+  ecatepecdemorelos @ 10%
+  ecatepecdemorelos @ 20%
+  ecatepecdemorelos @ 30%
+  papantla @ 5%
+  torreon @ 5%
+  torreon @ 20%
+
+pooled over the 8 multi-municipality cities only (where the aggregate is genuinely informative):
+budget
+0.05   -0.614
+0.10   -0.149
+0.20    0.086
+0.30    0.250

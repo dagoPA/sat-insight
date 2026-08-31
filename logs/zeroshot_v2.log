@@ -1,0 +1,23 @@
+06:33:21 dofa_base_patch16_224 loaded on mps, 768 dimensions
+06:33:22 19x12 patch grid, 5.1% of the array left over
+06:33:22 228 of 228 patches kept above 90% observed
+06:33:23 44573 tokens kept of 44688, from 228 windows
+06:33:24 44573 instances encoded into 768 dimensions
+06:33:24 bogota/s2: 44573 tokens
+06:33:25 19x12 patch grid, 5.1% of the array left over
+06:33:25 228 of 228 patches kept above 90% observed
+06:33:25 44688 tokens kept of 44688, from 228 windows
+06:33:26 44688 instances encoded into 768 dimensions
+06:33:26 bogota/s1: 44688 tokens
+OK bogota · 44573 tokens scored
+06:33:29 15x30 patch grid, 7.6% of the array left over
+06:33:29 450 of 450 patches kept above 90% observed
+06:33:30 88085 tokens kept of 88200, from 450 windows
+06:33:33 88085 instances encoded into 768 dimensions
+06:33:33 riodejaneiro/s2: 88085 tokens
+06:33:34 15x30 patch grid, 7.6% of the array left over
+06:33:34 450 of 450 patches kept above 90% observed
+06:33:34 88200 tokens kept of 88200, from 450 windows
+06:33:37 88200 instances encoded into 768 dimensions
+06:33:37 riodejaneiro/s1: 88200 tokens
+OK riodejaneiro · 88085 tokens scored

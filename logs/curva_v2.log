@@ -229,3 +229,26 @@ IndexError: arrays used as indices must be of integer (or boolean) type
 pool of 771 bags · sizes (50, 100, 200, 400, None) · seeds (0, 1, 2)
 05:22:16 seed 0 ·   50 bags · map AUROC 0.780 · within +0.156 · bag MAE 0.1348
 05:22:49 seed 0 ·  100 bags · map AUROC 0.784 · within +0.143 · bag MAE 0.1262
+05:23:48 seed 0 ·  200 bags · map AUROC 0.774 · within +0.144 · bag MAE 0.1091
+05:24:53 seed 0 ·  400 bags · map AUROC 0.757 · within +0.181 · bag MAE 0.1035
+05:27:09 seed 0 ·  771 bags · map AUROC 0.824 · within +0.242 · bag MAE 0.0977
+05:27:24 seed 1 ·   50 bags · map AUROC 0.796 · within +0.145 · bag MAE 0.1348
+05:27:38 seed 1 ·  100 bags · map AUROC 0.816 · within +0.146 · bag MAE 0.1379
+05:28:24 seed 1 ·  200 bags · map AUROC 0.772 · within +0.153 · bag MAE 0.1203
+05:29:29 seed 1 ·  400 bags · map AUROC 0.773 · within +0.166 · bag MAE 0.1076
+05:31:12 seed 1 ·  771 bags · map AUROC 0.795 · within +0.224 · bag MAE 0.0990
+05:31:28 seed 2 ·   50 bags · map AUROC 0.791 · within +0.150 · bag MAE 0.1441
+05:31:48 seed 2 ·  100 bags · map AUROC 0.777 · within +0.135 · bag MAE 0.1256
+05:32:29 seed 2 ·  200 bags · map AUROC 0.805 · within +0.156 · bag MAE 0.1158
+05:33:58 seed 2 ·  400 bags · map AUROC 0.803 · within +0.200 · bag MAE 0.0950
+05:35:58 seed 2 ·  771 bags · map AUROC 0.788 · within +0.215 · bag MAE 0.0957
+
+===== THE CURVE =====
+      auroc_high  spearman_within  bag_mae
+bags                                      
+50        0.7890           0.1502   0.1379
+100       0.7921           0.1412   0.1299
+200       0.7839           0.1511   0.1151
+400       0.7779           0.1822   0.1020
+771       0.8022           0.2270   0.0975
+ceiling with instance supervision and context: within +0.239
