@@ -107,6 +107,7 @@ def train_weighted(train_bags, weights, val_bags, val_links, grades, seed, torch
                 break
 
     model.load_state_dict(best_state)
+    train_weighted.last_model = model
     final = evaluate_map(model, val_bags, val_links, grades, torch, device)
     per_bag = final.pop("per_bag")
     return final, per_bag

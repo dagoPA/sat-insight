@@ -33,7 +33,9 @@ RESAMPLES = 2000
 
 
 def main() -> None:
-    scores = pd.read_parquet("data/predicciones_val.parquet")
+    source = sys.argv[1] if len(sys.argv) > 1 else "data/predicciones_val.parquet"
+    split = "test" if "test" in source else "val"
+    scores = pd.read_parquet(source)
     per_ageb = (
         scores.groupby(["city", "municipality", "cvegeo"], observed=True).score.mean().reset_index()
     )
@@ -43,7 +45,7 @@ def main() -> None:
     partition = pd.read_csv("data/partition.csv")
     catalogue = cities_by_size(stratify=True)
     rows = []
-    for city in sorted(cities_of(partition, "val")):
+    for city in sorted(cities_of(partition, split)):
         try:
             _, agebs = city_aoi(city, catalogue=catalogue)
         except Exception:
@@ -94,7 +96,9 @@ def main() -> None:
         "ci_high": float(high),
         "wins": int(sum(d > 0 for d in diff.values())),
     }
-    pd.DataFrame([result]).to_csv("data/incumbente_pareado.csv", index=False)
+    pd.DataFrame([result]).to_csv(
+        "data/incumbente_pareado" + ("_test.csv" if split == "test" else ".csv"), index=False
+    )
     print(
         f"ours {result['ours_within']:+.3f} · RWI {result['rwi_within']:+.3f} · "
         f"paired difference {result['difference']:+.3f} [{low:+.3f}, {high:+.3f}] · "

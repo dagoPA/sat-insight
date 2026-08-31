@@ -55,7 +55,9 @@ def reached(order: pd.DataFrame, budget: float) -> float:
 
 
 def main() -> None:
-    scores = pd.read_parquet("data/predicciones_val.parquet")
+    source = sys.argv[1] if len(sys.argv) > 1 else "data/predicciones_val.parquet"
+    split = "test" if "test" in source else "val"
+    scores = pd.read_parquet(source)
     per_ageb = (
         scores.groupby(["city", "municipality", "cvegeo"], observed=True).score.mean().reset_index()
     )
@@ -92,7 +94,7 @@ def main() -> None:
                 }
             )
     result = pd.DataFrame(rows)
-    result.to_csv("data/focalizacion.csv", index=False)
+    result.to_csv("data/focalizacion" + ("_test.csv" if split == "test" else ".csv"), index=False)
     print("===== TARGETING =====", flush=True)
     # per-city ratios explode when a city's gap is near zero; the honest figure pools
     # people first — reached people are additive, ratios of averages are not
