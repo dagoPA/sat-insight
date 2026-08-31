@@ -47,7 +47,7 @@ borrando. `[~]` marca herramienta escrita y encolada; `[x]` hecho.
       Moreno, Nuevo Casas Grandes) y 1 ValueError por revisar (La Independencia). Los de
       profundidad quedan excluidos con criterio explícito: el compuesto no alcanza las 8
       observaciones por píxel que la guarda exige.
-- [ ] **B5. MAUP y falacia ecológica.** Ya está en riesgos; el paper necesita el párrafo
+- [x] **B5. MAUP y falacia ecológica.** Ya está en riesgos; el paper necesita el párrafo
       cuantitativo: cómo cambia el Spearman dentro del municipio con el tamaño de la AGEB.
 
 ## C. Manuscrito y formato Nature Comms
@@ -90,7 +90,7 @@ A3 puede correr en paralelo desde ya porque solo compite por disco y GPU con la 
       agrupado). Faltan GHSL y luces nocturnas VIIRS (VIIRS pide registro en EOG).
 - [~] **E3. Replicación CONAPO.** IMU 2020 descargado: IM continuo + GM por AGEB, 50,790
       claves que cruzan al 100%. Herramienta escrita, encolada.
-- [ ] **E4. Suite de falsificación.** Discontinuidad en fronteras municipales dentro de
+- [~] **E4. Suite de falsificación.** Discontinuidad en fronteras municipales dentro de
       metrópolis + batería de placebos. La pieza creativa; necesita las predicciones
       persistidas y las geometrías de frontera.
 - [ ] **E5. Capa de incertidumbre.** Ensamble calibrado + conformal agrupado; auditoría
