@@ -9,7 +9,7 @@ The comparison that matters is against the attention map of the weakly supervise
 which reached 0.463 of area under the curve. The gap between that and this ceiling is what
 the weak supervision is costing.
 
-Usage: oraculo.py [epochs] [radius] [seed] [pool]
+Usage: oraculo.py [epochs] [radius] [seed] [pool] [eval_split]
 
 Pool "expanded" trains on the 110 national training cities plus the expansion beyond the
 national set. The ceiling is the denominator of the supervision-efficiency curve, and a
@@ -47,6 +47,7 @@ EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 6
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 POOL = sys.argv[4] if len(sys.argv) > 4 else "base"
+EVAL_SPLIT = sys.argv[5] if len(sys.argv) > 5 else "val"
 BATCH = 4096
 
 
@@ -136,7 +137,7 @@ def main() -> None:
 
     partition = pd.read_csv("data/partition.csv")
     train_cities = sorted(cities_of(partition, "train"))
-    val_cities = sorted(cities_of(partition, "val"))
+    val_cities = sorted(cities_of(partition, EVAL_SPLIT))
     if POOL == "expanded":
         train_cities += sorted(cities_extra())
         catalogue = catalogue_with_extra()
@@ -234,9 +235,9 @@ def main() -> None:
                 "within": float(np.mean([r for _, r in within])),
             }
         ]
-    ).to_csv(f"data/oraculo_{POOL}_r{RADIUS}_s{SEED}.csv", index=False)
+    ).to_csv(f"data/oraculo_{POOL}_r{RADIUS}_s{SEED}_{EVAL_SPLIT}.csv", index=False)
     pd.DataFrame(within, columns=["municipality", "rho"]).assign(radius=RADIUS, seed=SEED).to_csv(
-        f"data/oraculo_bags_{POOL}_r{RADIUS}_s{SEED}.csv", index=False
+        f"data/oraculo_bags_{POOL}_r{RADIUS}_s{SEED}_{EVAL_SPLIT}.csv", index=False
     )
 
 

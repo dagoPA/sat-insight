@@ -32,7 +32,9 @@ HIGH_GRADES = ("Alto", "Muy alto")
 
 
 def main() -> None:
-    scores = pd.read_parquet("data/predicciones_val.parquet")
+    source = sys.argv[1] if len(sys.argv) > 1 else "data/predicciones_val.parquet"
+    split = "test" if "test" in source else "val"
+    scores = pd.read_parquet(source)
     imu = pd.ExcelFile("data/externos/IMU_2020.xls").parse("IMU_2020")
     imu = imu.rename(columns={"CVE_AGEB": "cvegeo"})[["cvegeo", "IM_2020", "GM_2020"]]
     imu["cvegeo"] = imu.cvegeo.astype(str)
@@ -73,7 +75,9 @@ def main() -> None:
         "spearman_pooled": pooled,
         "auroc_high": auroc,
     }
-    pd.DataFrame([result]).to_csv("data/replicacion_imu.csv", index=False)
+    pd.DataFrame([result]).to_csv(
+        "data/replicacion_imu" + ("_test.csv" if split == "test" else ".csv"), index=False
+    )
     print("\n===== CONAPO REPLICATION =====", flush=True)
     print(
         f"within-municipality Spearman vs CONAPO deprivation: {mean:+.3f} ± {half:.3f} "

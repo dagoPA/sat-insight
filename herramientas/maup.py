@@ -32,7 +32,9 @@ BINS = ((1, 3), (4, 9), (10, 19), (20, 49), (50, 10_000))
 
 
 def main() -> None:
-    scores = pd.read_parquet("data/predicciones_val.parquet")
+    source = sys.argv[1] if len(sys.argv) > 1 else "data/predicciones_val.parquet"
+    split = "test" if "test" in source else "val"
+    scores = pd.read_parquet(source)
     per_ageb = (
         scores.groupby(["city", "municipality", "cvegeo"], observed=True)
         .agg(score=("score", "mean"), tokens=("score", "size"))
@@ -43,7 +45,7 @@ def main() -> None:
     partition = pd.read_csv("data/partition.csv")
     catalogue = cities_by_size(stratify=True)
     grades = {}
-    for city in sorted(cities_of(partition, "val")):
+    for city in sorted(cities_of(partition, split)):
         try:
             _, agebs = city_aoi(city, catalogue=catalogue)
             grades.update(dict(zip(agebs.cvegeo, agebs.ordinal.astype(int), strict=True)))
@@ -71,7 +73,7 @@ def main() -> None:
             }
         )
     result = pd.DataFrame(rows)
-    result.to_csv("data/maup.csv", index=False)
+    result.to_csv("data/maup" + ("_test.csv" if split == "test" else ".csv"), index=False)
     print(result.round(3).to_string(index=False), flush=True)
 
 

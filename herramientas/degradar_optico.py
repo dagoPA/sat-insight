@@ -91,7 +91,7 @@ def main() -> int:
     from satinsight.encoders import DofaEncoder
 
     partition = pd.read_csv("data/partition.csv")
-    keys = sorted(partition[partition.split.isin(["train", "val"])].ciudad)
+    keys = sorted(partition.ciudad)
     argumentos = sys.argv[1:]
     if len(argumentos) >= 2 and argumentos[0].isdigit():
         keys = keys[int(argumentos[0]) :: int(argumentos[1])]
