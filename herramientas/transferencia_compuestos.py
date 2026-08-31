@@ -2,7 +2,7 @@
 
 The imaging half of the pipeline never assumed Mexico: it works from a WGS84 box and the
 Planetary Computer STAC. What each foreign city needs is a box, and the honest source for
-it is the label layer itself — the ground the evaluation will run on.
+it is the label layer itself, the ground the evaluation will run on.
 
 Bogota's box wraps the stratified blocks. Rio's wraps its AGSN polygons: they spread
 across the whole municipality, so the box covers favelas and formal city alike, which is

@@ -148,8 +148,8 @@ def _extract(zip_path: Path, destination: Path, pattern: str | None = None) -> P
     """Unpacks a zip once, marking the result with a stamp.
 
     With `pattern` only members whose name contains it are extracted. A state package of
-    the Marco Geoestadístico weighs some 430 MB unpacked and carries fifteen layers —city
-    blocks, rural AGEB, services— of which this work uses a single one taking 3 MB.
+    the Marco Geoestadístico weighs some 430 MB unpacked and carries fifteen layers, city
+    blocks, rural AGEB, services, of which this work uses a single one taking 3 MB.
     Unpacking whole packages for 27 states would cost eleven gigabytes of layers nobody
     opens.
     """

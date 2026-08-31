@@ -39,7 +39,7 @@ def read_window(
         # in radar shadow and outside the swath; letting it pass as a number sinks the
         # median of every city whose box peeks over the edge of the scene, and a zero fill
         # would read as null backscatter, which is not true either. Integer rasters
-        # —Sentinel-2, WorldCover— keep the zero fill because they admit no NaN and their
+        # , Sentinel-2, WorldCover, keep the zero fill because they admit no NaN and their
         # zero already means outside the data.
         floating = np.issubdtype(np.dtype(source.dtypes[0]), np.floating)
         data = source.read(

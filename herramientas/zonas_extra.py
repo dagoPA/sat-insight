@@ -4,7 +4,7 @@ Usage: zonas_extra.py [index total]
 
 The selected 138 are the well-off half of urban Mexico: 14.4% of their AGEB sit at high
 grade against 30.5% of everything left out. That biases every number the project has
-produced, and it also makes the expansion the cleanest domain shift available — the label
+produced, and it also makes the expansion the cleanest domain shift available, the label
 definition, the census and the sensor all stay fixed, and only the urban form changes.
 
 Each municipality runs the whole chain: the analysis box from its AGEB, the annual median

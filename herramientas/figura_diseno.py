@@ -1,7 +1,7 @@
-"""Figure 1 of the manuscript: study design — where, what the model sees, what it produces.
+"""Figure 1 of the manuscript: study design, where, what the model sees, what it produces.
 
 Panel a: every municipality of the study on the national map, coloured by role. Panel b:
-the true-colour composite of one held-out city with its AGEB boundaries — the imagery the
+the true-colour composite of one held-out city with its AGEB boundaries, the imagery the
 model actually consumes. Panels c and d: AGEB truth and the token-level prediction for
 the same city, on one colour scale. Tapachula is the display city: median size, all five
 grades present, and a within-municipality rho close to the validation mean, so the
@@ -104,7 +104,7 @@ def main() -> None:
     fig = plt.figure(figsize=(7.2, 6.6), constrained_layout=True)
     grid_spec = fig.add_gridspec(2, 2, height_ratios=[1.15, 1])
 
-    # a — the national map
+    # a, the national map
     ax = fig.add_subplot(grid_spec[0, :])
     states = gpd.read_file("data/naturalearth/ne_10m_admin_1_states_provinces.shp")
     mexico = states[states.admin == "Mexico"]
@@ -136,7 +136,7 @@ def main() -> None:
         "a  Study municipalities and their role", loc="left", fontsize=9, fontweight="bold"
     )
 
-    # b — the imagery with AGEB boundaries
+    # b, the imagery with AGEB boundaries
     ax = fig.add_subplot(grid_spec[1, 0])
     rgb, grid = rgb_of(CITY)
     ax.imshow(rgb)
@@ -163,7 +163,7 @@ def main() -> None:
         f"b  Sentinel-2 median composite, {CITY.title()}", loc="left", fontsize=9, fontweight="bold"
     )
 
-    # c y d — truth and prediction on one scale
+    # c y d, truth and prediction on one scale
     scores = pd.read_parquet("data/predicciones_val.parquet")
     tokens = (
         scores[scores.city == CITY]

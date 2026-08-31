@@ -36,7 +36,7 @@ def reached(order: pd.DataFrame, budget: float) -> float:
     """People in high-deprivation AGEB reached by funding the top of `order`.
 
     The budget is a fraction of the city's population. The marginal AGEB is funded
-    fractionally — the whole-AGEB greedy stopped at the first overflow, which let a
+    fractionally, the whole-AGEB greedy stopped at the first overflow, which let a
     lucky coarse allocator beat the census ceiling and broke the gap's denominator.
     With fractional funding the census ordering is a true upper bound by construction.
     Ties inside an allocator are broken at random by the caller, which averages draws.
@@ -97,7 +97,7 @@ def main() -> None:
     result.to_csv("data/focalizacion" + ("_test.csv" if split == "test" else ".csv"), index=False)
     print("===== TARGETING =====", flush=True)
     # per-city ratios explode when a city's gap is near zero; the honest figure pools
-    # people first — reached people are additive, ratios of averages are not
+    # people first, reached people are additive, ratios of averages are not
     pooled = result.groupby("budget")[["aggregate", "map", "oracle"]].sum()
     pooled["gap_closed"] = (
         (pooled["map"] - pooled.aggregate_)

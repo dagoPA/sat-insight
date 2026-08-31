@@ -1,8 +1,8 @@
 """The single opening of the test set: every reported row, scored once, frozen.
 
 The fourteen test cities have never been touched. This scores them under every
-configuration the manuscript reports, with one discipline throughout: model selection —
-epochs by early stopping, hyperparameters, the choice of head — stays anchored to the
+configuration the manuscript reports, with one discipline throughout: model selection
+(epochs by early stopping, hyperparameters, the choice of head) stays anchored to the
 validation cities exactly as it was; the test cities are only ever scored. Nothing here
 may be re-run with different settings afterwards: a second opening would turn the
 confirmatory column back into a development set.
@@ -131,7 +131,7 @@ def main() -> None:
     for seed in SEEDS:
         _, _ = train_weighted(pool, weights, val_bags, val_links, val_grades, seed, torch, device)
         # train_weighted keeps no handle; rebuild scoring through its returned map on val
-        # is not what we need — so it must expose the model the same way train_once does
+        # is not what we need, so it must expose the model the same way train_once does
         model = train_weighted.last_model
         scored = score_test(model, test_bags, test_links, test_grades, torch, device)
         record({"row": "weighted", "detail": "population", "seed": seed, **scored})

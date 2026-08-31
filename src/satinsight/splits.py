@@ -169,8 +169,8 @@ def municipality_owner(table: pd.DataFrame, catalogue: dict) -> dict[str, str]:
     are later measured on it. Over the national partition there were 1,880 such AGEB.
 
     The city whose municipality key is the AGEB's own decides, which is the one the
-    catalogue names. A municipality no city claims —it enters by proximity, not by being
-    the core— goes to whichever holds most of its AGEB, and ties break by name so the
+    catalogue names. A municipality no city claims, it enters by proximity, not by being
+    the core, goes to whichever holds most of its AGEB, and ties break by name so the
     assignment does not depend on the order the files were read in.
     """
     owner = {c.municipality: clave for clave, c in catalogue.items()}

@@ -57,7 +57,7 @@ class AOI:
     ) -> "AOI":
         """Derives a box that wraps a set of polygons.
 
-        Accepts a GeoDataFrame —whose `total_bounds` it takes— or a tuple of bounds in
+        Accepts a GeoDataFrame, whose `total_bounds` it takes, or a tuple of bounds in
         WGS84 directly. The margin is given in metres and converted to degrees correcting
         longitude by the latitude of the centre, so the border is even on both axes.
 

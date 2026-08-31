@@ -1,8 +1,8 @@
 """Scores Meta's Relative Wealth Index against AGEB truth under the project's protocol.
 
 The first question of every referee in this literature: how does the map compare with the
-products one can already download? The RWI is the incumbent — global, 2.4 km, built from
-connectivity and imagery features — and the comparison that matters is within-city, which
+products one can already download? The RWI is the incumbent, global, 2.4 km, built from
+connectivity and imagery features, and the comparison that matters is within-city, which
 is where its resolution hurts and where targeting happens.
 
 Each AGEB takes the RWI of the nearest grid point (2.4 km spacing against AGEB centroids;

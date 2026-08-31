@@ -7,7 +7,7 @@ distinguishes it from its neighbours. At national granularity every bag carries 
 label and the only gradient left is the shared mean.
 
 Aggregates are computed from the full census table, population-weighted, because that is
-what the office would publish — the pool the model happens to train on does not shrink the
+what the office would publish, the pool the model happens to train on does not shrink the
 state it sits in. Evaluation never moves: the map is scored on the 14 held-out cities
 against AGEB grades, identically across granularities.
 

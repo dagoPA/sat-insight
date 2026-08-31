@@ -147,8 +147,8 @@ class DofaEncoder:
 
         `forward_features` folds the tokens into one vector before returning, so the run
         is reproduced here up to that last step. It touches only the pieces the published
-        architecture is built from —the input projection, the positional embedding, the
-        blocks and the final norm— and repeats them in the order the reference
+        architecture is built from, the input projection, the positional embedding, the
+        blocks and the final norm, and repeats them in the order the reference
         implementation does, so a checkpoint that loads at all will run through this.
 
         Each token has already attended to the rest of its window, so it carries the 2.24

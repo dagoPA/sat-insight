@@ -1,8 +1,8 @@
 """Independent same-year replication: score the map against CONAPO's urban marginacion.
 
 The GRS is one institution's reading of the 2020 census. CONAPO published a different
-index over the same census — different indicator set, different aggregation method, a
-continuous score IM_2020 and a five-level grade GM_2020 per urban AGEB — and its 50,790
+index over the same census, different indicator set, different aggregation method, a
+continuous score IM_2020 and a five-level grade GM_2020 per urban AGEB, and its 50,790
 AGEB match this project's keys exactly. A map trained on CONEVAL aggregates that also
 orders CONAPO's index within municipalities cannot be an artifact of one office's
 methodology, and the continuous index gives the correlation more resolution than five

@@ -1,7 +1,7 @@
 """Sweeps the hyperparameters the label-proportion head never had swept.
 
-Every number in that head was the first one written down. The sweeps in the history —
-entropy weight, clustering constraint, cumulative label — were run on the attention MIL,
+Every number in that head was the first one written down. The sweeps in the history (entropy
+weight, clustering constraint, cumulative label) were run on the attention MIL,
 the family that was abandoned. When the composition was inverted the new model inherited
 untouched defaults and got a single architectural ablation, the context radius.
 

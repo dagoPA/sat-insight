@@ -9,8 +9,8 @@ Conversion to decibels happens on reading, never before writing: averaging in de
 averaging in power give different results, and the decibel average is biased towards the
 low values.
 
-The file carries the grid with it —affine transform, reference system and the name of each
-band— so that reloading it recovers everything needed to cross it with polygons without
+The file carries the grid with it, affine transform, reference system and the name of each
+band, so that reloading it recovers everything needed to cross it with polygons without
 querying the catalogue again.
 """
 
@@ -36,8 +36,8 @@ def composite_path(city: str, sensor: str, root: Path = COMPOSITE_ROOT) -> Path:
 def save(bands: dict[str, np.ndarray], grid: Grid, destination: Path, **tags) -> Path:
     """Writes the bands of a composite into a GeoTIFF with its georeferencing.
 
-    Band names are kept in each band's description, and any extra metadata —scenes used,
-    orbit chosen— travels as a file tag so what it was built from can be audited later.
+    Band names are kept in each band's description, and any extra metadata, scenes used,
+    orbit chosen, travels as a file tag so what it was built from can be audited later.
     """
     if not bands:
         raise ValueError("there are no bands to save")

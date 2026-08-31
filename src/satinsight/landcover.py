@@ -61,7 +61,7 @@ def mosaic(area: AOI, grid: Grid, catalogue=None) -> np.ndarray:
     """Land cover over the city's grid, joining as many tiles as it takes.
 
     WorldCover is published in three-degree tiles and a city can touch several. Each tile
-    is read over the whole grid —whatever falls outside arrives as zero— and laid over
+    is read over the whole grid, whatever falls outside arrives as zero, and laid over
     wherever the previous one had no data.
     """
     catalogue = catalogue or open_catalogue()

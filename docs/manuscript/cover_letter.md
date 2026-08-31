@@ -1,4 +1,4 @@
-# Cover letter — Nature Communications
+# Cover letter, Nature Communications
 
 Dear Editors,
 
@@ -12,8 +12,8 @@ neighborhood detail those aggregates recover when combined with free satellite
 imagery. Mexico publishes its deprivation index at both municipal and census-tract
 level, which lets us calibrate the exchange rate between the two: models trained only on
 municipal aggregates reach 84–90% of the tract-level ordering that the same satellite
-features support under full supervision. The calibration axes are operational — how many
-aggregates, at what granularity, from which sensor — and the result is priced in policy
+features support under full supervision. The calibration axes are operational, how many
+aggregates, at what granularity, from which sensor, and the result is priced in policy
 units through a targeting simulation.
 
 Three findings extend beyond our study system. Attention-based multiple-instance
