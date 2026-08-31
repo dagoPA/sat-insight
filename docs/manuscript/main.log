@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  31 AUG 2026 11:36
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  31 AUG 2026 16:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -425,36 +425,36 @@ al/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}]
 [6]
 
 [7]
-<figures/fig1_design.pdf, id=113, 505.92409pt x 485.41301pt>
+<figures/fig1_design.pdf, id=114, 505.92409pt x 485.41301pt>
 File: figures/fig1_design.pdf Graphic file (type pdf)
 <use figures/fig1_design.pdf>
-Package pdftex.def Info: figures/fig1_design.pdf  used on input line 316.
+Package pdftex.def Info: figures/fig1_design.pdf  used on input line 337.
 (pdftex.def)             Requested size: 455.24411pt x 436.80101pt.
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig2_curve.pdf, id=114, 528.775pt x 181.87903pt>
+<figures/fig2_curve.pdf, id=115, 528.775pt x 181.87903pt>
 File: figures/fig2_curve.pdf Graphic file (type pdf)
 <use figures/fig2_curve.pdf>
-Package pdftex.def Info: figures/fig2_curve.pdf  used on input line 333.
+Package pdftex.def Info: figures/fig2_curve.pdf  used on input line 354.
 (pdftex.def)             Requested size: 455.24411pt x 156.59329pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig3_dissociation.pdf, id=115, 528.77113pt x 196.33302pt>
+<figures/fig3_dissociation.pdf, id=116, 528.77113pt x 196.33302pt>
 File: figures/fig3_dissociation.pdf Graphic file (type pdf)
 <use figures/fig3_dissociation.pdf>
-Package pdftex.def Info: figures/fig3_dissociation.pdf  used on input line 347.
+Package pdftex.def Info: figures/fig3_dissociation.pdf  used on input line 370.
 
 (pdftex.def)             Requested size: 455.24411pt x 169.03783pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig4_validation.pdf, id=116, 528.775pt x 174.65202pt>
+<figures/fig4_validation.pdf, id=117, 528.775pt x 174.65202pt>
 File: figures/fig4_validation.pdf Graphic file (type pdf)
 <use figures/fig4_validation.pdf>
-Package pdftex.def Info: figures/fig4_validation.pdf  used on input line 362.
+Package pdftex.def Info: figures/fig4_validation.pdf  used on input line 385.
 (pdftex.def)             Requested size: 455.24411pt x 150.37103pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
@@ -480,11 +480,11 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 Here is how much of TeX's memory you used:
  10536 strings out of 473190
  160443 string characters out of 5715801
- 575612 words of memory out of 5000000
+ 576114 words of memory out of 5000000
  33617 multiletter control sequences out of 15000+600000
  573327 words of font info for 67 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,968b,572s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,6n,79p,1040b,442s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><
 /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></
@@ -499,10 +499,10 @@ ive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texliv
 e/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/
 2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/local/texlive/20
 25/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb>
-Output written on main.pdf (11 pages, 2954721 bytes).
+Output written on main.pdf (11 pages, 2959219 bytes).
 PDF statistics:
- 565 PDF objects out of 1000 (max. 8388607)
- 213 compressed objects within 3 object streams
+ 568 PDF objects out of 1000 (max. 8388607)
+ 214 compressed objects within 3 object streams
  48 named destinations out of 1000 (max. 500000)
  21 words of extra memory for PDF output out of 10000 (max. 10000000)
 

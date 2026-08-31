@@ -1,0 +1,5 @@
+2811 AGEB scored · 2618 matched to IMU
+
+===== CONAPO REPLICATION =====
+within-municipality Spearman vs CONAPO deprivation: +0.257 ± 0.146 over 20 municipalities · pooled +0.388 · AUROC(GM high) 0.768
+reference: +0.182 within against the GRS grade it was trained toward
