@@ -196,3 +196,15 @@ pool of 771 bags · sizes (50, 100, 200, 400, None) · seeds (0, 1, 2)
 19:12:39 seed 2 ·   50 bags · map AUROC 0.724 · within +0.096 · bag MAE 0.1910
 19:13:03 seed 2 ·  100 bags · map AUROC 0.736 · within +0.109 · bag MAE 0.1772
 19:13:39 seed 2 ·  200 bags · map AUROC 0.761 · within +0.141 · bag MAE 0.1555
+19:14:44 seed 2 ·  400 bags · map AUROC 0.798 · within +0.160 · bag MAE 0.1387
+19:16:47 seed 2 ·  771 bags · map AUROC 0.804 · within +0.162 · bag MAE 0.1297
+
+===== THE CURVE =====
+      auroc_high  spearman_within  bag_mae
+bags                                      
+50        0.7469           0.1219   0.1848
+100       0.7683           0.1436   0.1700
+200       0.7870           0.1557   0.1505
+400       0.8025           0.1617   0.1381
+771       0.8020           0.1668   0.1289
+ceiling with instance supervision and context: within +0.239
