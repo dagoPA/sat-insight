@@ -137,8 +137,14 @@ def main() -> None:
     catalogue = catalogue_with_extra()
     train_cities = sorted(cities_of(partition, "train")) + sorted(cities_extra())
     val_cities = sorted(cities_of(partition, "val"))
-    assert not set(val_cities) & set(cities_extra()), "an expansion key collides with validation"
-    assert not set(cities_of(partition, "test")) & set(cities_extra()), "collides with test"
+    held = load_split(
+        sorted(cities_of(partition, "val")) + sorted(cities_of(partition, "test")), "s2"
+    )
+    held_muns = {b.municipality for b in held}
+    extra_muns = {c.municipality for c in cities_extra().values()}
+    assert not held_muns & extra_muns, (
+        f"expansion trains on held-out ground: {sorted(held_muns & extra_muns)}"
+    )
 
     pool = load_split(train_cities, "s2", fuse=True)
     val_bags = load_split(val_cities, "s2", fuse=True)

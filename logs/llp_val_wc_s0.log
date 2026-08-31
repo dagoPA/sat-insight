@@ -1,0 +1,97 @@
+05:05:32 138 cities with at least 150 AGEB
+05:05:32 333 bags of 110 cities · 428298 instances · median 706 per bag
+05:05:32 37 bags of 14 cities · 40114 instances · median 541 per bag
+05:05:32 already here: 11_guanajuato.zip (133.2 MB)
+05:05:32 reading 11a.shp
+05:05:33 connected mass: 88 of 126 AGEB, 38 satellites dropped
+05:05:33 Acámbaro: 88 polygons, 82 join with a label, 1 municipalities
+05:05:33 Acámbaro: 82 AGEB, box ~666x992 px @10 m
+05:05:33 already here: 07_chiapas.zip (108.8 MB)
+05:05:33 reading 07a.shp
+05:05:33 Comitán de Domínguez: 100 polygons, 100 join with a label, 2 municipalities
+05:05:33 Comitán de Domínguez: 100 AGEB, box ~1261x1162 px @10 m
+05:05:33 already here: 11_guanajuato.zip (133.2 MB)
+05:05:33 reading 11a.shp
+05:05:33 connected mass: 60 of 74 AGEB, 14 satellites dropped
+05:05:33 Comonfort: 60 polygons, 51 join with a label, 2 municipalities
+05:05:33 Comonfort: 51 AGEB, box ~417x1544 px @10 m
+05:05:33 already here: 25_sinaloa.zip (71.9 MB)
+05:05:33 reading 25a.shp
+05:05:34 connected mass: 572 of 653 AGEB, 81 satellites dropped
+05:05:34 Culiacán: 572 polygons, 529 join with a label, 2 municipalities
+05:05:34 Culiacán: 529 AGEB, box ~2479x2024 px @10 m
+05:05:34 already here: 15_mexico.zip (226.7 MB)
+05:05:34 reading 15a.shp
+05:05:34 Ecatepec de Morelos: 800 polygons, 798 join with a label, 13 municipalities
+05:05:34 Ecatepec de Morelos: 798 AGEB, box ~2439x3068 px @10 m
+05:05:34 already here: 23_quintanaroo.zip (37.9 MB)
+05:05:34 reading 23a.shp
+05:05:34 connected mass: 37 of 67 AGEB, 30 satellites dropped
+05:05:34 Felipe Carrillo Puerto: 37 polygons, 37 join with a label, 1 municipalities
+05:05:34 Felipe Carrillo Puerto: 37 AGEB, box ~523x417 px @10 m
+05:05:34 already here: 32_zacatecas.zip (74.4 MB)
+05:05:34 reading 32a.shp
+05:05:34 connected mass: 312 of 345 AGEB, 33 satellites dropped
+05:05:34 Guadalupe: 312 polygons, 288 join with a label, 3 municipalities
+05:05:34 Guadalupe: 288 AGEB, box ~1419x2120 px @10 m
+05:05:34 already here: 11_guanajuato.zip (133.2 MB)
+05:05:34 reading 11a.shp
+05:05:35 connected mass: 178 of 183 AGEB, 5 satellites dropped
+05:05:35 Guanajuato: 178 polygons, 165 join with a label, 3 municipalities
+05:05:35 Guanajuato: 165 AGEB, box ~1413x2904 px @10 m
+05:05:35 already here: 15_mexico.zip (226.7 MB)
+05:05:35 reading 15a.shp
+05:05:35 Naucalpan de Juárez: 400 polygons, 396 join with a label, 5 municipalities
+05:05:35 Naucalpan de Juárez: 396 AGEB, box ~2527x2397 px @10 m
+05:05:35 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:05:35 reading 30a.shp
+05:05:35 connected mass: 52 of 57 AGEB, 5 satellites dropped
+05:05:35 Papantla: 52 polygons, 52 join with a label, 1 municipalities
+05:05:35 Papantla: 52 AGEB, box ~791x1329 px @10 m
+05:05:35 already here: 26_sonora.zip (74.0 MB)
+05:05:35 reading 26a.shp
+05:05:36 connected mass: 239 of 291 AGEB, 52 satellites dropped
+05:05:36 San Luis Río Colorado: 239 polygons, 218 join with a label, 1 municipalities
+05:05:36 San Luis Río Colorado: 218 AGEB, box ~1340x1114 px @10 m
+05:05:36 already here: 07_chiapas.zip (108.8 MB)
+05:05:36 reading 07a.shp
+05:05:36 connected mass: 162 of 207 AGEB, 45 satellites dropped
+05:05:36 Tapachula: 162 polygons, 162 join with a label, 1 municipalities
+05:05:36 Tapachula: 162 AGEB, box ~985x1147 px @10 m
+05:05:36 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:05:36 reading 05a.shp
+05:05:36 Torreón: 355 polygons, 345 join with a label, 2 municipalities
+05:05:36 Torreón: 345 AGEB, box ~2425x1850 px @10 m
+05:05:36 already here: 24_sanluispotosi.zip (91.2 MB)
+05:05:36 reading 24a.shp
+05:05:36 connected mass: 21 of 76 AGEB, 55 satellites dropped
+05:05:36 Villa de Ramos: 21 polygons, 20 join with a label, 1 municipalities
+05:05:36 Villa de Ramos: 20 AGEB, box ~276x386 px @10 m
+worldcover · radius 1 · 333 training bags · 37 held
+05:05:56 epoch 1 · loss 0.45355 · bag MAE 0.1674 · map AUROC 0.739 · within +0.029
+05:05:59 epoch 2 · loss 0.37106 · bag MAE 0.1530 · map AUROC 0.765 · within +0.083
+05:06:02 epoch 3 · loss 0.35214 · bag MAE 0.1451 · map AUROC 0.773 · within +0.105
+05:06:04 epoch 4 · loss 0.34237 · bag MAE 0.1389 · map AUROC 0.778 · within +0.116
+05:06:07 epoch 5 · loss 0.33564 · bag MAE 0.1379 · map AUROC 0.784 · within +0.127
+05:06:10 epoch 6 · loss 0.33131 · bag MAE 0.1329 · map AUROC 0.790 · within +0.132
+05:06:12 epoch 7 · loss 0.32785 · bag MAE 0.1347 · map AUROC 0.792 · within +0.135
+05:06:15 epoch 8 · loss 0.32559 · bag MAE 0.1316 · map AUROC 0.796 · within +0.138
+05:06:18 epoch 9 · loss 0.32377 · bag MAE 0.1308 · map AUROC 0.797 · within +0.141
+05:06:20 epoch 10 · loss 0.32256 · bag MAE 0.1307 · map AUROC 0.797 · within +0.142
+05:06:23 epoch 11 · loss 0.32097 · bag MAE 0.1303 · map AUROC 0.798 · within +0.142
+05:06:26 epoch 12 · loss 0.31989 · bag MAE 0.1300 · map AUROC 0.802 · within +0.142
+05:06:28 epoch 13 · loss 0.31883 · bag MAE 0.1284 · map AUROC 0.803 · within +0.145
+05:06:31 epoch 14 · loss 0.31825 · bag MAE 0.1301 · map AUROC 0.805 · within +0.145
+05:06:34 epoch 15 · loss 0.31727 · bag MAE 0.1308 · map AUROC 0.806 · within +0.145
+05:06:37 epoch 16 · loss 0.31660 · bag MAE 0.1276 · map AUROC 0.806 · within +0.149
+05:06:39 epoch 17 · loss 0.31579 · bag MAE 0.1307 · map AUROC 0.806 · within +0.145
+05:06:42 epoch 18 · loss 0.31543 · bag MAE 0.1310 · map AUROC 0.809 · within +0.146
+05:06:45 epoch 19 · loss 0.31497 · bag MAE 0.1302 · map AUROC 0.809 · within +0.145
+05:06:47 epoch 20 · loss 0.31360 · bag MAE 0.1293 · map AUROC 0.810 · within +0.149
+05:06:50 epoch 21 · loss 0.31300 · bag MAE 0.1298 · map AUROC 0.810 · within +0.147
+05:06:53 epoch 22 · loss 0.31213 · bag MAE 0.1294 · map AUROC 0.809 · within +0.150
+05:06:56 epoch 23 · loss 0.31223 · bag MAE 0.1295 · map AUROC 0.813 · within +0.148
+05:06:58 epoch 24 · loss 0.31155 · bag MAE 0.1298 · map AUROC 0.812 · within +0.147
+
+===== VALIDATION =====
+worldcover · radius 1 · tuned True · map AUROC 0.806 · within-bag +0.149 over 34 bags · pooled +0.281 · bag MAE 0.1276

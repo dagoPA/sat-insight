@@ -325,6 +325,18 @@ def cities_extra(
     """
     base = cities_by_size(root=root, stratify=True)
     known = {city.municipality for city in base.values()}
+    # a city's box is a conurbation: its bags cover every municipality the box touches,
+    # and nine of those neighbours sat in the validation cities while also qualifying for
+    # the expansion. excluding only the seat municipality let the same ground train and
+    # evaluate. every municipality that any base city already turned into a bag is off
+    # limits, whichever split that city belongs to.
+    from satinsight.dataset import paths
+
+    bags_dir = paths(root)["bags"]
+    for key in base:
+        bag_file = bags_dir / f"{key}.parquet"
+        if bag_file.exists():
+            known |= set(pd.read_parquet(bag_file, columns=["municipio"]).municipio)
     wide = cities_by_size(min_agebs=min_agebs, root=root, stratify=True, **kwargs)
     extra: dict[str, City] = {}
     for key, city in wide.items():
