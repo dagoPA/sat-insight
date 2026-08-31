@@ -37,7 +37,13 @@ SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 TUNED = bool(int(sys.argv[4])) if len(sys.argv) > 4 else False
 MODALITY = sys.argv[5] if len(sys.argv) > 5 else "fused"
 PATIENCE = 8
-SENSOR = {"fused": "s2", "optical": "s2", "radar": "s1", "degraded": "s2deg"}[MODALITY]
+SENSOR = {
+    "fused": "s2",
+    "optical": "s2",
+    "radar": "s1",
+    "degraded": "s2deg",
+    "worldcover": "wc",
+}[MODALITY]
 FUSE = MODALITY == "fused"
 
 log = logging.getLogger("llp-val")

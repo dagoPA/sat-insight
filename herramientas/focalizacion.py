@@ -35,14 +35,23 @@ HIGH = 3  # ordinal del rezago alto
 def reached(order: pd.DataFrame, budget: float) -> float:
     """People in high-deprivation AGEB reached by funding the top of `order`.
 
-    The budget is a fraction of the city's population; AGEB are funded whole, in order,
-    until it runs out. Ties inside an allocator (every AGEB of a municipality under the
-    aggregate) are broken at random, and the caller averages over draws.
+    The budget is a fraction of the city's population. The marginal AGEB is funded
+    fractionally — the whole-AGEB greedy stopped at the first overflow, which let a
+    lucky coarse allocator beat the census ceiling and broke the gap's denominator.
+    With fractional funding the census ordering is a true upper bound by construction.
+    Ties inside an allocator are broken at random by the caller, which averages draws.
     """
     cap = order.poblacion.sum() * budget
-    cum = order.poblacion.cumsum()
-    chosen = cum <= cap
-    return float(order.loc[chosen & (order.ordinal >= HIGH), "poblacion"].sum())
+    population = order.poblacion.to_numpy(dtype="float64")
+    deprived = (order.ordinal.to_numpy() >= HIGH).astype(float)
+    cum = population.cumsum()
+    full = cum <= cap
+    total = float((population * deprived)[full].sum())
+    edge = int(full.sum())
+    if edge < len(order) and cap > (cum[edge - 1] if edge else 0.0):
+        remainder = cap - (cum[edge - 1] if edge else 0.0)
+        total += float(remainder * deprived[edge])
+    return total
 
 
 def main() -> None:
@@ -58,9 +67,6 @@ def main() -> None:
     rng = np.random.default_rng(0)
     rows = []
     for city, group in table.groupby("city", observed=True):
-        deprived_population = float(group.loc[group.ordinal >= HIGH, "poblacion"].sum())
-        if deprived_population == 0:
-            continue
         for budget in BUDGETS:
             oracle = reached(group.sort_values("ordinal", ascending=False), budget)
             map_reached = reached(group.sort_values("score", ascending=False), budget)
@@ -99,6 +105,28 @@ def main() -> None:
     print(pooled.round(3).to_string(), flush=True)
     print("\nper-city median of the ratio:", flush=True)
     print(result.groupby("budget").gap_closed.median().round(3).to_string(), flush=True)
+    # la heterogeneidad es parte del resultado: el promedio no puede esconder a las
+    # ciudades donde el mapa pierde contra el agregado
+    losses = result[result["map"] < result["aggregate"]]
+    print(
+        f"\ncity-budget cells where the map loses to the aggregate: {len(losses)}/{len(result)}",
+        flush=True,
+    )
+    for row in losses.itertuples():
+        print(f"  {row.city} @ {row.budget:.0%}", flush=True)
+    multi = pd.read_parquet("data/predicciones_val.parquet").groupby("city").municipality.nunique()
+    several = set(multi[multi > 1].index)
+    sub = result[result.city.isin(several)]
+    pooled_multi = sub.groupby("budget")[["aggregate", "map", "oracle"]].sum()
+    closed = (pooled_multi["map"] - pooled_multi["aggregate"]) / (
+        pooled_multi["oracle"] - pooled_multi["aggregate"]
+    )
+    print(
+        f"\npooled over the {len(several)} multi-municipality cities only "
+        f"(where the aggregate is genuinely informative):",
+        flush=True,
+    )
+    print(closed.round(3).to_string(), flush=True)
 
 
 if __name__ == "__main__":

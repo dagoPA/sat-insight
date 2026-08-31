@@ -1,0 +1,278 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{authblk}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\onehalfspacing
+\graphicspath{{figures/}}
+
+\title{\textbf{How much neighbourhood detail do published statistics contain?\\
+An exchange rate between aggregate social data and satellite maps}}
+\author[1]{Dagoberto Pulido Arias}
+\affil[1]{Independent researcher}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Most countries publish social statistics as administrative aggregates and
+almost none publish them at neighbourhood level. We measure how much neighbourhood
+detail those aggregates contain. Training a weakly supervised model on nothing but
+five-level deprivation grades of Mexican municipalities and free satellite imagery, and
+validating against fully held-out census-tract grades, we find that municipal aggregates
+recover 80\% of the tract-level ordering attainable with full spatial supervision
+(within-municipality $\rho$ = 0.213 of a 0.266 ceiling). One hundred aggregates already
+recover most of it; coarsening the label to state level halves it, and to one national
+figure erases it. The resulting maps close 26--41\% of the gap between aggregate-guided
+and census-guided targeting of social programmes, replicate against an independent
+institution's index ($\rho$ = 0.37), outperform the leading downloadable wealth map, and
+transfer without retraining to Bogotá ($\rho$ = 0.38 against block-level strata). Popular
+attention-based multiple-instance models fail at this task for a measurable reason we
+diagnose and fix.
+\end{abstract}
+
+\section*{Introduction}
+
+Census-quality social data is expensive, and most of the world sees it roughly once a
+decade. In between, and below the level the tables are published at, policy runs on
+aggregates: a municipal index here, a district average there. A rich line of work has
+shown that satellite imagery plus machine learning can predict such indicators across
+space~\cite{jean2016,yeh2020,chi2022,burke2021}, and global products derived from that
+idea are already used for programme targeting~\cite{chi2022,aiken2022}. But prediction
+across places and \emph{disaggregation within them} are different tasks, and the second
+one carries the policy weight: a mayor knows their municipality is poor; what they lack
+is the map of which neighbourhoods are poorest.
+
+This paper asks the disaggregation question quantitatively: \emph{how much neighbourhood
+detail does a published aggregate contain?} We treat the answer as an exchange rate ---
+so many aggregates of such a size buy so much map --- and we measure it where it can be
+measured: Mexico publishes its Social Deprivation Grade (GRS) both as a municipal
+aggregate and at census-tract level (AGEB) for 61{,}430 urban
+tracts~\cite{coneval2020}. We train only on the former and validate only on the latter,
+held out in full, on cities the model never saw.
+
+Three design choices make the measurement clean. First, supervision is genuinely weak: a
+model sees a bag of image tokens for a municipality and one label --- the shares of
+population at each deprivation grade --- and never any spatial annotation. Second, every
+comparison is scored \emph{within} municipalities, because ordering tracts across cities
+is mostly solved by knowing which city is poor, and pooled metrics flatter every method
+(pooled $\rho$ = 0.44 against 0.21 within). Third, an oracle trained on the held-out
+tract labels bounds what the frozen representation supports at all; every result is
+reported as a fraction of that ceiling, so ``how good is weak supervision'' is separated
+from ``how good are the features''.
+
+\section*{Results}
+
+\subsection*{Attention does not localize, and the reason is measurable}
+
+We first trained the standard tool for weakly supervised localization: gated-attention
+multiple-instance learning (ABMIL~\cite{ilse2018}, with the CLAM instance
+constraint~\cite{lu2021}). It predicts municipal labels well (quadratic-weighted
+$\kappa$ = 0.62) and its attention map is at chance (AUROC 0.463 for recovering
+high-deprivation tracts; Fig.~\ref{fig:dissociation}a). The diagnosis is quantitative:
+flattening the attention to near-uniform via an entropy penalty costs no bag accuracy
+(AUROC 0.899 $\to$ 0.895), so the bag task is solvable from the plain feature mean and
+no gradient ever asks the attention to point anywhere. Four ablations (ordinal and
+cumulative labels, clustering constraints, entropy sweeps) confirm the pattern.
+
+Inverting the composition fixes it. Predicting every token first and averaging the
+\emph{predictions} --- learning from label proportions (LLP~\cite{quadrianto2009}) ---
+makes the map the mechanism rather than a by-product: the same features, bags and labels
+reach AUROC 0.761. Because Mexican municipal grades are literally population-weighted
+aggregates of tract grades, the setting is LLP with known instance weights, and using
+census population as those weights improves the map further (within-municipality $\rho$
+0.213 $\to$ 0.234, bag error 0.090 $\to$ 0.087). A hyperparameter sweep --- chosen on
+training folds only, under the one signal weak supervision may legitimately monitor ---
+accounts for most of the remaining gap to the ceiling
+(Fig.~\ref{fig:dissociation}a).
+
+The sweep exposed a structural blindness worth naming. Across fourteen configurations,
+the rank correlation between bag-level error (the honest model-selection criterion) and
+map quality is $-0.14$: selecting weakly supervised models by the only metric they may
+look at is nearly blind to the quantity that matters
+(Fig.~\ref{fig:dissociation}b). This applies to any pipeline whose product is the map
+--- computational pathology included --- and it is why we release our benchmark with
+held-out instance labels.
+
+\subsection*{The exchange rate: three axes}
+
+Figure~\ref{fig:curve} shows the headline measurement on an expanded pool of 1{,}144
+municipal bags covering essentially all of urban Mexico. \textbf{Quantity}
+(Fig.~\ref{fig:curve}a): fifty aggregates buy $\rho$ = 0.15, one hundred buy 0.18, and
+the full national supply buys 0.213 --- 80\% of the 0.266 oracle ceiling. The curve's
+knee is early: most of the attainable map exists with a few hundred published numbers.
+\textbf{Granularity} (Fig.~\ref{fig:curve}b): re-labelling the same bags with state-level
+aggregates halves the map ($\rho$ = 0.119); a single national aggregate erases it
+(0.004). What a statistics office chooses to publish is, quite literally, the map its
+users can recover. \textbf{Resolution} (Fig.~\ref{fig:curve}c): destroying the optical
+resolution to the radar's 20 m by block-averaging barely hurts ($\rho$ = 0.183 $\to$
+0.172), while radar itself collapses to chance (0.006) despite being the best single
+modality for \emph{predicting} municipal grades. Content, not ground sampling distance,
+is what fails: the dissociation between predicting and localizing recurs across sensors,
+not just across models.
+
+\subsection*{External validity}
+
+Four independent checks argue the map is measurement rather than artifact
+(Fig.~\ref{fig:validation}). It outperforms the leading downloadable product --- Meta's
+Relative Wealth Index~\cite{chi2022} --- under our exact protocol ($\rho$ = 0.107
+$\pm$ 0.082 vs 0.213; Fig.~\ref{fig:validation}a), and a land-cover-plus-NDVI head with
+no learned representation reaches 0.149, so the foundation-model features carry real
+signal beyond built-up density. It replicates against an institution it never trained
+toward: CONAPO's continuous urban marginalization index, built from a different
+indicator set, correlates at $\rho$ = 0.366 $\pm$ 0.073 within municipalities ---
+higher than against the five-level training construct, as a tie-free target should be
+(Fig.~\ref{fig:validation}b). In simulated geographic targeting, allocating a fixed
+budget by the map instead of by the municipal aggregate closes 26--41\% of the gap to
+census-guided allocation, growing with budget (Fig.~\ref{fig:validation}c). And a
+border-discontinuity control finds no administrative shortcut: crossing a municipal
+border where deprivation does not change moves the map by $+0.013$
+[$-0.006, +0.247$] once neighbourhood context is computed city-wide --- an earlier
+$+0.143$ jump traced to bag-limited adjacency, our seam rather than the model's ---
+while tract borders inside municipalities are crossed smoothly ($-0.002$).
+
+\subsection*{The construct travels; a different construct does not}
+
+Applied unchanged to Bogotá, the Mexican model orders Colombia's block-level
+socioeconomic strata at $\rho$ = 0.378 (AUROC 0.732 for strata 1--2;
+Fig.~\ref{fig:transfer}). Applied to Rio de Janeiro, it detects IBGE's mapped informal
+settlements barely above chance (AUROC 0.581 among built-up tokens). The contrast is
+informative: Colombian strata measure the same construct as the GRS --- a graded
+deprivation ordering over the whole urban fabric --- while the AGSN mask delimits
+informality, a partly orthogonal notion. Weak supervision on aggregates taught the model
+a deprivation gradient, and that gradient, not a country signature, is what transfers.
+
+\subsection*{Limits}
+
+The ceiling itself is the honest limit: even with full tract labels and neighbourhood
+context, 160 m tokens support $\rho$ = 0.266 within municipalities. Agreement rises
+steeply with tract size (from 0.18 for tracts of 1--3 tokens to 0.45 for 20--49;
+Supplementary Table) --- the modifiable areal unit problem stated in units an office can
+act on. Maps at this fidelity order neighbourhoods usefully for prioritization and do
+not read individual blocks.
+
+\section*{Discussion}
+
+The exchange rate reframes a familiar technology. Rather than another demonstration that
+imagery predicts poverty, it answers the question a statistics office would actually
+ask: \emph{what resolution of publication buys what resolution of inference?} The three
+axes give the answer an operational shape --- a few hundred aggregates suffice; publish
+municipal rather than state tables; optical resolution is not the binding constraint ---
+and the targeting experiment prices it in people reached. The negative results carry
+equal weight: attention-based MIL fails here for a structural reason, aggregate-level
+validation is nearly blind to map quality, and informality is not a free by-product of a
+deprivation gradient. All three are warnings any weakly supervised mapping effort will
+meet.
+
+Mexico's dual-level publication made the calibration possible; the measured fractions
+are what travel to the majority of countries that publish only aggregates. The Bogotá
+result is the first step of that argument, and extending the dual calibration to
+Colombia's own strata is the natural next measurement.
+
+\section*{Methods}
+
+\noindent\textbf{Data.} Sentinel-2 L2A and Sentinel-1 RTC annual median composites for
+2020 over 424 Mexican cities and municipalities (10 m grid, windowed reads from
+Planetary Computer), CONEVAL GRS at municipal and AGEB level (2020 census), CONAPO IMU
+2020, ESA WorldCover 2020, Meta RWI, IBGE AGSN 2019, Bogotá block stratification.
+\textbf{Bags and instances.} A bag is a municipality; instances are 16-pixel tokens
+(160 m) encoded by a frozen DOFA foundation model~\cite{xiong2024}; both sensors are
+fused per token. Labels are the population shares at each grade threshold.
+\textbf{Model.} A two-layer head over frozen features predicts four cumulative-grade
+probabilities per token; the bag prediction is the (population-weighted) mean of token
+predictions, fit with binary cross-entropy on standardized inputs; each token's hidden
+representation is concatenated with the mean of its 8 grid neighbours (480 m).
+\textbf{Protocol.} 110 training / 14 validation / 14 test cities, stratified, no city
+split across sets; the test set remains unopened. All sweeps select on grouped training
+folds; validation cities are scored once per reported configuration; comparisons are
+paired by municipality over three seeds; intervals are city-clustered bootstraps.
+\textbf{Oracle.} The same head trained directly on tract labels bounds the
+representation. \textbf{Code and data.} Full pipeline, frozen vectors, labels, splits
+and protocol released as a benchmark.
+
+\bibliographystyle{naturemag}
+\begin{thebibliography}{10}
+\bibitem{jean2016} Jean, N. \emph{et al.} Combining satellite imagery and machine
+learning to predict poverty. \emph{Science} \textbf{353}, 790--794 (2016).
+\bibitem{yeh2020} Yeh, C. \emph{et al.} Using publicly available satellite imagery and
+deep learning to understand economic well-being in Africa. \emph{Nat. Commun.}
+\textbf{11}, 2583 (2020).
+\bibitem{chi2022} Chi, G., Fang, H., Chatterjee, S. \& Blumenstock, J. E. Microestimates
+of wealth for all low- and middle-income countries. \emph{Proc. Natl Acad. Sci. USA}
+\textbf{119}, e2113658119 (2022).
+\bibitem{burke2021} Burke, M., Driscoll, A., Lobell, D. B. \& Ermon, S. Using satellite
+imagery to understand and promote sustainable development. \emph{Science} \textbf{371},
+eabe8628 (2021).
+\bibitem{aiken2022} Aiken, E., Bellue, S., Karlan, D., Udry, C. \& Blumenstock, J. E.
+Machine learning and phone data can improve targeting of humanitarian aid.
+\emph{Nature} \textbf{603}, 864--870 (2022).
+\bibitem{coneval2020} CONEVAL. Grado de Rezago Social por AGEB urbana 2020 (2021).
+\bibitem{ilse2018} Ilse, M., Tomczak, J. M. \& Welling, M. Attention-based deep multiple
+instance learning. \emph{Proc. ICML} 2127--2136 (2018).
+\bibitem{lu2021} Lu, M. Y. \emph{et al.} Data-efficient and weakly supervised
+computational pathology on whole-slide images. \emph{Nat. Biomed. Eng.} \textbf{5},
+555--570 (2021).
+\bibitem{quadrianto2009} Quadrianto, N., Smola, A. J., Caetano, T. S. \& Le, Q. V.
+Estimating labels from label proportions. \emph{J. Mach. Learn. Res.} \textbf{10},
+2349--2374 (2009).
+\bibitem{xiong2024} Xiong, Z. \emph{et al.} Neural plasticity-inspired multimodal
+foundation model for Earth observation. \emph{arXiv:2403.15356} (2024).
+\end{thebibliography}
+
+\clearpage
+\section*{Figures}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig1_curve.pdf}
+\caption{\textbf{The exchange rate between aggregates and maps.}
+\textbf{a}, Within-municipality agreement between the weakly supervised map and held-out
+tract grades, as a function of how many municipal aggregates supervise training (nested,
+grade-stratified sampling; mean $\pm$ s.d. over three seeds; dashed line: oracle trained
+on tract labels). \textbf{b}, The same bags re-labelled with coarser aggregates.
+\textbf{c}, Sensor and resolution: block-averaging optical imagery to the radar's
+resolution barely hurts; radar collapses despite being the best predictor of municipal
+grades.}
+\label{fig:curve}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig2_dissociation.pdf}
+\caption{\textbf{Predicting is not localizing.}
+\textbf{a}, Map quality by model family on identical features, bags and labels.
+Attention-based MIL is at chance because the bag task is solvable from the feature mean;
+predicting instances and averaging predictions (label proportions) makes the map the
+mechanism. \textbf{b}, Across the hyperparameter sweep, the only criterion weak
+supervision may monitor (bag error) is nearly uncorrelated with map quality.}
+\label{fig:dissociation}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig3_validation.pdf}
+\caption{\textbf{External validity.}
+\textbf{a}, Within-municipality agreement of downloadable products and of this work,
+under one protocol. \textbf{b}, Replication against an independent institution's
+continuous index. \textbf{c}, Share of the aggregate-to-census targeting gap closed by
+allocating a fixed budget with the map (people pooled across the 14 held-out cities).}
+\label{fig:validation}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\linewidth]{fig4_transfer.pdf}
+\caption{\textbf{Zero-shot transfer.} The Mexican model, unchanged, ordering Bogotá's
+block-level strata and detecting Rio's mapped informal settlements. The deprivation
+gradient travels; informality is a different construct.}
+\label{fig:transfer}
+\end{figure}
+
+\end{document}
