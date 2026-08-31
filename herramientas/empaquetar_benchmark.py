@@ -1,4 +1,4 @@
-"""C5: packages the frozen benchmark — vectors, labels, splits, protocol — for release.
+"""C5: packages the frozen benchmark, vectors, labels, splits, protocol, for release.
 
 The citation magnet is a bundle any lab can train against in minutes with no satellite
 pipeline: the frozen foundation-model vectors per city, the bag labels, the AGEB grades

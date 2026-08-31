@@ -1,8 +1,8 @@
 """Persists per-instance scores on the validation cities, which every new analysis needs.
 
-Every training run so far evaluated and discarded its predictions. The adopted slate —
-targeting efficiency, the CONAPO replication, the border-discontinuity test, the
-uncertainty layer — all consume the same object: the score of every token of the 14
+Every training run so far evaluated and discarded its predictions. The adopted slate
+(targeting efficiency, the CONAPO replication, the border-discontinuity test, the
+uncertainty layer) all consume the same object: the score of every token of the 14
 held-out cities under the final configuration. This trains that configuration (tuned head,
 480 m context, expanded pool), saves the model weights, and writes one row per token.
 

@@ -2,7 +2,7 @@
 
 The shortcut this test hunts: a model that memorises the bag label paints every token of a
 municipality with its grade, and its map then jumps precisely where the administrative
-border runs — ground that looks the same on both sides gets different scores because the
+border runs, ground that looks the same on both sides gets different scores because the
 paperwork differs. A model that reads territory crosses the border smoothly.
 
 The design compares adjacent token pairs, 160 m apart on the grid, inside validation

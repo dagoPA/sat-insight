@@ -53,7 +53,7 @@ def agsn_of_city(city_name: str, root: Path = DATA_ROOT) -> gpd.GeoDataFrame:
 def bogota_strata(root: Path = DATA_ROOT) -> gpd.GeoDataFrame:
     """Blocks of Bogota with their stratum, in WGS84, stratum zero dropped.
 
-    Zero marks unstratified ground — institutional, industrial, unbuilt — and carries no
+    Zero marks unstratified ground, institutional, industrial, unbuilt, and carries no
     ordinal meaning, so keeping it would poison the correlation.
     """
     table = gpd.read_file(root / BOGOTA_PATH)

@@ -6,7 +6,7 @@ under them (WorldCover built fraction above a floor). Without that restriction t
 forest and the bay would pad the negatives with easy ground and flatter the number.
 
 Bogota: does the score order the stratification? Tokens join their nearest block within
-120 m — blocks only exist on urban ground, so the scope restriction is automatic — and the
+120 m, blocks only exist on urban ground, so the scope restriction is automatic, and the
 metric is Spearman against the stratum, inverted so higher means more deprived, plus AUROC
 for the deprived strata (1 and 2).
 

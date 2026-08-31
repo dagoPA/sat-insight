@@ -107,7 +107,7 @@ def transfer_diagnostics(
     measurement was taken better than what was measured.
 
     Se lee junto con `split_half_reliability` y nunca sola. Un rasgo que es puro ruido sale
-    with a low ratio —noise correlates with the city no more than with anything else— so a
+    with a low ratio, noise correlates with the city no more than with anything else, so a
     good ratio only means something in a feature that already proved it reproduces.
     """
     rows = []
@@ -139,8 +139,8 @@ def standardise_by_group(
     up centred just like the rich one. That is why it is evaluated as a declared ablation.
 
     A feature constant within a city ends up centred at zero. The distinction matters: several
-    clases de cobertura valen cero en todas las AGEB —nieve,
-    musgo, manglar tierra adentro— y convertirlas en columns enteramente nulas rompe el
+    clases de cobertura valen cero en todas las AGEB, nieve,
+    musgo, manglar tierra adentro, y convertirlas en columns enteramente nulas rompe el
     model's binning. The nulls that really are absent data, such as the texture of an AGEB
     too small, are kept so the model treats them as missing.
     """
@@ -444,7 +444,7 @@ def auroc_one_vs_rest(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]
         if target.sum() == 0 or target.sum() == len(target):
             continue
         # with a single ordered score, the evidence for class k is closeness to k. Using the
-        # raw order inverts the low classes —for them a high score means the opposite— and
+        # raw order inverts the low classes, for them a high score means the opposite, and
         # the average of the five comes out at 0.5 by cancellation, looking like chance
         # where the model separates well
         mark = scores[:, k] if scores.ndim == 2 else -np.abs(scores - k)
@@ -555,7 +555,7 @@ def evaluate_partition(
 def fuse(optical: pd.DataFrame, radar: pd.DataFrame, *, key: str = "cvegeo") -> pd.DataFrame:
     """Une las tablas de las dos modalidades en una sola, por AGEB.
 
-        The context columns —land cover, population, city, grade— come from the
+        The context columns, land cover, population, city, grade, come from the
         misma fuente en ambas y se toman una vez. Las de imagen llevan el sensor en el name,
     so they coexist without clashing.
 

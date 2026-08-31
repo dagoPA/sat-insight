@@ -6,7 +6,7 @@ change, and there is a mechanical suspect before any claim about label memorisat
 neighbours across it, at training and at scoring alike. Administrative paperwork has no
 business shaping who counts as a neighbour at inference.
 
-This loads the saved heads — no retraining — and scores every validation city as one
+This loads the saved heads, no retraining, and scores every validation city as one
 block, with the adjacency drawn over the whole city grid. The border test rerun on both
 columns separates the hypotheses: a jump that dies was our seam; a jump that survives is
 the model carrying municipal information it was never given.

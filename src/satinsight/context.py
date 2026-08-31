@@ -30,8 +30,8 @@ def adjacency(y0: np.ndarray, x0: np.ndarray, radius: int = 1) -> tuple[np.ndarr
     instance's own representation stay two distinct pieces of information.
 
     Positions come in pixels, which is how they are stored beside the instances. A bag does
-    not tile a full rectangle — tokens with too few observed pixels were dropped, and a
-    municipality is not a box — so the grid is sparse and the lookup goes through a
+    not tile a full rectangle, tokens with too few observed pixels were dropped, and a
+    municipality is not a box, so the grid is sparse and the lookup goes through a
     dictionary of occupied cells.
     """
     row = (np.asarray(y0) // STRIDE).astype(np.int64)
@@ -65,8 +65,8 @@ def build_layer(hidden: int):
     class Neighbourhood(nn.Module):
         """Concatenates each row with the mean of the rows adjacent to it.
 
-        An instance with no neighbour on the grid — an isolated token, and nine per cent of
-        AGEB hold a single one — takes its own representation as its context. Zero would
+        An instance with no neighbour on the grid, an isolated token, and nine per cent of
+        AGEB hold a single one, takes its own representation as its context. Zero would
         put those rows in a region of the space no trained instance occupies, and they are
         exactly the small AGEB whose scores the map is most likely to get wrong already.
         """

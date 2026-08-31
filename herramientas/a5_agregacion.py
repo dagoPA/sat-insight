@@ -2,14 +2,14 @@
 
 The GRS label of a municipality is a population-weighted aggregate of its AGEB, and every
 label-proportion method in the literature averages instances uniformly. The mismatch was
-measured at 0.029 of mean discrepancy on the held-out cities — real, and small against a
+measured at 0.029 of mean discrepancy on the held-out cities, real, and small against a
 bag error of 0.110. This is the experiment that says whether modelling the aggregation
 buys anything.
 
 The model changes in one place: the bag prediction becomes a weighted mean of the instance
 predictions, with each token carrying the population of its AGEB split evenly among the
 tokens of that AGEB in the bag. Population at AGEB level is public census data and is not
-the label being disaggregated — using it is the setting where instance weights are known,
+the label being disaggregated, using it is the setting where instance weights are known,
 which the label-proportions literature allows but never instantiates with real weights.
 
 Evaluation is identical to every other run: the map on the 14 held-out cities, paired

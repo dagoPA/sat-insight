@@ -1,7 +1,7 @@
 """Zero-shot scoring of the transfer cities with the Mexican model, untouched.
 
 The claim under test: what the model learned from Mexican aggregates is urban form, and
-urban form travels. Nothing is retrained and nothing is recalibrated here — the three
+urban form travels. Nothing is retrained and nothing is recalibrated here, the three
 final models score every token of Bogota and Rio exactly as they scored Guadalajara, and
 whatever ordering comes out is compared against ground the model has never heard of.
 

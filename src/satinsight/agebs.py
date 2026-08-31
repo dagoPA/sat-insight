@@ -1,8 +1,8 @@
 """Join of the urban AGEB with their Grado de Rezago Social.
 
 CONEVAL publishes the label in an Excel workbook with no geometry; INEGI publishes the
-geometry with no label. The thirteen character key —state, municipality, locality and AGEB
-concatenated— is what joins them.
+geometry with no label. The thirteen character key, state, municipality, locality and AGEB
+concatenated, is what joins them.
 
 The result of that join is the unit of analysis of phase one: a polygon with an ordinal
 class and seventeen deprivation indicators.
@@ -315,7 +315,7 @@ def cities_extra(
 
     The keys of `cities_by_size` are disambiguated against the selected set, which makes
     them a function of the selection. Widening the floor to thirty AGEB introduces homonyms
-    of five cities already on disk — Cancún, La Paz, Matamoros, Tonalá and Cuauhtémoc — and
+    of five cities already on disk, Cancún, La Paz, Matamoros, Tonalá and Cuauhtémoc, and
     every one of them would come back with a suffix it did not have before. Their
     composites are named after the old key, the partition refers to the old key, and
     nothing would raise: the cities would quietly be downloaded again as new ground.

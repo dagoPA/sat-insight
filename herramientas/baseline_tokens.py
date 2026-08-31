@@ -8,7 +8,7 @@ so the baseline has to live there too.
 Each surviving token of a city gets the WorldCover class fractions inside its 160 m window
 plus the mean and dispersion of NDVI from the same composite the encoder saw. The features
 are saved under the sensor name "wc" with an instances table identical to the optical one,
-so every training and evaluation tool of the project runs on them unchanged — same bags,
+so every training and evaluation tool of the project runs on them unchanged, same bags,
 same protocol, same head. Whatever difference appears is the representation.
 
 Usage: baseline_tokens.py [index total]

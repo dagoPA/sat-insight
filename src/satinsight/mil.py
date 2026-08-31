@@ -31,7 +31,7 @@ ATTENTION = 128
 """Width of the attention hidden layer."""
 
 DROPOUT = 0.25
-"""Applied after the projection. Bags are few —412— and instances many, so the model can
+"""Applied after the projection. Bags are few, 412, and instances many, so the model can
 memorise which municipality it is looking at long before it learns what deprivation looks
 like."""
 
@@ -97,8 +97,8 @@ def clustering_targets(weights, k: int):
     gradient that reaches the attention without passing through the bag average.
 
     The pseudo-labels are the model's own ranking, so nothing outside the bag label enters.
-    What the constraint buys is that the ranking has to be self-consistent —the instances
-    it calls evidence must actually look different from the ones it dismisses— and a
+    What the constraint buys is that the ranking has to be self-consistent, the instances
+    it calls evidence must actually look different from the ones it dismisses, and a
     ranking scattered at random cannot be.
     """
     import torch
