@@ -149,9 +149,9 @@ adjacency --- our inference seam, corrected, not the model's shortcut.
 
 Applied unchanged to Bogot\'a, the model orders Colombia's block-level socioeconomic
 strata at $\rho = 0.318$ (AUROC 0.716 for the deprived strata 1--2 over 14{,}132 tokens
-joined to blocks; Fig.~\ref{fig:transfer}). Applied to Rio de Janeiro, it detects
+joined to blocks; Fig.~\ref{fig:validation}d). Applied to Rio de Janeiro, it detects
 IBGE's mapped informal settlements barely above chance (AUROC 0.557 among built-up
-tokens). The contrast is informative rather than disappointing: Colombian strata measure
+tokens; Fig.~\ref{fig:validation}d). The contrast is informative rather than disappointing: Colombian strata measure
 the same construct as the GRS --- a graded deprivation ordering over the whole urban
 fabric --- while the AGSN mask delimits informality, a partly orthogonal notion. Weak
 supervision on aggregates taught a deprivation gradient, and the gradient, not a country
@@ -162,8 +162,8 @@ signature, is what transfers.
 The ceiling is the honest one: even with full tract labels and neighbourhood context,
 160 m tokens support $\rho = 0.251$ within municipalities --- useful for ordering
 neighbourhoods, far from reading individual blocks. Agreement depends strongly on tract
-size: $\rho = 0.18$ for tracts covered by 1--3 tokens, rising to $0.45$ at 20--49
-tokens, and falling back to $0.10$ in the two municipalities dominated by very large
+size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--49
+tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
 tracts --- the modifiable areal unit problem stated in units an office can act on.
 Ecological caution applies throughout: the model recovers where deprived tracts are, and
 tract grades are themselves aggregates over households; neither the labels nor the maps
@@ -223,6 +223,27 @@ trained on tract labels, with the same context, bounds the representation
 and Rio get the same 2020 composite protocol; tokens are scored by the three final seeds
 with Mexican standardization statistics, deliberately unadapted. Rio's evaluation is
 restricted to tokens with WorldCover built fraction $\geq 0.10$.
+\textbf{Sweep.} Fourteen configurations varied one ingredient each (learning rate
+5e-5--1e-3, hidden width 64--512, dropout 0--0.5, weight decay, loss, input
+standardization), then a combination round; standardized inputs with binary
+cross-entropy won on bag error over five grouped training folds.
+\textbf{Targeting simulation.} For each validation city and budget $q \in \{5, 10, 20,
+30\}\%$ of population, tracts are funded in the order given by each allocator ---
+municipal aggregate (ties broken at random, 200 draws), the map's tract-mean score, or
+tract truth --- with the marginal tract funded fractionally, so the truth ordering upper-bounds
+both by construction. The outcome is the population living in high or very-high grade
+tracts among those reached, pooled over cities before the gap ratio is formed.
+\textbf{RWI pairing.} Each AGEB takes the RWI value of the nearest grid point to its
+centroid; the model is averaged token-to-tract; both are scored on the 2{,}958 shared
+AGEB in the 22 municipalities with at least 20 scored tracts and more than one grade,
+and the interval is a city-clustered bootstrap of the per-municipality difference.
+\textbf{MAUP bins.} Tracts are binned by tokens contained (1--3, 4--9, 10--19, 20--49,
+$\geq$50); within-municipality correlations use municipalities with at least ten tracts
+in the bin.
+\textbf{Border test.} Adjacent token pairs (160 m apart) are classed by what their
+midpoint crosses; the excess mean absolute score jump of same-grade
+municipal-border pairs over same-tract pairs is city-bootstrapped; same-grade AGEB-border
+pairs inside one municipality are the placebo.
 \textbf{Data and code.} The full pipeline, frozen vectors, labels, splits and protocol
 are released; every figure regenerates from one canonical results file.
 
@@ -277,8 +298,15 @@ open-data portal.
 The full pipeline (MIT licence) is available at the project repository, pinned by
 \texttt{uv.lock}; each figure maps to one driver script.
 
+\section*{Author contributions}
+D.P.A. conceived the study, built the pipeline, ran the experiments and wrote the
+manuscript.
+
 \section*{Competing interests}
 The author declares no competing interests.
+
+\section*{Correspondence}
+Correspondence to D.P.A.
 
 \clearpage
 \section*{Figures}
@@ -287,9 +315,10 @@ The author declares no competing interests.
 \centering
 \includegraphics[width=\linewidth]{fig1_design.pdf}
 \caption{\textbf{Study design.}
-\textbf{a}, The 351 study municipalities: 110 training cities, the 213-municipality
-expansion toward the deprived half of urban Mexico (municipalities overlapping held-out
-ground excluded), 14 validation cities and 14 unopened test cities. \textbf{b}, What the
+\textbf{a}, The 351 study units: 110 training cities, the 213-municipality expansion
+toward the deprived half of urban Mexico (municipalities overlapping held-out ground
+excluded), 14 validation and 14 unopened test cities. A city box is a conurbation and
+typically yields several municipal bags, which is how 351 units produce 771 bags. \textbf{b}, What the
 model consumes: the 2020 Sentinel-2 median composite of Tapachula (a validation city)
 with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, What it
 produces: the token-level deprivation score from municipal aggregates alone. Tract
@@ -317,12 +346,14 @@ hurts; radar collapses.}
 \centering
 \includegraphics[width=\linewidth]{fig3_dissociation.pdf}
 \caption{\textbf{Predicting is not localizing.}
-\textbf{a}, Map quality by model family on identical features and labels (national-set
-pool for the ABMIL diagnostics). Attention pooling solves the bag task from the feature
-mean and receives no localization gradient; predicting instances and averaging
-predictions makes the map the mechanism. \textbf{b}, Across the hyperparameter sweep,
-the only criterion weak supervision may monitor is nearly uncorrelated with map
-quality.}
+\textbf{a}, Map quality by model family on identical features and labels; the first
+three bars are measured on the national-set pool, the swept bar on the expanded pool of
+Fig.~2. Attention pooling solves the bag task from the feature mean and receives no
+localization gradient; predicting instances and averaging predictions makes the map the
+mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
+folds of the national set), the only criterion weak supervision may monitor is nearly
+uncorrelated with within-municipality map quality --- and positively correlated
+($+0.62$) with the pooled AUROC it would seem to proxy.}
 \label{fig:dissociation}
 \end{figure}
 
@@ -339,14 +370,5 @@ validation cities; the map loses at the tightest budget and wins from 10\% upwar
 \label{fig:validation}
 \end{figure}
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.6\linewidth]{fig5_transfer.pdf}
-\caption{\textbf{Zero-shot transfer.} The Mexican model, unchanged and unadapted,
-ordering Bogot\'a's block strata (AUROC for strata 1--2; $n = 14{,}132$ tokens) and
-detecting Rio's mapped informal settlements among built-up tokens ($n = 34{,}331$). The
-deprivation gradient travels; informality is a different construct.}
-\label{fig:transfer}
-\end{figure}
 
 \end{document}

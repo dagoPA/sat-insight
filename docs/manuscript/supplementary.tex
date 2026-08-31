@@ -1,0 +1,80 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{setspace}
+\onehalfspacing
+\graphicspath{{figures/}}
+\renewcommand{\figurename}{Supplementary Figure}
+\renewcommand{\tablename}{Supplementary Table}
+
+\title{\textbf{Supplementary Information}\\
+\large Municipal aggregates recover ninety per cent of the neighbourhood deprivation
+ordering that their satellite features support}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.62\linewidth]{fig1_truth.pdf}
+\caption{Tract-level ground truth for Tapachula, on the colour scale of main-text
+Fig.~1c. Every token inherits the held-out GRS grade of the AGEB it falls in.}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{The supervision-efficiency curve (main-text Fig.~2a). Mean over three seeds on
+the 14 validation cities; s.d. over seeds.}
+\begin{tabular}{rcccc}
+\toprule
+Bags & Within-$\rho$ & s.d. & Map AUROC & Bag MAE\\
+\midrule
+50 & 0.150 & 0.021 & 0.789 & 0.138\\
+100 & 0.141 & 0.021 & 0.792 & 0.130\\
+200 & 0.151 & 0.022 & 0.784 & 0.115\\
+400 & 0.182 & 0.020 & 0.778 & 0.102\\
+771 & 0.227 & 0.010 & 0.802 & 0.098\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Agreement by tract size (main-text Limits). Within-municipality Spearman over
+municipalities with at least ten tracts in the bin.}
+\begin{tabular}{rrrrc}
+\toprule
+Tokens per tract & Tracts & Median population & Municipalities & Within-$\rho$\\
+\midrule
+1--3 & 567 & 211 & 15 & 0.257\\
+4--9 & 849 & 1{,}948 & 16 & 0.338\\
+10--19 & 999 & 2{,}644 & 20 & 0.352\\
+20--49 & 464 & 3{,}231 & 14 & 0.432\\
+$\geq$50 & 79 & 3{,}561 & 2 & 0.127\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Municipalities excluded from the expansion for insufficient optical depth or
+persistent acquisition errors; the guard requires eight observations per pixel and
+excludes rather than composits shallow ground.}
+\begin{tabular}{ll}
+\toprule
+Municipality & Reason\\
+\midrule
+Amozoc; Comalcalco; Hidalgo del Parral; & composite below the eight-observation\\
+Lagos de Moreno; Nuevo Casas Grandes & depth floor (optical arm)\\
+La Independencia & inconsistent tract geometry\\
+El Marqu\'es & repeated acquisition timeouts\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
