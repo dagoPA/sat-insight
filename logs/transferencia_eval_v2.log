@@ -1,0 +1,8 @@
+06:33:43 Rio de Janeiro: 778 AGSN polygons
+06:33:44 riodejaneiro: 1 WorldCover 2020_v100 tiles
+06:33:48 riodejaneiro: 100.0% of the grid classified
+06:33:49 Rio de Janeiro: 778 AGSN polygons
+rio: 88085 tokens · 34331 built · 5.5% in AGSN · AUROC 0.557
+06:33:49 Bogota: 39150 stratified blocks
+bogota: 44573 tokens · 14132 joined a block · Spearman vs stratum +0.318 · AUROC(estrato 1-2) 0.716
+done

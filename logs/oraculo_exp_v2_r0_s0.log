@@ -1,0 +1,1678 @@
+05:36:00 138 cities with at least 150 AGEB
+05:36:00 430 cities with at least 30 AGEB
+05:36:00 213 municipalities beyond the national set
+05:36:00 138 cities with at least 150 AGEB
+05:36:00 138 cities with at least 150 AGEB
+05:36:01 430 cities with at least 30 AGEB
+05:36:01 213 municipalities beyond the national set
+05:36:01 aguascalientes: 803 instances without a counterpart dropped
+05:36:01 champoton: 21 instances without a counterpart dropped
+05:36:04 morelia: 103 instances without a counterpart dropped
+05:36:04 patzcuaro: 53 instances without a counterpart dropped
+05:36:04 santodomingotehuantepec: 117 instances without a counterpart dropped
+05:36:05 trancoso: 2 instances without a counterpart dropped
+05:36:05 zacapu: 67 instances without a counterpart dropped
+05:36:06 acuna: 167 instances without a counterpart dropped
+05:36:06 angostura: 5 instances without a counterpart dropped
+05:36:06 arandas: 18 instances without a counterpart dropped
+05:36:06 ascension: 20 instances without a counterpart dropped
+05:36:06 atotonilcoelalto: 13 instances without a counterpart dropped
+05:36:06 ayotlan: 7 instances without a counterpart dropped
+05:36:06 bocoyna: 4 instances without a counterpart dropped
+05:36:06 buenaventura: 16 instances without a counterpart dropped
+05:36:06 campeche: 177 instances without a counterpart dropped
+05:36:06 no bags for comalcalco
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/comalcalco_s2.parquet'
+05:36:06 cosamaloapandecarpio: 42 instances without a counterpart dropped
+05:36:06 encarnaciondediaz: 6 instances without a counterpart dropped
+05:36:07 generalpanfilonatera: 1 instances without a counterpart dropped
+05:36:07 no bags for hidalgodelparral
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/hidalgodelparral_s2.parquet'
+05:36:07 jalostotitlan: 2 instances without a counterpart dropped
+05:36:07 no bags for lagosdemoreno
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/lagosdemoreno_s2.parquet'
+05:36:07 no bags for laindependencia
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/laindependencia_s2.parquet'
+05:36:07 loreto32024: 2 instances without a counterpart dropped
+05:36:07 mulege: 4 instances without a counterpart dropped
+05:36:07 namiquipa: 60 instances without a counterpart dropped
+05:36:07 no bags for nuevocasasgrandes
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/nuevocasasgrandes_s2.parquet'
+05:36:07 ojocaliente: 5 instances without a counterpart dropped
+05:36:07 parras: 30 instances without a counterpart dropped
+05:36:07 progreso: 301 instances without a counterpart dropped
+05:36:07 puruandiro: 30 instances without a counterpart dropped
+05:36:08 salvadoralvarado: 65 instances without a counterpart dropped
+05:36:08 sanjuandeloslagos: 20 instances without a counterpart dropped
+05:36:08 sanmiguelelalto: 16 instances without a counterpart dropped
+05:36:08 teocaltiche: 11 instances without a counterpart dropped
+05:36:08 tepatitlandemorelos: 49 instances without a counterpart dropped
+05:36:08 no bags for villadetututepec
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 88, in load_city
+    vectors = np.hstack([vectors[keep], other_vectors[np.array(rows)[keep]]])
+                         ~~~~~~~^^^^^^
+IndexError: arrays used as indices must be of integer (or boolean) type
+05:36:08 villagonzalezortega: 5 instances without a counterpart dropped
+05:36:08 villahidalgo: 7 instances without a counterpart dropped
+05:36:09 771 bags of 317 cities · 630704 instances · median 380 per bag
+05:36:09 villaderamos: 1 instances without a counterpart dropped
+05:36:09 37 bags of 14 cities · 40113 instances · median 541 per bag
+05:36:09 already here: 12_guerrero.zip (125.7 MB)
+05:36:09 reading 12a.shp
+05:36:10 connected mass: 532 of 542 AGEB, 10 satellites dropped
+05:36:10 Acapulco de Juárez: 532 polygons, 527 join with a label, 2 municipalities
+05:36:10 Acapulco de Juárez: 527 AGEB, box ~3305x3304 px @10 m
+05:36:10 already here: 26_sonora.zip (74.0 MB)
+05:36:10 reading 26a.shp
+05:36:10 Agua Prieta: 179 polygons, 168 join with a label, 1 municipalities
+05:36:10 Agua Prieta: 168 AGEB, box ~1064x897 px @10 m
+05:36:10 already here: 01_aguascalientes.zip (36.8 MB)
+05:36:10 reading 01a.shp
+05:36:10 connected mass: 376 of 378 AGEB, 2 satellites dropped
+05:36:10 Aguascalientes: 376 polygons, 375 join with a label, 3 municipalities
+05:36:10 Aguascalientes: 375 AGEB, box ~2389x2692 px @10 m
+05:36:10 already here: 25_sinaloa.zip (71.9 MB)
+05:36:10 reading 25a.shp
+05:36:11 connected mass: 252 of 374 AGEB, 122 satellites dropped
+05:36:11 Ahome: 252 polygons, 230 join with a label, 1 municipalities
+05:36:11 Ahome: 230 AGEB, box ~1345x1412 px @10 m
+05:36:11 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:11 reading 28a.shp
+05:36:11 connected mass: 264 of 275 AGEB, 11 satellites dropped
+05:36:11 Altamira: 264 polygons, 254 join with a label, 3 municipalities
+05:36:11 Altamira: 254 AGEB, box ~1813x1937 px @10 m
+05:36:11 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:11 reading 09a.shp
+05:36:11 Álvaro Obregón: 763 polygons, 758 join with a label, 10 municipalities
+05:36:11 Álvaro Obregón: 758 AGEB, box ~2387x2431 px @10 m
+05:36:11 already here: 11_guanajuato.zip (133.2 MB)
+05:36:11 reading 11a.shp
+05:36:11 connected mass: 75 of 109 AGEB, 34 satellites dropped
+05:36:11 Apaseo el Alto: 75 polygons, 69 join with a label, 2 municipalities
+05:36:11 Apaseo el Alto: 69 AGEB, box ~710x896 px @10 m
+05:36:11 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:11 reading 16a.shp
+05:36:12 Apatzingán: 75 polygons, 74 join with a label, 1 municipalities
+05:36:12 Apatzingán: 74 AGEB, box ~984x873 px @10 m
+05:36:12 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:12 reading 19a.shp
+05:36:12 Apodaca: 717 polygons, 683 join with a label, 9 municipalities
+05:36:12 Apodaca: 683 AGEB, box ~2574x3140 px @10 m
+05:36:12 already here: 21_puebla.zip (152.1 MB)
+05:36:12 reading 21a.shp
+05:36:12 Atlixco: 77 polygons, 77 join with a label, 5 municipalities
+05:36:12 Atlixco: 77 AGEB, box ~2590x1604 px @10 m
+05:36:12 already here: 18_nayarit.zip (46.4 MB)
+05:36:12 reading 18a.shp
+05:36:13 connected mass: 178 of 181 AGEB, 3 satellites dropped
+05:36:13 Bahía de Banderas: 178 polygons, 169 join with a label, 1 municipalities
+05:36:13 Bahía de Banderas: 169 AGEB, box ~2210x1609 px @10 m
+05:36:13 already here: 23_quintanaroo.zip (37.9 MB)
+05:36:13 reading 23a.shp
+05:36:13 Benito Juárez: 448 polygons, 426 join with a label, 2 municipalities
+05:36:13 Benito Juárez: 426 AGEB, box ~2446x2263 px @10 m
+05:36:13 already here: 26_sonora.zip (74.0 MB)
+05:36:13 reading 26a.shp
+05:36:13 connected mass: 107 of 133 AGEB, 26 satellites dropped
+05:36:13 Caborca: 107 polygons, 91 join with a label, 1 municipalities
+05:36:13 Caborca: 91 AGEB, box ~1168x836 px @10 m
+05:36:13 already here: 26_sonora.zip (74.0 MB)
+05:36:13 reading 26a.shp
+05:36:13 connected mass: 317 of 334 AGEB, 17 satellites dropped
+05:36:13 Cajeme: 317 polygons, 294 join with a label, 1 municipalities
+05:36:13 Cajeme: 294 AGEB, box ~1421x1880 px @10 m
+05:36:13 already here: 27_tabasco.zip (50.9 MB)
+05:36:13 reading 27a.shp
+05:36:13 connected mass: 64 of 79 AGEB, 15 satellites dropped
+05:36:13 Cárdenas: 64 polygons, 64 join with a label, 3 municipalities
+05:36:13 Cárdenas: 64 AGEB, box ~3369x1899 px @10 m
+05:36:13 already here: 11_guanajuato.zip (133.2 MB)
+05:36:13 reading 11a.shp
+05:36:14 Celaya: 368 polygons, 346 join with a label, 5 municipalities
+05:36:14 Celaya: 346 AGEB, box ~2698x3069 px @10 m
+05:36:14 already here: 27_tabasco.zip (50.9 MB)
+05:36:14 reading 27a.shp
+05:36:14 connected mass: 183 of 190 AGEB, 7 satellites dropped
+05:36:14 Centro: 183 polygons, 183 join with a label, 2 municipalities
+05:36:14 Centro: 183 AGEB, box ~2498x4036 px @10 m
+05:36:14 already here: 04_campeche.zip (33.7 MB)
+05:36:14 reading 04a.shp
+05:36:14 connected mass: 28 of 57 AGEB, 29 satellites dropped
+05:36:14 Champotón: 28 polygons, 28 join with a label, 1 municipalities
+05:36:14 Champotón: 28 AGEB, box ~460x671 px @10 m
+05:36:14 already here: 08_chihuahua.zip (105.8 MB)
+05:36:14 reading 08a.shp
+05:36:14 Chihuahua: 700 polygons, 675 join with a label, 3 municipalities
+05:36:14 Chihuahua: 675 AGEB, box ~2901x2704 px @10 m
+05:36:14 already here: 12_guerrero.zip (125.7 MB)
+05:36:14 reading 12a.shp
+05:36:15 connected mass: 64 of 68 AGEB, 4 satellites dropped
+05:36:15 Chilapa de Álvarez: 64 polygons, 64 join with a label, 2 municipalities
+05:36:15 Chilapa de Álvarez: 64 AGEB, box ~1167x1357 px @10 m
+05:36:15 already here: 12_guerrero.zip (125.7 MB)
+05:36:15 reading 12a.shp
+05:36:15 connected mass: 235 of 246 AGEB, 11 satellites dropped
+05:36:15 Chilpancingo de los Bravo: 235 polygons, 228 join with a label, 2 municipalities
+05:36:15 Chilpancingo de los Bravo: 228 AGEB, box ~1030x2882 px @10 m
+05:36:15 already here: 18_nayarit.zip (46.4 MB)
+05:36:15 reading 18a.shp
+05:36:15 connected mass: 21 of 62 AGEB, 41 satellites dropped
+05:36:15 Compostela: 21 polygons, 21 join with a label, 1 municipalities
+05:36:15 Compostela: 21 AGEB, box ~432x411 px @10 m
+05:36:15 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:15 reading 09a.shp
+05:36:16 Coyoacán: 972 polygons, 970 join with a label, 11 municipalities
+05:36:16 Coyoacán: 970 AGEB, box ~2455x1964 px @10 m
+05:36:16 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:16 reading 09a.shp
+05:36:16 Cuauhtémoc: 976 polygons, 963 join with a label, 10 municipalities
+05:36:16 Cuauhtémoc: 963 AGEB, box ~2010x1941 px @10 m
+05:36:16 already here: 15_mexico.zip (226.7 MB)
+05:36:16 reading 15a.shp
+05:36:16 Cuautitlán Izcalli: 653 polygons, 641 join with a label, 11 municipalities
+05:36:16 Cuautitlán Izcalli: 641 AGEB, box ~2476x2769 px @10 m
+05:36:16 already here: 10_durango.zip (61.6 MB)
+05:36:16 reading 10a.shp
+05:36:17 Durango: 485 polygons, 459 join with a label, 1 municipalities
+05:36:17 Durango: 459 AGEB, box ~1905x1879 px @10 m
+05:36:17 already here: 12_guerrero.zip (125.7 MB)
+05:36:17 reading 12a.shp
+05:36:17 connected mass: 90 of 118 AGEB, 28 satellites dropped
+05:36:17 Eduardo Neri: 90 polygons, 88 join with a label, 2 municipalities
+05:36:17 Eduardo Neri: 88 AGEB, box ~596x1340 px @10 m
+05:36:17 already here: 25_sinaloa.zip (71.9 MB)
+05:36:17 reading 25a.shp
+05:36:17 connected mass: 30 of 69 AGEB, 39 satellites dropped
+05:36:17 El Fuerte: 30 polygons, 28 join with a label, 1 municipalities
+05:36:17 El Fuerte: 28 AGEB, box ~340x416 px @10 m
+05:36:17 already here: 02_bajacalifornia.zip (68.3 MB)
+05:36:17 reading 02a.shp
+05:36:17 connected mass: 280 of 307 AGEB, 27 satellites dropped
+05:36:17 Ensenada: 280 polygons, 277 join with a label, 1 municipalities
+05:36:17 Ensenada: 277 AGEB, box ~2107x2857 px @10 m
+05:36:17 already here: 25_sinaloa.zip (71.9 MB)
+05:36:17 reading 25a.shp
+05:36:18 connected mass: 37 of 58 AGEB, 21 satellites dropped
+05:36:18 Escuinapa: 37 polygons, 35 join with a label, 1 municipalities
+05:36:18 Escuinapa: 35 AGEB, box ~408x431 px @10 m
+05:36:18 already here: 32_zacatecas.zip (74.4 MB)
+05:36:18 reading 32a.shp
+05:36:18 connected mass: 188 of 261 AGEB, 73 satellites dropped
+05:36:18 Fresnillo: 188 polygons, 165 join with a label, 1 municipalities
+05:36:18 Fresnillo: 165 AGEB, box ~1417x1007 px @10 m
+05:36:18 already here: 10_durango.zip (61.6 MB)
+05:36:18 reading 10a.shp
+05:36:18 connected mass: 267 of 270 AGEB, 3 satellites dropped
+05:36:18 Gómez Palacio: 267 polygons, 255 join with a label, 2 municipalities
+05:36:18 Gómez Palacio: 255 AGEB, box ~1363x2150 px @10 m
+05:36:18 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:18 reading 28a.shp
+05:36:18 connected mass: 27 of 53 AGEB, 26 satellites dropped
+05:36:18 González: 27 polygons, 27 join with a label, 1 municipalities
+05:36:18 González: 27 AGEB, box ~453x405 px @10 m
+05:36:18 already here: 14_jalisco.zip (142.6 MB)
+05:36:18 reading 14a.shp
+05:36:19 Guadalajara: 1124 polygons, 1111 join with a label, 6 municipalities
+05:36:19 Guadalajara: 1111 AGEB, box ~2805x2555 px @10 m
+05:36:19 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:19 reading 19a.shp
+05:36:19 Guadalupe: 820 polygons, 783 join with a label, 7 municipalities
+05:36:19 Guadalupe: 783 AGEB, box ~2752x2470 px @10 m
+05:36:19 already here: 25_sinaloa.zip (71.9 MB)
+05:36:19 reading 25a.shp
+05:36:19 connected mass: 97 of 195 AGEB, 98 satellites dropped
+05:36:19 Guasave: 97 polygons, 91 join with a label, 1 municipalities
+05:36:19 Guasave: 91 AGEB, box ~1001x914 px @10 m
+05:36:19 already here: 26_sonora.zip (74.0 MB)
+05:36:19 reading 26a.shp
+05:36:19 connected mass: 167 of 199 AGEB, 32 satellites dropped
+05:36:19 Guaymas: 167 polygons, 154 join with a label, 2 municipalities
+05:36:19 Guaymas: 154 AGEB, box ~1823x1342 px @10 m
+05:36:19 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:19 reading 09a.shp
+05:36:20 Gustavo A. Madero: 717 polygons, 706 join with a label, 7 municipalities
+05:36:20 Gustavo A. Madero: 706 AGEB, box ~1823x2300 px @10 m
+05:36:20 already here: 26_sonora.zip (74.0 MB)
+05:36:20 reading 26a.shp
+05:36:20 connected mass: 587 of 665 AGEB, 78 satellites dropped
+05:36:20 Hermosillo: 587 polygons, 551 join with a label, 1 municipalities
+05:36:20 Hermosillo: 551 AGEB, box ~2075x2293 px @10 m
+05:36:20 already here: 20_oaxaca.zip (174.6 MB)
+05:36:20 reading 20a.shp
+05:36:20 Heroica Ciudad de Huajuapan de León: 72 polygons, 69 join with a label, 3 municipalities
+05:36:20 Heroica Ciudad de Huajuapan de León: 69 AGEB, box ~1459x780 px @10 m
+05:36:20 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:20 reading 09a.shp
+05:36:21 Iztapalapa: 1138 polygons, 1128 join with a label, 12 municipalities
+05:36:21 Iztapalapa: 1128 AGEB, box ~2595x2467 px @10 m
+05:36:21 already here: 08_chihuahua.zip (105.8 MB)
+05:36:21 reading 08a.shp
+05:36:21 Juárez: 664 polygons, 633 join with a label, 1 municipalities
+05:36:21 Juárez: 633 AGEB, box ~3088x2937 px @10 m
+05:36:21 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:21 reading 19a.shp
+05:36:21 Juárez: 385 polygons, 379 join with a label, 6 municipalities
+05:36:21 Juárez: 379 AGEB, box ~2426x2241 px @10 m
+05:36:21 already here: 20_oaxaca.zip (174.6 MB)
+05:36:21 reading 20a.shp
+05:36:22 connected mass: 73 of 100 AGEB, 27 satellites dropped
+05:36:22 Juchitán de Zaragoza: 73 polygons, 72 join with a label, 4 municipalities
+05:36:22 Juchitán de Zaragoza: 72 AGEB, box ~832x1909 px @10 m
+05:36:22 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:22 reading 16a.shp
+05:36:22 connected mass: 156 of 158 AGEB, 2 satellites dropped
+05:36:22 Lázaro Cárdenas: 156 polygons, 150 join with a label, 1 municipalities
+05:36:22 Lázaro Cárdenas: 150 AGEB, box ~2470x1543 px @10 m
+05:36:22 already here: 11_guanajuato.zip (133.2 MB)
+05:36:22 reading 11a.shp
+05:36:23 connected mass: 701 of 704 AGEB, 3 satellites dropped
+05:36:23 León: 701 polygons, 669 join with a label, 3 municipalities
+05:36:23 León: 669 AGEB, box ~3260x2725 px @10 m
+05:36:23 already here: 10_durango.zip (61.6 MB)
+05:36:23 reading 10a.shp
+05:36:23 connected mass: 276 of 302 AGEB, 26 satellites dropped
+05:36:23 Lerdo: 276 polygons, 263 join with a label, 2 municipalities
+05:36:23 Lerdo: 263 AGEB, box ~2395x1850 px @10 m
+05:36:23 already here: 03_bajacaliforniasur.zip (32.8 MB)
+05:36:23 reading 03a.shp
+05:36:23 Los Cabos: 277 polygons, 258 join with a label, 1 municipalities
+05:36:23 Los Cabos: 258 AGEB, box ~3675x3678 px @10 m
+05:36:23 already here: 10_durango.zip (61.6 MB)
+05:36:23 reading 10a.shp
+05:36:23 connected mass: 29 of 61 AGEB, 32 satellites dropped
+05:36:23 Mapimí: 29 polygons, 26 join with a label, 1 municipalities
+05:36:23 Mapimí: 26 AGEB, box ~239x397 px @10 m
+05:36:23 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:23 reading 28a.shp
+05:36:24 connected mass: 332 of 345 AGEB, 13 satellites dropped
+05:36:24 Matamoros: 332 polygons, 311 join with a label, 1 municipalities
+05:36:24 Matamoros: 311 AGEB, box ~1969x1625 px @10 m
+05:36:24 already here: 25_sinaloa.zip (71.9 MB)
+05:36:24 reading 25a.shp
+05:36:24 connected mass: 294 of 328 AGEB, 34 satellites dropped
+05:36:24 Mazatlán: 294 polygons, 280 join with a label, 1 municipalities
+05:36:24 Mazatlán: 280 AGEB, box ~1801x1617 px @10 m
+05:36:24 already here: 31_yucatan.zip (50.6 MB)
+05:36:24 reading 31a.shp
+05:36:24 Mérida: 636 polygons, 627 join with a label, 6 municipalities
+05:36:24 Mérida: 627 AGEB, box ~2685x3716 px @10 m
+05:36:24 already here: 02_bajacalifornia.zip (68.3 MB)
+05:36:24 reading 02a.shp
+05:36:25 connected mass: 431 of 530 AGEB, 99 satellites dropped
+05:36:25 Mexicali: 431 polygons, 423 join with a label, 1 municipalities
+05:36:25 Mexicali: 423 AGEB, box ~3249x1494 px @10 m
+05:36:25 already here: 13_hidalgo.zip (110.0 MB)
+05:36:25 reading 13a.shp
+05:36:25 Mineral de la Reforma: 370 polygons, 365 join with a label, 4 municipalities
+05:36:25 Mineral de la Reforma: 365 AGEB, box ~1740x1793 px @10 m
+05:36:25 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:25 reading 19a.shp
+05:36:25 Monterrey: 1003 polygons, 975 join with a label, 9 municipalities
+05:36:25 Monterrey: 975 AGEB, box ~3249x4498 px @10 m
+05:36:25 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:25 reading 16a.shp
+05:36:26 Morelia: 495 polygons, 480 join with a label, 3 municipalities
+05:36:26 Morelia: 480 AGEB, box ~3837x2051 px @10 m
+05:36:26 already here: 25_sinaloa.zip (71.9 MB)
+05:36:26 reading 25a.shp
+05:36:26 connected mass: 31 of 105 AGEB, 74 satellites dropped
+05:36:26 Navolato: 31 polygons, 30 join with a label, 1 municipalities
+05:36:26 Navolato: 30 AGEB, box ~423x259 px @10 m
+05:36:26 already here: 15_mexico.zip (226.7 MB)
+05:36:26 reading 15a.shp
+05:36:26 Nezahualcóyotl: 532 polygons, 532 join with a label, 8 municipalities
+05:36:26 Nezahualcóyotl: 532 AGEB, box ~2376x2642 px @10 m
+05:36:26 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:26 reading 28a.shp
+05:36:27 Nuevo Laredo: 266 polygons, 252 join with a label, 1 municipalities
+05:36:27 Nuevo Laredo: 252 AGEB, box ~1476x2180 px @10 m
+05:36:27 already here: 07_chiapas.zip (108.8 MB)
+05:36:27 reading 07a.shp
+05:36:27 connected mass: 37 of 93 AGEB, 56 satellites dropped
+05:36:27 Ocosingo: 37 polygons, 32 join with a label, 1 municipalities
+05:36:27 Ocosingo: 32 AGEB, box ~289x309 px @10 m
+05:36:27 already here: 23_quintanaroo.zip (37.9 MB)
+05:36:27 reading 23a.shp
+05:36:27 connected mass: 125 of 159 AGEB, 34 satellites dropped
+05:36:27 Othón P. Blanco: 125 polygons, 122 join with a label, 1 municipalities
+05:36:27 Othón P. Blanco: 122 AGEB, box ~1071x892 px @10 m
+05:36:27 already here: 13_hidalgo.zip (110.0 MB)
+05:36:27 reading 13a.shp
+05:36:27 Pachuca de Soto: 398 polygons, 392 join with a label, 6 municipalities
+05:36:27 Pachuca de Soto: 392 AGEB, box ~2608x2297 px @10 m
+05:36:27 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:27 reading 16a.shp
+05:36:27 connected mass: 61 of 71 AGEB, 10 satellites dropped
+05:36:27 Pátzcuaro: 61 polygons, 58 join with a label, 2 municipalities
+05:36:27 Pátzcuaro: 58 AGEB, box ~622x972 px @10 m
+05:36:27 already here: 21_puebla.zip (152.1 MB)
+05:36:27 reading 21a.shp
+05:36:28 Puebla: 667 polygons, 664 join with a label, 7 municipalities
+05:36:28 Puebla: 664 AGEB, box ~3485x3117 px @10 m
+05:36:28 already here: 10_durango.zip (61.6 MB)
+05:36:28 reading 10a.shp
+05:36:28 connected mass: 45 of 57 AGEB, 12 satellites dropped
+05:36:28 Pueblo Nuevo: 45 polygons, 41 join with a label, 1 municipalities
+05:36:28 Pueblo Nuevo: 41 AGEB, box ~572x456 px @10 m
+05:36:28 already here: 14_jalisco.zip (142.6 MB)
+05:36:28 reading 14a.shp
+05:36:28 connected mass: 240 of 256 AGEB, 16 satellites dropped
+05:36:28 Puerto Vallarta: 240 polygons, 234 join with a label, 1 municipalities
+05:36:28 Puerto Vallarta: 234 AGEB, box ~1010x1634 px @10 m
+05:36:28 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:28 reading 28a.shp
+05:36:29 Reynosa: 400 polygons, 375 join with a label, 2 municipalities
+05:36:29 Reynosa: 375 AGEB, box ~3284x2203 px @10 m
+05:36:29 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:36:29 reading 05a.shp
+05:36:29 Saltillo: 416 polygons, 403 join with a label, 3 municipalities
+05:36:29 Saltillo: 403 AGEB, box ~2327x2624 px @10 m
+05:36:29 already here: 11_guanajuato.zip (133.2 MB)
+05:36:29 reading 11a.shp
+05:36:29 Salvatierra: 189 polygons, 152 join with a label, 4 municipalities
+05:36:29 Salvatierra: 152 AGEB, box ~2374x1655 px @10 m
+05:36:29 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:29 reading 30a.shp
+05:36:30 San Andrés Tuxtla: 72 polygons, 72 join with a label, 2 municipalities
+05:36:30 San Andrés Tuxtla: 72 AGEB, box ~1385x953 px @10 m
+05:36:30 already here: 07_chiapas.zip (108.8 MB)
+05:36:30 reading 07a.shp
+05:36:30 San Cristóbal de las Casas: 77 polygons, 74 join with a label, 3 municipalities
+05:36:30 San Cristóbal de las Casas: 74 AGEB, box ~1432x1092 px @10 m
+05:36:30 already here: 11_guanajuato.zip (133.2 MB)
+05:36:30 reading 11a.shp
+05:36:30 connected mass: 59 of 85 AGEB, 26 satellites dropped
+05:36:30 San Felipe: 59 polygons, 46 join with a label, 1 municipalities
+05:36:30 San Felipe: 46 AGEB, box ~458x482 px @10 m
+05:36:30 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:30 reading 28a.shp
+05:36:30 connected mass: 62 of 71 AGEB, 9 satellites dropped
+05:36:30 San Fernando: 62 polygons, 58 join with a label, 1 municipalities
+05:36:30 San Fernando: 58 AGEB, box ~691x502 px @10 m
+05:36:30 already here: 20_oaxaca.zip (174.6 MB)
+05:36:30 reading 20a.shp
+05:36:30 connected mass: 56 of 62 AGEB, 6 satellites dropped
+05:36:30 San Juan Bautista Tuxtepec: 56 polygons, 56 join with a label, 1 municipalities
+05:36:30 San Juan Bautista Tuxtepec: 56 AGEB, box ~882x1008 px @10 m
+05:36:30 already here: 11_guanajuato.zip (133.2 MB)
+05:36:30 reading 11a.shp
+05:36:31 San Luis de la Paz: 89 polygons, 84 join with a label, 1 municipalities
+05:36:31 San Luis de la Paz: 84 AGEB, box ~709x1163 px @10 m
+05:36:31 already here: 24_sanluispotosi.zip (91.2 MB)
+05:36:31 reading 24a.shp
+05:36:31 San Luis Potosí: 521 polygons, 493 join with a label, 3 municipalities
+05:36:31 San Luis Potosí: 493 AGEB, box ~3318x2402 px @10 m
+05:36:31 already here: 21_puebla.zip (152.1 MB)
+05:36:31 reading 21a.shp
+05:36:31 San Martín Texmelucan: 102 polygons, 101 join with a label, 7 municipalities
+05:36:31 San Martín Texmelucan: 101 AGEB, box ~1986x1644 px @10 m
+05:36:31 already here: 14_jalisco.zip (142.6 MB)
+05:36:31 reading 14a.shp
+05:36:32 San Pedro Tlaquepaque: 1089 polygons, 1078 join with a label, 6 municipalities
+05:36:32 San Pedro Tlaquepaque: 1078 AGEB, box ~3527x2353 px @10 m
+05:36:32 already here: 02_bajacalifornia.zip (68.3 MB)
+05:36:32 reading 02a.shp
+05:36:32 connected mass: 39 of 88 AGEB, 49 satellites dropped
+05:36:32 San Quintín: 39 polygons, 38 join with a label, 1 municipalities
+05:36:32 San Quintín: 38 AGEB, box ~544x1267 px @10 m
+05:36:32 already here: 11_guanajuato.zip (133.2 MB)
+05:36:32 reading 11a.shp
+05:36:32 connected mass: 69 of 77 AGEB, 8 satellites dropped
+05:36:32 Santa Cruz de Juventino Rosas: 69 polygons, 64 join with a label, 1 municipalities
+05:36:32 Santa Cruz de Juventino Rosas: 64 AGEB, box ~439x826 px @10 m
+05:36:32 already here: 20_oaxaca.zip (174.6 MB)
+05:36:32 reading 20a.shp
+05:36:32 Santa Cruz Xoxocotlán: 249 polygons, 246 join with a label, 16 municipalities
+05:36:32 Santa Cruz Xoxocotlán: 246 AGEB, box ~1520x2011 px @10 m
+05:36:32 already here: 20_oaxaca.zip (174.6 MB)
+05:36:32 reading 20a.shp
+05:36:33 connected mass: 49 of 55 AGEB, 6 satellites dropped
+05:36:33 Santiago Pinotepa Nacional: 49 polygons, 47 join with a label, 1 municipalities
+05:36:33 Santiago Pinotepa Nacional: 47 AGEB, box ~583x452 px @10 m
+05:36:33 already here: 20_oaxaca.zip (174.6 MB)
+05:36:33 reading 20a.shp
+05:36:33 connected mass: 87 of 90 AGEB, 3 satellites dropped
+05:36:33 Santo Domingo Tehuantepec: 87 polygons, 87 join with a label, 4 municipalities
+05:36:33 Santo Domingo Tehuantepec: 87 AGEB, box ~1155x2176 px @10 m
+05:36:33 already here: 23_quintanaroo.zip (37.9 MB)
+05:36:33 reading 23a.shp
+05:36:33 connected mass: 166 of 175 AGEB, 9 satellites dropped
+05:36:33 Solidaridad: 166 polygons, 158 join with a label, 1 municipalities
+05:36:33 Solidaridad: 158 AGEB, box ~1135x1242 px @10 m
+05:36:33 already here: 12_guerrero.zip (125.7 MB)
+05:36:33 reading 12a.shp
+05:36:33 connected mass: 48 of 65 AGEB, 17 satellites dropped
+05:36:33 Taxco de Alarcón: 48 polygons, 47 join with a label, 1 municipalities
+05:36:33 Taxco de Alarcón: 47 AGEB, box ~1010x1585 px @10 m
+05:36:33 already here: 06_colima.zip (29.0 MB)
+05:36:33 reading 06a.shp
+05:36:34 connected mass: 90 of 102 AGEB, 12 satellites dropped
+05:36:34 Tecomán: 90 polygons, 90 join with a label, 2 municipalities
+05:36:34 Tecomán: 90 AGEB, box ~1399x985 px @10 m
+05:36:34 already here: 12_guerrero.zip (125.7 MB)
+05:36:34 reading 12a.shp
+05:36:34 connected mass: 27 of 52 AGEB, 25 satellites dropped
+05:36:34 Técpan de Galeana: 27 polygons, 27 join with a label, 1 municipalities
+05:36:34 Técpan de Galeana: 27 AGEB, box ~402x558 px @10 m
+05:36:34 already here: 21_puebla.zip (152.1 MB)
+05:36:34 reading 21a.shp
+05:36:34 Tehuacán: 157 polygons, 156 join with a label, 5 municipalities
+05:36:34 Tehuacán: 156 AGEB, box ~3288x2814 px @10 m
+05:36:34 already here: 18_nayarit.zip (46.4 MB)
+05:36:34 reading 18a.shp
+05:36:34 Tepic: 281 polygons, 273 join with a label, 2 municipalities
+05:36:34 Tepic: 273 AGEB, box ~1642x1938 px @10 m
+05:36:34 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:34 reading 30a.shp
+05:36:35 connected mass: 51 of 54 AGEB, 3 satellites dropped
+05:36:35 Tierra Blanca: 51 polygons, 51 join with a label, 1 municipalities
+05:36:35 Tierra Blanca: 51 AGEB, box ~433x464 px @10 m
+05:36:35 already here: 02_bajacalifornia.zip (68.3 MB)
+05:36:35 reading 02a.shp
+05:36:35 connected mass: 737 of 746 AGEB, 9 satellites dropped
+05:36:35 Tijuana: 737 polygons, 726 join with a label, 2 municipalities
+05:36:35 Tijuana: 726 AGEB, box ~3763x2238 px @10 m
+05:36:35 already here: 14_jalisco.zip (142.6 MB)
+05:36:35 reading 14a.shp
+05:36:36 Tlajomulco de Zúñiga: 712 polygons, 693 join with a label, 6 municipalities
+05:36:36 Tlajomulco de Zúñiga: 693 AGEB, box ~3662x2786 px @10 m
+05:36:36 already here: 15_mexico.zip (226.7 MB)
+05:36:36 reading 15a.shp
+05:36:36 Tlalnepantla de Baz: 756 polygons, 750 join with a label, 7 municipalities
+05:36:36 Tlalnepantla de Baz: 750 AGEB, box ~3002x2489 px @10 m
+05:36:36 already here: 09_ciudaddemexico.zip (83.2 MB)
+05:36:36 reading 09a.shp
+05:36:37 Tlalpan: 697 polygons, 695 join with a label, 8 municipalities
+05:36:37 Tlalpan: 695 AGEB, box ~2709x2716 px @10 m
+05:36:37 already here: 15_mexico.zip (226.7 MB)
+05:36:37 reading 15a.shp
+05:36:37 Toluca: 444 polygons, 439 join with a label, 11 municipalities
+05:36:37 Toluca: 439 AGEB, box ~3216x3277 px @10 m
+05:36:37 already here: 14_jalisco.zip (142.6 MB)
+05:36:37 reading 14a.shp
+05:36:38 Tonalá: 582 polygons, 580 join with a label, 6 municipalities
+05:36:38 Tonalá: 580 AGEB, box ~2532x2728 px @10 m
+05:36:38 already here: 32_zacatecas.zip (74.4 MB)
+05:36:38 reading 32a.shp
+05:36:38 Trancoso: 63 polygons, 59 join with a label, 1 municipalities
+05:36:38 Trancoso: 59 AGEB, box ~426x298 px @10 m
+05:36:38 already here: 07_chiapas.zip (108.8 MB)
+05:36:38 reading 07a.shp
+05:36:38 Tuxtla Gutiérrez: 260 polygons, 259 join with a label, 3 municipalities
+05:36:38 Tuxtla Gutiérrez: 259 AGEB, box ~3183x1442 px @10 m
+05:36:38 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:38 reading 16a.shp
+05:36:38 connected mass: 184 of 198 AGEB, 14 satellites dropped
+05:36:38 Uruapan: 184 polygons, 184 join with a label, 2 municipalities
+05:36:38 Uruapan: 184 AGEB, box ~1578x1018 px @10 m
+05:36:38 already here: 11_guanajuato.zip (133.2 MB)
+05:36:38 reading 11a.shp
+05:36:39 connected mass: 78 of 86 AGEB, 8 satellites dropped
+05:36:39 Valle de Santiago: 78 polygons, 70 join with a label, 1 municipalities
+05:36:39 Valle de Santiago: 70 AGEB, box ~989x652 px @10 m
+05:36:39 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:39 reading 30a.shp
+05:36:39 Veracruz: 390 polygons, 383 join with a label, 4 municipalities
+05:36:39 Veracruz: 383 AGEB, box ~2802x1880 px @10 m
+05:36:39 already here: 32_zacatecas.zip (74.4 MB)
+05:36:39 reading 32a.shp
+05:36:39 connected mass: 29 of 68 AGEB, 39 satellites dropped
+05:36:39 Villa de Cos: 29 polygons, 29 join with a label, 1 municipalities
+05:36:39 Villa de Cos: 29 AGEB, box ~330x296 px @10 m
+05:36:39 already here: 07_chiapas.zip (108.8 MB)
+05:36:39 reading 07a.shp
+05:36:39 connected mass: 26 of 58 AGEB, 32 satellites dropped
+05:36:39 Villaflores: 26 polygons, 26 join with a label, 2 municipalities
+05:36:39 Villaflores: 26 AGEB, box ~713x1039 px @10 m
+05:36:39 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:39 reading 30a.shp
+05:36:40 Xalapa: 223 polygons, 223 join with a label, 7 municipalities
+05:36:40 Xalapa: 223 AGEB, box ~1617x1837 px @10 m
+05:36:40 already here: 11_guanajuato.zip (133.2 MB)
+05:36:40 reading 11a.shp
+05:36:40 connected mass: 61 of 126 AGEB, 65 satellites dropped
+05:36:40 Yuriria: 61 polygons, 52 join with a label, 2 municipalities
+05:36:40 Yuriria: 52 AGEB, box ~744x868 px @10 m
+05:36:40 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:40 reading 16a.shp
+05:36:40 Zacapu: 53 polygons, 52 join with a label, 1 municipalities
+05:36:40 Zacapu: 52 AGEB, box ~823x1134 px @10 m
+05:36:40 already here: 32_zacatecas.zip (74.4 MB)
+05:36:40 reading 32a.shp
+05:36:40 Zacatecas: 313 polygons, 289 join with a label, 4 municipalities
+05:36:40 Zacatecas: 289 AGEB, box ~1719x1406 px @10 m
+05:36:40 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:40 reading 16a.shp
+05:36:40 connected mass: 143 of 146 AGEB, 3 satellites dropped
+05:36:40 Zamora: 143 polygons, 138 join with a label, 2 municipalities
+05:36:40 Zamora: 138 AGEB, box ~1450x1729 px @10 m
+05:36:40 already here: 12_guerrero.zip (125.7 MB)
+05:36:40 reading 12a.shp
+05:36:41 Zihuatanejo de Azueta: 140 polygons, 135 join with a label, 1 municipalities
+05:36:41 Zihuatanejo de Azueta: 135 AGEB, box ~1964x1527 px @10 m
+05:36:41 already here: 15_mexico.zip (226.7 MB)
+05:36:41 reading 15a.shp
+05:36:41 Zinacantepec: 174 polygons, 173 join with a label, 3 municipalities
+05:36:41 Zinacantepec: 173 AGEB, box ~2197x1737 px @10 m
+05:36:41 already here: 21_puebla.zip (152.1 MB)
+05:36:41 reading 21a.shp
+05:36:41 Acajete: 69 polygons, 69 join with a label, 5 municipalities
+05:36:41 Acajete: 69 AGEB, box ~1872x2150 px @10 m
+05:36:41 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:41 reading 30a.shp
+05:36:42 connected mass: 50 of 69 AGEB, 19 satellites dropped
+05:36:42 Acayucan: 50 polygons, 50 join with a label, 3 municipalities
+05:36:42 Acayucan: 50 AGEB, box ~695x642 px @10 m
+05:36:42 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:36:42 reading 05a.shp
+05:36:42 Acuña: 113 polygons, 111 join with a label, 1 municipalities
+05:36:42 Acuña: 111 AGEB, box ~1447x854 px @10 m
+05:36:42 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:42 reading 30a.shp
+05:36:42 Agua Dulce: 32 polygons, 32 join with a label, 1 municipalities
+05:36:42 Agua Dulce: 32 AGEB, box ~542x767 px @10 m
+05:36:42 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:36:42 reading 05a.shp
+05:36:42 Allende: 50 polygons, 48 join with a label, 2 municipalities
+05:36:42 Allende: 48 AGEB, box ~656x1008 px @10 m
+05:36:42 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:42 reading 19a.shp
+05:36:42 Allende: 34 polygons, 33 join with a label, 1 municipalities
+05:36:42 Allende: 33 AGEB, box ~609x624 px @10 m
+05:36:42 already here: 14_jalisco.zip (142.6 MB)
+05:36:42 reading 14a.shp
+05:36:43 connected mass: 32 of 36 AGEB, 4 satellites dropped
+05:36:43 Ameca: 32 polygons, 28 join with a label, 1 municipalities
+05:36:43 Ameca: 28 AGEB, box ~576x535 px @10 m
+05:36:43 already here: 25_sinaloa.zip (71.9 MB)
+05:36:43 reading 25a.shp
+05:36:43 connected mass: 17 of 39 AGEB, 22 satellites dropped
+05:36:43 Angostura: 17 polygons, 14 join with a label, 1 municipalities
+05:36:43 Angostura: 14 AGEB, box ~499x385 px @10 m
+05:36:43 already here: 29_tlaxcala.zip (53.4 MB)
+05:36:43 reading 29a.shp
+05:36:43 Apizaco: 153 polygons, 153 join with a label, 12 municipalities
+05:36:43 Apizaco: 153 AGEB, box ~2162x1947 px @10 m
+05:36:43 already here: 14_jalisco.zip (142.6 MB)
+05:36:43 reading 14a.shp
+05:36:43 connected mass: 46 of 59 AGEB, 13 satellites dropped
+05:36:43 Arandas: 46 polygons, 41 join with a label, 1 municipalities
+05:36:43 Arandas: 41 AGEB, box ~631x626 px @10 m
+05:36:43 already here: 12_guerrero.zip (125.7 MB)
+05:36:43 reading 12a.shp
+05:36:43 Arcelia: 37 polygons, 37 join with a label, 1 municipalities
+05:36:43 Arcelia: 37 AGEB, box ~400x600 px @10 m
+05:36:43 already here: 08_chihuahua.zip (105.8 MB)
+05:36:43 reading 08a.shp
+05:36:44 connected mass: 29 of 54 AGEB, 25 satellites dropped
+05:36:44 Ascensión: 29 polygons, 28 join with a label, 1 municipalities
+05:36:44 Ascensión: 28 AGEB, box ~460x456 px @10 m
+05:36:44 already here: 15_mexico.zip (226.7 MB)
+05:36:44 reading 15a.shp
+05:36:44 Atlacomulco: 49 polygons, 48 join with a label, 3 municipalities
+05:36:44 Atlacomulco: 48 AGEB, box ~2636x1705 px @10 m
+05:36:44 already here: 13_hidalgo.zip (110.0 MB)
+05:36:44 reading 13a.shp
+05:36:44 Atotonilco de Tula: 77 polygons, 77 join with a label, 4 municipalities
+05:36:44 Atotonilco de Tula: 77 AGEB, box ~1337x2187 px @10 m
+05:36:44 already here: 14_jalisco.zip (142.6 MB)
+05:36:44 reading 14a.shp
+05:36:44 connected mass: 24 of 43 AGEB, 19 satellites dropped
+05:36:44 Atotonilco el Alto: 24 polygons, 24 join with a label, 1 municipalities
+05:36:44 Atotonilco el Alto: 24 AGEB, box ~559x553 px @10 m
+05:36:44 already here: 12_guerrero.zip (125.7 MB)
+05:36:44 reading 12a.shp
+05:36:45 connected mass: 26 of 38 AGEB, 12 satellites dropped
+05:36:45 Atoyac de Álvarez: 26 polygons, 24 join with a label, 2 municipalities
+05:36:45 Atoyac de Álvarez: 24 AGEB, box ~604x1073 px @10 m
+05:36:45 already here: 14_jalisco.zip (142.6 MB)
+05:36:45 reading 14a.shp
+05:36:45 Autlán de Navarro: 33 polygons, 33 join with a label, 1 municipalities
+05:36:45 Autlán de Navarro: 33 AGEB, box ~522x773 px @10 m
+05:36:45 already here: 17_morelos.zip (63.4 MB)
+05:36:45 reading 17a.shp
+05:36:45 connected mass: 116 of 118 AGEB, 2 satellites dropped
+05:36:45 Ayala: 116 polygons, 115 join with a label, 3 municipalities
+05:36:45 Ayala: 115 AGEB, box ~1478x1683 px @10 m
+05:36:45 already here: 14_jalisco.zip (142.6 MB)
+05:36:45 reading 14a.shp
+05:36:45 connected mass: 22 of 45 AGEB, 23 satellites dropped
+05:36:45 Ayotlán: 22 polygons, 22 join with a label, 1 municipalities
+05:36:45 Ayotlán: 22 AGEB, box ~509x350 px @10 m
+05:36:45 already here: 26_sonora.zip (74.0 MB)
+05:36:45 reading 26a.shp
+05:36:45 connected mass: 24 of 35 AGEB, 11 satellites dropped
+05:36:45 Bácum: 24 polygons, 23 join with a label, 1 municipalities
+05:36:45 Bácum: 23 AGEB, box ~596x809 px @10 m
+05:36:45 already here: 08_chihuahua.zip (105.8 MB)
+05:36:45 reading 08a.shp
+05:36:46 connected mass: 21 of 41 AGEB, 20 satellites dropped
+05:36:46 Bocoyna: 21 polygons, 21 join with a label, 1 municipalities
+05:36:46 Bocoyna: 21 AGEB, box ~335x588 px @10 m
+05:36:46 already here: 08_chihuahua.zip (105.8 MB)
+05:36:46 reading 08a.shp
+05:36:46 connected mass: 33 of 60 AGEB, 27 satellites dropped
+05:36:46 Buenaventura: 33 polygons, 33 join with a label, 1 municipalities
+05:36:46 Buenaventura: 33 AGEB, box ~506x553 px @10 m
+05:36:46 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:46 reading 16a.shp
+05:36:46 connected mass: 26 of 43 AGEB, 17 satellites dropped
+05:36:46 Buenavista: 26 polygons, 25 join with a label, 1 municipalities
+05:36:46 Buenavista: 25 AGEB, box ~804x1013 px @10 m
+05:36:46 already here: 32_zacatecas.zip (74.4 MB)
+05:36:46 reading 32a.shp
+05:36:46 connected mass: 63 of 84 AGEB, 21 satellites dropped
+05:36:46 Calera: 63 polygons, 56 join with a label, 2 municipalities
+05:36:46 Calera: 56 AGEB, box ~795x898 px @10 m
+05:36:46 already here: 04_campeche.zip (33.7 MB)
+05:36:46 reading 04a.shp
+05:36:46 connected mass: 34 of 42 AGEB, 8 satellites dropped
+05:36:46 Calkiní: 34 polygons, 32 join with a label, 1 municipalities
+05:36:46 Calkiní: 32 AGEB, box ~603x1988 px @10 m
+05:36:46 already here: 08_chihuahua.zip (105.8 MB)
+05:36:46 reading 08a.shp
+05:36:46 Camargo: 48 polygons, 43 join with a label, 1 municipalities
+05:36:46 Camargo: 43 AGEB, box ~715x672 px @10 m
+05:36:46 already here: 04_campeche.zip (33.7 MB)
+05:36:46 reading 04a.shp
+05:36:47 connected mass: 132 of 135 AGEB, 3 satellites dropped
+05:36:47 Campeche: 132 polygons, 131 join with a label, 1 municipalities
+05:36:47 Campeche: 131 AGEB, box ~1672x1389 px @10 m
+05:36:47 already here: 26_sonora.zip (74.0 MB)
+05:36:47 reading 26a.shp
+05:36:47 Cananea: 39 polygons, 37 join with a label, 1 municipalities
+05:36:47 Cananea: 37 AGEB, box ~803x690 px @10 m
+05:36:47 already here: 14_jalisco.zip (142.6 MB)
+05:36:47 reading 14a.shp
+05:36:47 connected mass: 17 of 35 AGEB, 18 satellites dropped
+05:36:47 Casimiro Castillo: 17 polygons, 16 join with a label, 1 municipalities
+05:36:47 Casimiro Castillo: 16 AGEB, box ~366x286 px @10 m
+05:36:47 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:36:47 reading 05a.shp
+05:36:47 Castaños: 59 polygons, 57 join with a label, 2 municipalities
+05:36:47 Castaños: 57 AGEB, box ~678x1414 px @10 m
+05:36:47 already here: 14_jalisco.zip (142.6 MB)
+05:36:47 reading 14a.shp
+05:36:47 Chapala: 81 polygons, 77 join with a label, 3 municipalities
+05:36:47 Chapala: 77 AGEB, box ~2726x1385 px @10 m
+05:36:47 already here: 24_sanluispotosi.zip (91.2 MB)
+05:36:47 reading 24a.shp
+05:36:48 Charcas: 32 polygons, 31 join with a label, 1 municipalities
+05:36:48 Charcas: 31 AGEB, box ~396x351 px @10 m
+05:36:48 already here: 31_yucatan.zip (50.6 MB)
+05:36:48 reading 31a.shp
+05:36:48 connected mass: 19 of 33 AGEB, 14 satellites dropped
+05:36:48 Chemax: 19 polygons, 18 join with a label, 1 municipalities
+05:36:48 Chemax: 18 AGEB, box ~320x283 px @10 m
+05:36:48 already here: 21_puebla.zip (152.1 MB)
+05:36:48 reading 21a.shp
+05:36:48 connected mass: 29 of 31 AGEB, 2 satellites dropped
+05:36:48 Chignahuapan: 29 polygons, 29 join with a label, 1 municipalities
+05:36:48 Chignahuapan: 29 AGEB, box ~777x524 px @10 m
+05:36:48 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:48 reading 19a.shp
+05:36:48 Ciénega de Flores: 79 polygons, 76 join with a label, 3 municipalities
+05:36:48 Ciénega de Flores: 76 AGEB, box ~1216x1233 px @10 m
+05:36:48 already here: 14_jalisco.zip (142.6 MB)
+05:36:48 reading 14a.shp
+05:36:48 connected mass: 25 of 49 AGEB, 24 satellites dropped
+05:36:48 Cihuatlán: 25 polygons, 22 join with a label, 1 municipalities
+05:36:48 Cihuatlán: 22 AGEB, box ~395x291 px @10 m
+05:36:48 already here: 07_chiapas.zip (108.8 MB)
+05:36:48 reading 07a.shp
+05:36:49 connected mass: 31 of 36 AGEB, 5 satellites dropped
+05:36:49 Cintalapa: 31 polygons, 30 join with a label, 2 municipalities
+05:36:49 Cintalapa: 30 AGEB, box ~1277x466 px @10 m
+05:36:49 already here: 24_sanluispotosi.zip (91.2 MB)
+05:36:49 reading 24a.shp
+05:36:49 connected mass: 129 of 139 AGEB, 10 satellites dropped
+05:36:49 Ciudad Valles: 129 polygons, 125 join with a label, 1 municipalities
+05:36:49 Ciudad Valles: 125 AGEB, box ~1059x977 px @10 m
+05:36:49 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:49 reading 30a.shp
+05:36:49 Coatzacoalcos: 155 polygons, 147 join with a label, 3 municipalities
+05:36:49 Coatzacoalcos: 147 AGEB, box ~2307x1453 px @10 m
+05:36:49 already here: 06_colima.zip (29.0 MB)
+05:36:49 reading 06a.shp
+05:36:49 Colima: 247 polygons, 242 join with a label, 4 municipalities
+05:36:49 Colima: 242 AGEB, box ~1731x1321 px @10 m
+05:36:49 already here: 27_tabasco.zip (50.9 MB)
+05:36:49 reading 27a.shp
+05:36:49 connected mass: 38 of 40 AGEB, 2 satellites dropped
+05:36:49 Comalcalco: 38 polygons, 37 join with a label, 2 municipalities
+05:36:49 Comalcalco: 37 AGEB, box ~2238x1616 px @10 m
+05:36:49 already here: 03_bajacaliforniasur.zip (32.8 MB)
+05:36:49 reading 03a.shp
+05:36:49 connected mass: 98 of 130 AGEB, 32 satellites dropped
+05:36:49 Comondú: 98 polygons, 88 join with a label, 1 municipalities
+05:36:49 Comondú: 88 AGEB, box ~732x940 px @10 m
+05:36:49 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:49 reading 30a.shp
+05:36:50 Córdoba: 127 polygons, 124 join with a label, 4 municipalities
+05:36:50 Córdoba: 124 AGEB, box ~1925x1374 px @10 m
+05:36:50 already here: 11_guanajuato.zip (133.2 MB)
+05:36:50 reading 11a.shp
+05:36:50 connected mass: 81 of 95 AGEB, 14 satellites dropped
+05:36:50 Cortazar: 81 polygons, 77 join with a label, 2 municipalities
+05:36:50 Cortazar: 77 AGEB, box ~1008x895 px @10 m
+05:36:50 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:50 reading 30a.shp
+05:36:50 connected mass: 52 of 86 AGEB, 34 satellites dropped
+05:36:50 Cosamaloapan de Carpio: 52 polygons, 51 join with a label, 3 municipalities
+05:36:50 Cosamaloapan de Carpio: 51 AGEB, box ~1389x1013 px @10 m
+05:36:50 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:50 reading 30a.shp
+05:36:50 connected mass: 136 of 214 AGEB, 78 satellites dropped
+05:36:50 Cosoleacaque: 136 polygons, 136 join with a label, 6 municipalities
+05:36:50 Cosoleacaque: 136 AGEB, box ~2415x1397 px @10 m
+05:36:50 already here: 23_quintanaroo.zip (37.9 MB)
+05:36:50 reading 23a.shp
+05:36:51 Cozumel: 56 polygons, 56 join with a label, 1 municipalities
+05:36:51 Cozumel: 56 AGEB, box ~747x1005 px @10 m
+05:36:51 already here: 08_chihuahua.zip (105.8 MB)
+05:36:51 reading 08a.shp
+05:36:51 Cuauhtémoc: 163 polygons, 149 join with a label, 1 municipalities
+05:36:51 Cuauhtémoc: 149 AGEB, box ~1875x1451 px @10 m
+05:36:51 already here: 17_morelos.zip (63.4 MB)
+05:36:51 reading 17a.shp
+05:36:51 Cuautla: 161 polygons, 160 join with a label, 5 municipalities
+05:36:51 Cuautla: 160 AGEB, box ~1928x2003 px @10 m
+05:36:51 already here: 10_durango.zip (61.6 MB)
+05:36:51 reading 10a.shp
+05:36:51 connected mass: 39 of 60 AGEB, 21 satellites dropped
+05:36:51 Cuencamé: 39 polygons, 37 join with a label, 1 municipalities
+05:36:51 Cuencamé: 37 AGEB, box ~295x401 px @10 m
+05:36:51 already here: 11_guanajuato.zip (133.2 MB)
+05:36:51 reading 11a.shp
+05:36:51 Cuerámaro: 53 polygons, 49 join with a label, 1 municipalities
+05:36:51 Cuerámaro: 49 AGEB, box ~382x312 px @10 m
+05:36:51 already here: 17_morelos.zip (63.4 MB)
+05:36:51 reading 17a.shp
+05:36:52 Cuernavaca: 313 polygons, 312 join with a label, 7 municipalities
+05:36:52 Cuernavaca: 312 AGEB, box ~1782x2748 px @10 m
+05:36:52 already here: 08_chihuahua.zip (105.8 MB)
+05:36:52 reading 08a.shp
+05:36:52 Delicias: 154 polygons, 142 join with a label, 4 municipalities
+05:36:52 Delicias: 142 AGEB, box ~2274x1657 px @10 m
+05:36:52 already here: 11_guanajuato.zip (133.2 MB)
+05:36:52 reading 11a.shp
+05:36:52 Dolores Hidalgo Cuna de la Independencia Nacional: 109 polygons, 103 join with a label, 1 municipalities
+05:36:52 Dolores Hidalgo Cuna de la Independencia Nacional: 103 AGEB, box ~769x950 px @10 m
+05:36:52 already here: 24_sanluispotosi.zip (91.2 MB)
+05:36:52 reading 24a.shp
+05:36:52 connected mass: 21 of 39 AGEB, 18 satellites dropped
+05:36:52 Ebano: 21 polygons, 21 join with a label, 1 municipalities
+05:36:52 Ebano: 21 AGEB, box ~548x440 px @10 m
+05:36:52 already here: 28_tamaulipas.zip (80.0 MB)
+05:36:52 reading 28a.shp
+05:36:52 connected mass: 91 of 101 AGEB, 10 satellites dropped
+05:36:52 El Mante: 91 polygons, 90 join with a label, 1 municipalities
+05:36:52 El Mante: 90 AGEB, box ~873x980 px @10 m
+05:36:52 already here: 10_durango.zip (61.6 MB)
+05:36:52 reading 10a.shp
+05:36:52 El Oro: 67 polygons, 56 join with a label, 1 municipalities
+05:36:52 El Oro: 56 AGEB, box ~293x418 px @10 m
+05:36:52 already here: 25_sinaloa.zip (71.9 MB)
+05:36:52 reading 25a.shp
+05:36:53 Elota: 56 polygons, 49 join with a label, 1 municipalities
+05:36:53 Elota: 49 AGEB, box ~511x356 px @10 m
+05:36:53 already here: 17_morelos.zip (63.4 MB)
+05:36:53 reading 17a.shp
+05:36:53 Emiliano Zapata: 300 polygons, 298 join with a label, 6 municipalities
+05:36:53 Emiliano Zapata: 298 AGEB, box ~1667x2504 px @10 m
+05:36:53 already here: 14_jalisco.zip (142.6 MB)
+05:36:53 reading 14a.shp
+05:36:53 connected mass: 50 of 66 AGEB, 16 satellites dropped
+05:36:53 Encarnación de Díaz: 50 polygons, 49 join with a label, 1 municipalities
+05:36:53 Encarnación de Díaz: 49 AGEB, box ~456x427 px @10 m
+05:36:53 already here: 26_sonora.zip (74.0 MB)
+05:36:53 reading 26a.shp
+05:36:53 connected mass: 35 of 49 AGEB, 14 satellites dropped
+05:36:53 Etchojoa: 35 polygons, 30 join with a label, 1 municipalities
+05:36:53 Etchojoa: 30 AGEB, box ~631x1109 px @10 m
+05:36:53 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:36:53 reading 05a.shp
+05:36:53 Frontera: 148 polygons, 146 join with a label, 2 municipalities
+05:36:53 Frontera: 146 AGEB, box ~1256x1829 px @10 m
+05:36:53 already here: 32_zacatecas.zip (74.4 MB)
+05:36:53 reading 32a.shp
+05:36:54 connected mass: 25 of 46 AGEB, 21 satellites dropped
+05:36:54 General Pánfilo Natera: 25 polygons, 19 join with a label, 1 municipalities
+05:36:54 General Pánfilo Natera: 19 AGEB, box ~306x227 px @10 m
+05:36:54 already here: 26_sonora.zip (74.0 MB)
+05:36:54 reading 26a.shp
+05:36:54 General Plutarco Elías Calles: 54 polygons, 48 join with a label, 1 municipalities
+05:36:54 General Plutarco Elías Calles: 48 AGEB, box ~633x451 px @10 m
+05:36:54 already here: 08_chihuahua.zip (105.8 MB)
+05:36:54 reading 08a.shp
+05:36:54 Guachochi: 33 polygons, 32 join with a label, 1 municipalities
+05:36:54 Guachochi: 32 AGEB, box ~372x432 px @10 m
+05:36:54 already here: 10_durango.zip (61.6 MB)
+05:36:54 reading 10a.shp
+05:36:54 connected mass: 53 of 105 AGEB, 52 satellites dropped
+05:36:54 Guadalupe Victoria: 53 polygons, 49 join with a label, 1 municipalities
+05:36:54 Guadalupe Victoria: 49 AGEB, box ~395x448 px @10 m
+05:36:54 already here: 08_chihuahua.zip (105.8 MB)
+05:36:54 reading 08a.shp
+05:36:54 connected mass: 29 of 36 AGEB, 7 satellites dropped
+05:36:54 Guadalupe y Calvo: 29 polygons, 28 join with a label, 1 municipalities
+05:36:54 Guadalupe y Calvo: 28 AGEB, box ~310x310 px @10 m
+05:36:54 already here: 08_chihuahua.zip (105.8 MB)
+05:36:54 reading 08a.shp
+05:36:54 Hidalgo del Parral: 89 polygons, 81 join with a label, 1 municipalities
+05:36:54 Hidalgo del Parral: 81 AGEB, box ~1133x1006 px @10 m
+05:36:54 already here: 29_tlaxcala.zip (53.4 MB)
+05:36:54 reading 29a.shp
+05:36:55 connected mass: 39 of 45 AGEB, 6 satellites dropped
+05:36:55 Huamantla: 39 polygons, 39 join with a label, 2 municipalities
+05:36:55 Huamantla: 39 AGEB, box ~870x1633 px @10 m
+05:36:55 already here: 26_sonora.zip (74.0 MB)
+05:36:55 reading 26a.shp
+05:36:55 connected mass: 38 of 42 AGEB, 4 satellites dropped
+05:36:55 Huatabampo: 38 polygons, 31 join with a label, 1 municipalities
+05:36:55 Huatabampo: 31 AGEB, box ~633x510 px @10 m
+05:36:55 already here: 21_puebla.zip (152.1 MB)
+05:36:55 reading 21a.shp
+05:36:55 Huauchinango: 59 polygons, 59 join with a label, 4 municipalities
+05:36:55 Huauchinango: 59 AGEB, box ~1567x1495 px @10 m
+05:36:55 already here: 15_mexico.zip (226.7 MB)
+05:36:55 reading 15a.shp
+05:36:55 Huehuetoca: 83 polygons, 83 join with a label, 6 municipalities
+05:36:55 Huehuetoca: 83 AGEB, box ~1837x1985 px @10 m
+05:36:55 already here: 13_hidalgo.zip (110.0 MB)
+05:36:55 reading 13a.shp
+05:36:56 connected mass: 31 of 45 AGEB, 14 satellites dropped
+05:36:56 Huejutla de Reyes: 31 polygons, 31 join with a label, 1 municipalities
+05:36:56 Huejutla de Reyes: 31 AGEB, box ~616x460 px @10 m
+05:36:56 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:56 reading 16a.shp
+05:36:56 Huetamo: 39 polygons, 38 join with a label, 1 municipalities
+05:36:56 Huetamo: 38 AGEB, box ~481x565 px @10 m
+05:36:56 already here: 12_guerrero.zip (125.7 MB)
+05:36:56 reading 12a.shp
+05:36:56 connected mass: 25 of 42 AGEB, 17 satellites dropped
+05:36:56 Huitzuco de los Figueroa: 25 polygons, 24 join with a label, 1 municipalities
+05:36:56 Huitzuco de los Figueroa: 24 AGEB, box ~414x423 px @10 m
+05:36:56 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:56 reading 30a.shp
+05:36:56 Ixtaczoquitlán: 154 polygons, 152 join with a label, 12 municipalities
+05:36:56 Ixtaczoquitlán: 152 AGEB, box ~1891x2385 px @10 m
+05:36:56 already here: 21_puebla.zip (152.1 MB)
+05:36:56 reading 21a.shp
+05:36:56 Izúcar de Matamoros: 48 polygons, 48 join with a label, 4 municipalities
+05:36:56 Izúcar de Matamoros: 48 AGEB, box ~1357x2596 px @10 m
+05:36:56 already here: 14_jalisco.zip (142.6 MB)
+05:36:56 reading 14a.shp
+05:36:57 Jalostotitlán: 44 polygons, 42 join with a label, 1 municipalities
+05:36:57 Jalostotitlán: 42 AGEB, box ~403x423 px @10 m
+05:36:57 already here: 32_zacatecas.zip (74.4 MB)
+05:36:57 reading 32a.shp
+05:36:57 Jalpa: 40 polygons, 36 join with a label, 1 municipalities
+05:36:57 Jalpa: 36 AGEB, box ~332x498 px @10 m
+05:36:57 already here: 32_zacatecas.zip (74.4 MB)
+05:36:57 reading 32a.shp
+05:36:57 Jerez: 74 polygons, 68 join with a label, 1 municipalities
+05:36:57 Jerez: 68 AGEB, box ~600x639 px @10 m
+05:36:57 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:57 reading 16a.shp
+05:36:57 Jiquilpan: 49 polygons, 47 join with a label, 2 municipalities
+05:36:57 Jiquilpan: 47 AGEB, box ~744x1108 px @10 m
+05:36:57 already here: 17_morelos.zip (63.4 MB)
+05:36:57 reading 17a.shp
+05:36:57 Jiutepec: 321 polygons, 318 join with a label, 6 municipalities
+05:36:57 Jiutepec: 318 AGEB, box ~2341x2096 px @10 m
+05:36:57 already here: 14_jalisco.zip (142.6 MB)
+05:36:57 reading 14a.shp
+05:36:58 connected mass: 46 of 48 AGEB, 2 satellites dropped
+05:36:58 Jocotepec: 46 polygons, 44 join with a label, 2 municipalities
+05:36:58 Jocotepec: 44 AGEB, box ~2424x722 px @10 m
+05:36:58 already here: 17_morelos.zip (63.4 MB)
+05:36:58 reading 17a.shp
+05:36:58 Jojutla: 132 polygons, 131 join with a label, 6 municipalities
+05:36:58 Jojutla: 131 AGEB, box ~1948x2517 px @10 m
+05:36:58 already here: 14_jalisco.zip (142.6 MB)
+05:36:58 reading 14a.shp
+05:36:58 connected mass: 36 of 43 AGEB, 7 satellites dropped
+05:36:58 La Barca: 36 polygons, 33 join with a label, 1 municipalities
+05:36:58 La Barca: 33 AGEB, box ~485x643 px @10 m
+05:36:58 already here: 14_jalisco.zip (142.6 MB)
+05:36:58 reading 14a.shp
+05:36:58 connected mass: 80 of 84 AGEB, 4 satellites dropped
+05:36:58 Lagos de Moreno: 80 polygons, 77 join with a label, 1 municipalities
+05:36:58 Lagos de Moreno: 77 AGEB, box ~1126x725 px @10 m
+05:36:58 already here: 07_chiapas.zip (108.8 MB)
+05:36:58 reading 07a.shp
+05:36:59 connected mass: 18 of 52 AGEB, 34 satellites dropped
+05:36:59 La Independencia: 18 polygons, 17 join with a label, 2 municipalities
+05:36:59 La Independencia: 17 AGEB, box ~607x665 px @10 m
+05:36:59 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:36:59 reading 16a.shp
+05:36:59 La Piedad: 66 polygons, 64 join with a label, 2 municipalities
+05:36:59 La Piedad: 64 AGEB, box ~1319x1550 px @10 m
+05:36:59 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:36:59 reading 30a.shp
+05:36:59 Las Choapas: 36 polygons, 36 join with a label, 1 municipalities
+05:36:59 Las Choapas: 36 AGEB, box ~480x862 px @10 m
+05:36:59 already here: 07_chiapas.zip (108.8 MB)
+05:36:59 reading 07a.shp
+05:36:59 connected mass: 15 of 48 AGEB, 33 satellites dropped
+05:36:59 La Trinitaria: 15 polygons, 14 join with a label, 1 municipalities
+05:36:59 La Trinitaria: 14 AGEB, box ~619x576 px @10 m
+05:36:59 already here: 19_nuevoleon.zip (91.4 MB)
+05:36:59 reading 19a.shp
+05:36:59 Linares: 64 polygons, 61 join with a label, 1 municipalities
+05:36:59 Linares: 61 AGEB, box ~864x763 px @10 m
+05:36:59 already here: 20_oaxaca.zip (174.6 MB)
+05:36:59 reading 20a.shp
+05:37:00 Loma Bonita: 31 polygons, 30 join with a label, 1 municipalities
+05:37:00 Loma Bonita: 30 AGEB, box ~464x537 px @10 m
+05:37:00 already here: 03_bajacaliforniasur.zip (32.8 MB)
+05:37:00 reading 03a.shp
+05:37:00 Loreto: 39 polygons, 38 join with a label, 1 municipalities
+05:37:00 Loreto: 38 AGEB, box ~429x701 px @10 m
+05:37:00 already here: 32_zacatecas.zip (74.4 MB)
+05:37:00 reading 32a.shp
+05:37:00 Loreto: 41 polygons, 39 join with a label, 1 municipalities
+05:37:00 Loreto: 39 AGEB, box ~658x329 px @10 m
+05:37:00 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:00 reading 16a.shp
+05:37:00 connected mass: 38 of 41 AGEB, 3 satellites dropped
+05:37:00 Los Reyes: 38 polygons, 37 join with a label, 2 municipalities
+05:37:00 Los Reyes: 37 AGEB, box ~522x970 px @10 m
+05:37:00 already here: 27_tabasco.zip (50.9 MB)
+05:37:00 reading 27a.shp
+05:37:00 connected mass: 24 of 41 AGEB, 17 satellites dropped
+05:37:00 Macuspana: 24 polygons, 23 join with a label, 1 municipalities
+05:37:00 Macuspana: 23 AGEB, box ~816x1149 px @10 m
+05:37:00 already here: 26_sonora.zip (74.0 MB)
+05:37:00 reading 26a.shp
+05:37:00 Magdalena: 39 polygons, 37 join with a label, 1 municipalities
+05:37:00 Magdalena: 37 AGEB, box ~673x661 px @10 m
+05:37:00 already here: 06_colima.zip (29.0 MB)
+05:37:00 reading 06a.shp
+05:37:01 Manzanillo: 142 polygons, 140 join with a label, 1 municipalities
+05:37:01 Manzanillo: 140 AGEB, box ~1771x1807 px @10 m
+05:37:01 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:01 reading 16a.shp
+05:37:01 connected mass: 46 of 55 AGEB, 9 satellites dropped
+05:37:01 Maravatío: 46 polygons, 45 join with a label, 1 municipalities
+05:37:01 Maravatío: 45 AGEB, box ~1261x719 px @10 m
+05:37:01 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:01 reading 30a.shp
+05:37:01 connected mass: 52 of 59 AGEB, 7 satellites dropped
+05:37:01 Martínez de la Torre: 52 polygons, 52 join with a label, 2 municipalities
+05:37:01 Martínez de la Torre: 52 AGEB, box ~757x626 px @10 m
+05:37:01 already here: 24_sanluispotosi.zip (91.2 MB)
+05:37:01 reading 24a.shp
+05:37:01 Matehuala: 84 polygons, 81 join with a label, 2 municipalities
+05:37:01 Matehuala: 81 AGEB, box ~1145x1056 px @10 m
+05:37:01 already here: 08_chihuahua.zip (105.8 MB)
+05:37:01 reading 08a.shp
+05:37:01 connected mass: 46 of 63 AGEB, 17 satellites dropped
+05:37:01 Meoqui: 46 polygons, 41 join with a label, 3 municipalities
+05:37:01 Meoqui: 41 AGEB, box ~916x1012 px @10 m
+05:37:01 already here: 28_tamaulipas.zip (80.0 MB)
+05:37:01 reading 28a.shp
+05:37:02 Miguel Alemán: 44 polygons, 44 join with a label, 1 municipalities
+05:37:02 Miguel Alemán: 44 AGEB, box ~812x691 px @10 m
+05:37:02 already here: 32_zacatecas.zip (74.4 MB)
+05:37:02 reading 32a.shp
+05:37:02 Miguel Auza: 51 polygons, 49 join with a label, 2 municipalities
+05:37:02 Miguel Auza: 49 AGEB, box ~1002x591 px @10 m
+05:37:02 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:02 reading 30a.shp
+05:37:02 Minatitlán: 103 polygons, 103 join with a label, 3 municipalities
+05:37:02 Minatitlán: 103 AGEB, box ~1598x1097 px @10 m
+05:37:02 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:02 reading 05a.shp
+05:37:02 Monclova: 197 polygons, 194 join with a label, 3 municipalities
+05:37:02 Monclova: 194 AGEB, box ~1115x2310 px @10 m
+05:37:02 already here: 19_nuevoleon.zip (91.4 MB)
+05:37:02 reading 19a.shp
+05:37:02 Montemorelos: 55 polygons, 51 join with a label, 1 municipalities
+05:37:02 Montemorelos: 51 AGEB, box ~620x622 px @10 m
+05:37:02 already here: 11_guanajuato.zip (133.2 MB)
+05:37:02 reading 11a.shp
+05:37:03 Moroleón: 144 polygons, 136 join with a label, 2 municipalities
+05:37:03 Moroleón: 136 AGEB, box ~680x743 px @10 m
+05:37:03 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:03 reading 16a.shp
+05:37:03 connected mass: 29 of 32 AGEB, 3 satellites dropped
+05:37:03 Múgica: 29 polygons, 29 join with a label, 1 municipalities
+05:37:03 Múgica: 29 AGEB, box ~427x644 px @10 m
+05:37:03 already here: 03_bajacaliforniasur.zip (32.8 MB)
+05:37:03 reading 03a.shp
+05:37:03 connected mass: 34 of 107 AGEB, 73 satellites dropped
+05:37:03 Mulegé: 34 polygons, 27 join with a label, 1 municipalities
+05:37:03 Mulegé: 27 AGEB, box ~560x423 px @10 m
+05:37:03 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:03 reading 05a.shp
+05:37:03 connected mass: 40 of 86 AGEB, 46 satellites dropped
+05:37:03 Múzquiz: 40 polygons, 40 join with a label, 1 municipalities
+05:37:03 Múzquiz: 40 AGEB, box ~600x623 px @10 m
+05:37:03 already here: 26_sonora.zip (74.0 MB)
+05:37:03 reading 26a.shp
+05:37:03 Nacozari de García: 47 polygons, 43 join with a label, 1 municipalities
+05:37:03 Nacozari de García: 43 AGEB, box ~333x296 px @10 m
+05:37:03 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:03 reading 16a.shp
+05:37:03 Nahuatzen: 61 polygons, 56 join with a label, 3 municipalities
+05:37:03 Nahuatzen: 56 AGEB, box ~1263x1539 px @10 m
+05:37:03 already here: 08_chihuahua.zip (105.8 MB)
+05:37:03 reading 08a.shp
+05:37:04 connected mass: 30 of 38 AGEB, 8 satellites dropped
+05:37:04 Namiquipa: 30 polygons, 27 join with a label, 1 municipalities
+05:37:04 Namiquipa: 27 AGEB, box ~599x1242 px @10 m
+05:37:04 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:04 reading 05a.shp
+05:37:04 connected mass: 33 of 104 AGEB, 71 satellites dropped
+05:37:04 Nava: 33 polygons, 33 join with a label, 1 municipalities
+05:37:04 Nava: 33 AGEB, box ~442x518 px @10 m
+05:37:04 already here: 26_sonora.zip (74.0 MB)
+05:37:04 reading 26a.shp
+05:37:04 connected mass: 128 of 132 AGEB, 4 satellites dropped
+05:37:04 Navojoa: 128 polygons, 110 join with a label, 1 municipalities
+05:37:04 Navojoa: 110 AGEB, box ~1027x846 px @10 m
+05:37:04 already here: 10_durango.zip (61.6 MB)
+05:37:04 reading 10a.shp
+05:37:04 Nazas: 40 polygons, 39 join with a label, 1 municipalities
+05:37:04 Nazas: 39 AGEB, box ~345x307 px @10 m
+05:37:04 already here: 32_zacatecas.zip (74.4 MB)
+05:37:04 reading 32a.shp
+05:37:04 Nochistlán de Mejía: 40 polygons, 37 join with a label, 1 municipalities
+05:37:04 Nochistlán de Mejía: 37 AGEB, box ~467x402 px @10 m
+05:37:04 already here: 08_chihuahua.zip (105.8 MB)
+05:37:04 reading 08a.shp
+05:37:04 Nuevo Casas Grandes: 73 polygons, 72 join with a label, 2 municipalities
+05:37:04 Nuevo Casas Grandes: 72 AGEB, box ~1091x1210 px @10 m
+05:37:04 already here: 10_durango.zip (61.6 MB)
+05:37:04 reading 10a.shp
+05:37:05 Nuevo Ideal: 41 polygons, 35 join with a label, 1 municipalities
+05:37:05 Nuevo Ideal: 35 AGEB, box ~359x415 px @10 m
+05:37:05 already here: 14_jalisco.zip (142.6 MB)
+05:37:05 reading 14a.shp
+05:37:05 Ocotlán: 77 polygons, 72 join with a label, 3 municipalities
+05:37:05 Ocotlán: 72 AGEB, box ~994x1473 px @10 m
+05:37:05 already here: 08_chihuahua.zip (105.8 MB)
+05:37:05 reading 08a.shp
+05:37:05 Ojinaga: 51 polygons, 48 join with a label, 1 municipalities
+05:37:05 Ojinaga: 48 AGEB, box ~709x575 px @10 m
+05:37:05 already here: 32_zacatecas.zip (74.4 MB)
+05:37:05 reading 32a.shp
+05:37:05 Ojocaliente: 42 polygons, 39 join with a label, 1 municipalities
+05:37:05 Ojocaliente: 39 AGEB, box ~381x445 px @10 m
+05:37:05 already here: 12_guerrero.zip (125.7 MB)
+05:37:05 reading 12a.shp
+05:37:05 connected mass: 52 of 58 AGEB, 6 satellites dropped
+05:37:05 Ometepec: 52 polygons, 50 join with a label, 2 municipalities
+05:37:05 Ometepec: 50 AGEB, box ~1323x919 px @10 m
+05:37:05 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:05 reading 30a.shp
+05:37:06 Orizaba: 136 polygons, 135 join with a label, 12 municipalities
+05:37:06 Orizaba: 135 AGEB, box ~1785x1665 px @10 m
+05:37:06 already here: 21_puebla.zip (152.1 MB)
+05:37:06 reading 21a.shp
+05:37:06 Palmar de Bravo: 44 polygons, 44 join with a label, 2 municipalities
+05:37:06 Palmar de Bravo: 44 AGEB, box ~2337x1393 px @10 m
+05:37:06 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:06 reading 30a.shp
+05:37:06 connected mass: 20 of 52 AGEB, 32 satellites dropped
+05:37:06 Pánuco: 20 polygons, 20 join with a label, 1 municipalities
+05:37:06 Pánuco: 20 AGEB, box ~423x733 px @10 m
+05:37:06 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:06 reading 16a.shp
+05:37:06 connected mass: 23 of 45 AGEB, 22 satellites dropped
+05:37:06 Paracho: 23 polygons, 23 join with a label, 1 municipalities
+05:37:06 Paracho: 23 AGEB, box ~395x396 px @10 m
+05:37:06 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:06 reading 05a.shp
+05:37:06 Parras: 31 polygons, 31 join with a label, 1 municipalities
+05:37:06 Parras: 31 AGEB, box ~799x721 px @10 m
+05:37:06 already here: 22_queretaro.zip (65.8 MB)
+05:37:06 reading 22a.shp
+05:37:07 Pedro Escobedo: 49 polygons, 48 join with a label, 5 municipalities
+05:37:07 Pedro Escobedo: 48 AGEB, box ~2160x1892 px @10 m
+05:37:07 already here: 11_guanajuato.zip (133.2 MB)
+05:37:07 reading 11a.shp
+05:37:07 connected mass: 43 of 52 AGEB, 9 satellites dropped
+05:37:07 Pénjamo: 43 polygons, 40 join with a label, 1 municipalities
+05:37:07 Pénjamo: 40 AGEB, box ~625x720 px @10 m
+05:37:07 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:07 reading 30a.shp
+05:37:07 connected mass: 37 of 45 AGEB, 8 satellites dropped
+05:37:07 Perote: 37 polygons, 36 join with a label, 2 municipalities
+05:37:07 Perote: 36 AGEB, box ~744x2040 px @10 m
+05:37:07 already here: 12_guerrero.zip (125.7 MB)
+05:37:07 reading 12a.shp
+05:37:07 Petatlán: 43 polygons, 43 join with a label, 1 municipalities
+05:37:07 Petatlán: 43 AGEB, box ~1249x699 px @10 m
+05:37:07 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:07 reading 05a.shp
+05:37:07 Piedras Negras: 137 polygons, 135 join with a label, 2 municipalities
+05:37:07 Piedras Negras: 135 AGEB, box ~953x1586 px @10 m
+05:37:07 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:07 reading 30a.shp
+05:37:08 Poza Rica de Hidalgo: 149 polygons, 149 join with a label, 3 municipalities
+05:37:08 Poza Rica de Hidalgo: 149 AGEB, box ~1385x1303 px @10 m
+05:37:08 already here: 31_yucatan.zip (50.6 MB)
+05:37:08 reading 31a.shp
+05:37:08 connected mass: 56 of 60 AGEB, 4 satellites dropped
+05:37:08 Progreso: 56 polygons, 52 join with a label, 1 municipalities
+05:37:08 Progreso: 52 AGEB, box ~3406x785 px @10 m
+05:37:08 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:08 reading 30a.shp
+05:37:08 Pueblo Viejo: 43 polygons, 43 join with a label, 2 municipalities
+05:37:08 Pueblo Viejo: 43 AGEB, box ~1217x866 px @10 m
+05:37:08 already here: 17_morelos.zip (63.4 MB)
+05:37:08 reading 17a.shp
+05:37:08 Puente de Ixtla: 75 polygons, 75 join with a label, 5 municipalities
+05:37:08 Puente de Ixtla: 75 AGEB, box ~2076x2542 px @10 m
+05:37:08 already here: 26_sonora.zip (74.0 MB)
+05:37:08 reading 26a.shp
+05:37:08 Puerto Peñasco: 132 polygons, 119 join with a label, 1 municipalities
+05:37:08 Puerto Peñasco: 119 AGEB, box ~882x1156 px @10 m
+05:37:08 already here: 11_guanajuato.zip (133.2 MB)
+05:37:08 reading 11a.shp
+05:37:09 Purísima del Rincón: 91 polygons, 88 join with a label, 2 municipalities
+05:37:09 Purísima del Rincón: 88 AGEB, box ~727x1173 px @10 m
+05:37:09 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:09 reading 16a.shp
+05:37:09 connected mass: 30 of 38 AGEB, 8 satellites dropped
+05:37:09 Puruándiro: 30 polygons, 29 join with a label, 1 municipalities
+05:37:09 Puruándiro: 29 AGEB, box ~1033x898 px @10 m
+05:37:09 already here: 28_tamaulipas.zip (80.0 MB)
+05:37:09 reading 28a.shp
+05:37:09 connected mass: 108 of 117 AGEB, 9 satellites dropped
+05:37:09 Río Bravo: 108 polygons, 103 join with a label, 2 municipalities
+05:37:09 Río Bravo: 103 AGEB, box ~1717x1006 px @10 m
+05:37:09 already here: 32_zacatecas.zip (74.4 MB)
+05:37:09 reading 32a.shp
+05:37:09 Río Grande: 78 polygons, 72 join with a label, 1 municipalities
+05:37:09 Río Grande: 72 AGEB, box ~777x612 px @10 m
+05:37:09 already here: 24_sanluispotosi.zip (91.2 MB)
+05:37:09 reading 24a.shp
+05:37:09 Rioverde: 59 polygons, 55 join with a label, 2 municipalities
+05:37:09 Rioverde: 55 AGEB, box ~1219x914 px @10 m
+05:37:09 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:09 reading 05a.shp
+05:37:09 Sabinas: 122 polygons, 122 join with a label, 2 municipalities
+05:37:09 Sabinas: 122 AGEB, box ~1715x1503 px @10 m
+05:37:09 already here: 19_nuevoleon.zip (91.4 MB)
+05:37:09 reading 19a.shp
+05:37:10 Sabinas Hidalgo: 58 polygons, 56 join with a label, 1 municipalities
+05:37:10 Sabinas Hidalgo: 56 AGEB, box ~758x997 px @10 m
+05:37:10 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:10 reading 16a.shp
+05:37:10 Sahuayo: 56 polygons, 55 join with a label, 3 municipalities
+05:37:10 Sahuayo: 55 AGEB, box ~1117x1584 px @10 m
+05:37:10 already here: 25_sinaloa.zip (71.9 MB)
+05:37:10 reading 25a.shp
+05:37:10 Salvador Alvarado: 113 polygons, 103 join with a label, 1 municipalities
+05:37:10 Salvador Alvarado: 103 AGEB, box ~1310x742 px @10 m
+05:37:10 already here: 18_nayarit.zip (46.4 MB)
+05:37:10 reading 18a.shp
+05:37:10 connected mass: 14 of 35 AGEB, 21 satellites dropped
+05:37:10 San Blas: 14 polygons, 12 join with a label, 1 municipalities
+05:37:10 San Blas: 12 AGEB, box ~298x345 px @10 m
+05:37:10 already here: 11_guanajuato.zip (133.2 MB)
+05:37:10 reading 11a.shp
+05:37:10 connected mass: 43 of 48 AGEB, 5 satellites dropped
+05:37:10 San José Iturbide: 43 polygons, 42 join with a label, 1 municipalities
+05:37:10 San José Iturbide: 42 AGEB, box ~375x534 px @10 m
+05:37:10 already here: 14_jalisco.zip (142.6 MB)
+05:37:10 reading 14a.shp
+05:37:11 San Juan de los Lagos: 54 polygons, 49 join with a label, 1 municipalities
+05:37:11 San Juan de los Lagos: 49 AGEB, box ~597x607 px @10 m
+05:37:11 already here: 22_queretaro.zip (65.8 MB)
+05:37:11 reading 22a.shp
+05:37:11 San Juan del Río: 138 polygons, 137 join with a label, 3 municipalities
+05:37:11 San Juan del Río: 137 AGEB, box ~3185x3043 px @10 m
+05:37:11 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:11 reading 05a.shp
+05:37:11 San Juan de Sabinas: 71 polygons, 70 join with a label, 2 municipalities
+05:37:11 San Juan de Sabinas: 70 AGEB, box ~1656x820 px @10 m
+05:37:11 already here: 11_guanajuato.zip (133.2 MB)
+05:37:11 reading 11a.shp
+05:37:11 connected mass: 71 of 74 AGEB, 3 satellites dropped
+05:37:11 San Miguel de Allende: 71 polygons, 63 join with a label, 1 municipalities
+05:37:11 San Miguel de Allende: 63 AGEB, box ~719x711 px @10 m
+05:37:11 already here: 14_jalisco.zip (142.6 MB)
+05:37:11 reading 14a.shp
+05:37:12 San Miguel el Alto: 37 polygons, 36 join with a label, 1 municipalities
+05:37:12 San Miguel el Alto: 36 AGEB, box ~452x458 px @10 m
+05:37:12 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:12 reading 05a.shp
+05:37:12 connected mass: 30 of 43 AGEB, 13 satellites dropped
+05:37:12 San Pedro: 30 polygons, 28 join with a label, 1 municipalities
+05:37:12 San Pedro: 28 AGEB, box ~570x459 px @10 m
+05:37:12 already here: 20_oaxaca.zip (174.6 MB)
+05:37:12 reading 20a.shp
+05:37:12 connected mass: 47 of 51 AGEB, 4 satellites dropped
+05:37:12 San Pedro Mixtepec: 47 polygons, 47 join with a label, 2 municipalities
+05:37:12 San Pedro Mixtepec: 47 AGEB, box ~1061x1174 px @10 m
+05:37:12 already here: 20_oaxaca.zip (174.6 MB)
+05:37:12 reading 20a.shp
+05:37:12 connected mass: 19 of 33 AGEB, 14 satellites dropped
+05:37:12 Santa María Huatulco: 19 polygons, 19 join with a label, 1 municipalities
+05:37:12 Santa María Huatulco: 19 AGEB, box ~500x463 px @10 m
+05:37:12 already here: 18_nayarit.zip (46.4 MB)
+05:37:12 reading 18a.shp
+05:37:12 connected mass: 20 of 55 AGEB, 35 satellites dropped
+05:37:12 Santiago Ixcuintla: 20 polygons, 20 join with a label, 1 municipalities
+05:37:12 Santiago Ixcuintla: 20 AGEB, box ~422x366 px @10 m
+05:37:12 already here: 10_durango.zip (61.6 MB)
+05:37:12 reading 10a.shp
+05:37:13 Santiago Papasquiaro: 105 polygons, 96 join with a label, 1 municipalities
+05:37:13 Santiago Papasquiaro: 96 AGEB, box ~506x620 px @10 m
+05:37:13 already here: 14_jalisco.zip (142.6 MB)
+05:37:13 reading 14a.shp
+05:37:13 Sayula: 37 polygons, 31 join with a label, 1 municipalities
+05:37:13 Sayula: 31 AGEB, box ~906x406 px @10 m
+05:37:13 already here: 32_zacatecas.zip (74.4 MB)
+05:37:13 reading 32a.shp
+05:37:13 connected mass: 64 of 92 AGEB, 28 satellites dropped
+05:37:13 Sombrerete: 64 polygons, 58 join with a label, 1 municipalities
+05:37:13 Sombrerete: 58 AGEB, box ~441x573 px @10 m
+05:37:13 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:13 reading 16a.shp
+05:37:13 connected mass: 21 of 30 AGEB, 9 satellites dropped
+05:37:13 Tacámbaro: 21 polygons, 21 join with a label, 1 municipalities
+05:37:13 Tacámbaro: 21 AGEB, box ~335x416 px @10 m
+05:37:13 already here: 14_jalisco.zip (142.6 MB)
+05:37:13 reading 14a.shp
+05:37:13 connected mass: 81 of 106 AGEB, 25 satellites dropped
+05:37:13 Tala: 81 polygons, 75 join with a label, 2 municipalities
+05:37:13 Tala: 75 AGEB, box ~715x1610 px @10 m
+05:37:13 already here: 14_jalisco.zip (142.6 MB)
+05:37:13 reading 14a.shp
+05:37:14 connected mass: 28 of 38 AGEB, 10 satellites dropped
+05:37:14 Tamazula de Gordiano: 28 polygons, 27 join with a label, 1 municipalities
+05:37:14 Tamazula de Gordiano: 27 AGEB, box ~542x529 px @10 m
+05:37:14 already here: 24_sanluispotosi.zip (91.2 MB)
+05:37:14 reading 24a.shp
+05:37:14 connected mass: 31 of 43 AGEB, 12 satellites dropped
+05:37:14 Tamazunchale: 31 polygons, 31 join with a label, 2 municipalities
+05:37:14 Tamazunchale: 31 AGEB, box ~626x931 px @10 m
+05:37:14 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:14 reading 30a.shp
+05:37:14 Tantoyuca: 35 polygons, 35 join with a label, 1 municipalities
+05:37:14 Tantoyuca: 35 AGEB, box ~431x459 px @10 m
+05:37:14 already here: 11_guanajuato.zip (133.2 MB)
+05:37:14 reading 11a.shp
+05:37:14 Tarimoro: 38 polygons, 35 join with a label, 1 municipalities
+05:37:14 Tarimoro: 35 AGEB, box ~865x394 px @10 m
+05:37:14 already here: 21_puebla.zip (152.1 MB)
+05:37:14 reading 21a.shp
+05:37:14 Tecamachalco: 85 polygons, 85 join with a label, 7 municipalities
+05:37:14 Tecamachalco: 85 AGEB, box ~1967x2108 px @10 m
+05:37:14 already here: 02_bajacalifornia.zip (68.3 MB)
+05:37:14 reading 02a.shp
+05:37:15 connected mass: 58 of 74 AGEB, 16 satellites dropped
+05:37:15 Tecate: 58 polygons, 55 join with a label, 1 municipalities
+05:37:15 Tecate: 55 AGEB, box ~1479x686 px @10 m
+05:37:15 already here: 18_nayarit.zip (46.4 MB)
+05:37:15 reading 18a.shp
+05:37:15 connected mass: 27 of 34 AGEB, 7 satellites dropped
+05:37:15 Tecuala: 27 polygons, 27 join with a label, 1 municipalities
+05:37:15 Tecuala: 27 AGEB, box ~651x461 px @10 m
+05:37:15 already here: 12_guerrero.zip (125.7 MB)
+05:37:15 reading 12a.shp
+05:37:15 Teloloapan: 34 polygons, 34 join with a label, 1 municipalities
+05:37:15 Teloloapan: 34 AGEB, box ~456x492 px @10 m
+05:37:15 already here: 17_morelos.zip (63.4 MB)
+05:37:15 reading 17a.shp
+05:37:15 connected mass: 240 of 241 AGEB, 1 satellites dropped
+05:37:15 Temixco: 240 polygons, 239 join with a label, 5 municipalities
+05:37:15 Temixco: 239 AGEB, box ~1121x1970 px @10 m
+05:37:15 already here: 14_jalisco.zip (142.6 MB)
+05:37:15 reading 14a.shp
+05:37:16 connected mass: 34 of 36 AGEB, 2 satellites dropped
+05:37:16 Teocaltiche: 34 polygons, 34 join with a label, 1 municipalities
+05:37:16 Teocaltiche: 34 AGEB, box ~412x518 px @10 m
+05:37:16 already here: 14_jalisco.zip (142.6 MB)
+05:37:16 reading 14a.shp
+05:37:16 connected mass: 68 of 124 AGEB, 56 satellites dropped
+05:37:16 Tepatitlán de Morelos: 68 polygons, 66 join with a label, 1 municipalities
+05:37:16 Tepatitlán de Morelos: 66 AGEB, box ~813x746 px @10 m
+05:37:16 already here: 21_puebla.zip (152.1 MB)
+05:37:16 reading 21a.shp
+05:37:16 Tepeaca: 88 polygons, 87 join with a label, 10 municipalities
+05:37:16 Tepeaca: 87 AGEB, box ~1931x2346 px @10 m
+05:37:16 already here: 13_hidalgo.zip (110.0 MB)
+05:37:16 reading 13a.shp
+05:37:16 Tepeapulco: 46 polygons, 44 join with a label, 2 municipalities
+05:37:16 Tepeapulco: 44 AGEB, box ~872x877 px @10 m
+05:37:16 already here: 13_hidalgo.zip (110.0 MB)
+05:37:16 reading 13a.shp
+05:37:16 Tepeji del Río de Ocampo: 81 polygons, 81 join with a label, 3 municipalities
+05:37:16 Tepeji del Río de Ocampo: 81 AGEB, box ~1674x2670 px @10 m
+05:37:16 already here: 14_jalisco.zip (142.6 MB)
+05:37:16 reading 14a.shp
+05:37:17 connected mass: 31 of 34 AGEB, 3 satellites dropped
+05:37:17 Tequila: 31 polygons, 30 join with a label, 1 municipalities
+05:37:17 Tequila: 30 AGEB, box ~518x416 px @10 m
+05:37:17 already here: 22_queretaro.zip (65.8 MB)
+05:37:17 reading 22a.shp
+05:37:17 connected mass: 55 of 57 AGEB, 2 satellites dropped
+05:37:17 Tequisquiapan: 55 polygons, 55 join with a label, 3 municipalities
+05:37:17 Tequisquiapan: 55 AGEB, box ~2330x1677 px @10 m
+05:37:17 already here: 15_mexico.zip (226.7 MB)
+05:37:17 reading 15a.shp
+05:37:17 Texcoco: 290 polygons, 290 join with a label, 10 municipalities
+05:37:17 Texcoco: 290 AGEB, box ~2648x2586 px @10 m
+05:37:17 already here: 21_puebla.zip (152.1 MB)
+05:37:17 reading 21a.shp
+05:37:18 Teziutlán: 53 polygons, 52 join with a label, 4 municipalities
+05:37:18 Teziutlán: 52 AGEB, box ~1413x1506 px @10 m
+05:37:18 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:18 reading 30a.shp
+05:37:18 connected mass: 17 of 128 AGEB, 111 satellites dropped
+05:37:18 Tihuatlán: 17 polygons, 17 join with a label, 1 municipalities
+05:37:18 Tihuatlán: 17 AGEB, box ~281x341 px @10 m
+05:37:18 already here: 13_hidalgo.zip (110.0 MB)
+05:37:18 reading 13a.shp
+05:37:18 Tizayuca: 111 polygons, 111 join with a label, 2 municipalities
+05:37:18 Tizayuca: 111 AGEB, box ~921x1243 px @10 m
+05:37:18 already here: 31_yucatan.zip (50.6 MB)
+05:37:18 reading 31a.shp
+05:37:18 connected mass: 33 of 37 AGEB, 4 satellites dropped
+05:37:18 Tizimín: 33 polygons, 32 join with a label, 1 municipalities
+05:37:18 Tizimín: 32 AGEB, box ~789x662 px @10 m
+05:37:18 already here: 17_morelos.zip (63.4 MB)
+05:37:18 reading 17a.shp
+05:37:18 Tlaltizapán de Zapata: 76 polygons, 76 join with a label, 7 municipalities
+05:37:18 Tlaltizapán de Zapata: 76 AGEB, box ~1573x1828 px @10 m
+05:37:18 already here: 12_guerrero.zip (125.7 MB)
+05:37:18 reading 12a.shp
+05:37:19 Tlapa de Comonfort: 50 polygons, 49 join with a label, 1 municipalities
+05:37:19 Tlapa de Comonfort: 49 AGEB, box ~549x524 px @10 m
+05:37:19 already here: 29_tlaxcala.zip (53.4 MB)
+05:37:19 reading 29a.shp
+05:37:19 Tlaxcala: 213 polygons, 212 join with a label, 27 municipalities
+05:37:19 Tlaxcala: 212 AGEB, box ~2519x2471 px @10 m
+05:37:19 already here: 29_tlaxcala.zip (53.4 MB)
+05:37:19 reading 29a.shp
+05:37:19 connected mass: 31 of 34 AGEB, 3 satellites dropped
+05:37:19 Tlaxco: 31 polygons, 30 join with a label, 1 municipalities
+05:37:19 Tlaxco: 30 AGEB, box ~1392x1001 px @10 m
+05:37:19 already here: 14_jalisco.zip (142.6 MB)
+05:37:19 reading 14a.shp
+05:37:19 connected mass: 16 of 31 AGEB, 15 satellites dropped
+05:37:19 Tomatlán: 16 polygons, 15 join with a label, 1 municipalities
+05:37:19 Tomatlán: 15 AGEB, box ~321x328 px @10 m
+05:37:19 already here: 07_chiapas.zip (108.8 MB)
+05:37:19 reading 07a.shp
+05:37:19 connected mass: 27 of 38 AGEB, 11 satellites dropped
+05:37:19 Tonalá: 27 polygons, 27 join with a label, 1 municipalities
+05:37:19 Tonalá: 27 AGEB, box ~546x449 px @10 m
+05:37:19 already here: 13_hidalgo.zip (110.0 MB)
+05:37:19 reading 13a.shp
+05:37:20 Tula de Allende: 108 polygons, 106 join with a label, 6 municipalities
+05:37:20 Tula de Allende: 106 AGEB, box ~1861x2930 px @10 m
+05:37:20 already here: 13_hidalgo.zip (110.0 MB)
+05:37:20 reading 13a.shp
+05:37:20 Tulancingo de Bravo: 132 polygons, 130 join with a label, 5 municipalities
+05:37:20 Tulancingo de Bravo: 130 AGEB, box ~2571x1991 px @10 m
+05:37:20 already here: 23_quintanaroo.zip (37.9 MB)
+05:37:20 reading 23a.shp
+05:37:20 Tulum: 33 polygons, 31 join with a label, 1 municipalities
+05:37:20 Tulum: 31 AGEB, box ~508x1129 px @10 m
+05:37:20 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:20 reading 30a.shp
+05:37:20 Tuxpan: 96 polygons, 96 join with a label, 1 municipalities
+05:37:20 Tuxpan: 96 AGEB, box ~1486x655 px @10 m
+05:37:20 already here: 11_guanajuato.zip (133.2 MB)
+05:37:20 reading 11a.shp
+05:37:20 Uriangato: 166 polygons, 156 join with a label, 3 municipalities
+05:37:20 Uriangato: 156 AGEB, box ~1039x1267 px @10 m
+05:37:20 already here: 31_yucatan.zip (50.6 MB)
+05:37:20 reading 31a.shp
+05:37:21 connected mass: 41 of 47 AGEB, 6 satellites dropped
+05:37:21 Valladolid: 41 polygons, 39 join with a label, 2 municipalities
+05:37:21 Valladolid: 39 AGEB, box ~985x1720 px @10 m
+05:37:21 already here: 28_tamaulipas.zip (80.0 MB)
+05:37:21 reading 28a.shp
+05:37:21 connected mass: 67 of 75 AGEB, 8 satellites dropped
+05:37:21 Valle Hermoso: 67 polygons, 66 join with a label, 1 municipalities
+05:37:21 Valle Hermoso: 66 AGEB, box ~1272x693 px @10 m
+05:37:21 already here: 32_zacatecas.zip (74.4 MB)
+05:37:21 reading 32a.shp
+05:37:21 Valparaíso: 53 polygons, 48 join with a label, 1 municipalities
+05:37:21 Valparaíso: 48 AGEB, box ~567x629 px @10 m
+05:37:21 already here: 07_chiapas.zip (108.8 MB)
+05:37:21 reading 07a.shp
+05:37:21 connected mass: 21 of 46 AGEB, 25 satellites dropped
+05:37:21 Venustiano Carranza: 21 polygons, 21 join with a label, 1 municipalities
+05:37:21 Venustiano Carranza: 21 AGEB, box ~281x401 px @10 m
+05:37:21 already here: 10_durango.zip (61.6 MB)
+05:37:21 reading 10a.shp
+05:37:21 Vicente Guerrero: 51 polygons, 39 join with a label, 1 municipalities
+05:37:21 Vicente Guerrero: 39 AGEB, box ~392x557 px @10 m
+05:37:21 already here: 06_colima.zip (29.0 MB)
+05:37:21 reading 06a.shp
+05:37:21 Villa de Álvarez: 253 polygons, 247 join with a label, 5 municipalities
+05:37:21 Villa de Álvarez: 247 AGEB, box ~1662x1557 px @10 m
+05:37:21 already here: 24_sanluispotosi.zip (91.2 MB)
+05:37:21 reading 24a.shp
+05:37:21 connected mass: 28 of 38 AGEB, 10 satellites dropped
+05:37:21 Villa de Reyes: 28 polygons, 27 join with a label, 1 municipalities
+05:37:21 Villa de Reyes: 27 AGEB, box ~422x582 px @10 m
+05:37:21 already here: 20_oaxaca.zip (174.6 MB)
+05:37:21 reading 20a.shp
+05:37:22 connected mass: 19 of 35 AGEB, 16 satellites dropped
+05:37:22 Villa de Tututepec: 19 polygons, 19 join with a label, 1 municipalities
+05:37:22 Villa de Tututepec: 19 AGEB, box ~384x399 px @10 m
+05:37:22 already here: 32_zacatecas.zip (74.4 MB)
+05:37:22 reading 32a.shp
+05:37:22 connected mass: 27 of 42 AGEB, 15 satellites dropped
+05:37:22 Villa González Ortega: 27 polygons, 22 join with a label, 1 municipalities
+05:37:22 Villa González Ortega: 22 AGEB, box ~307x266 px @10 m
+05:37:22 already here: 14_jalisco.zip (142.6 MB)
+05:37:22 reading 14a.shp
+05:37:22 Villa Hidalgo: 39 polygons, 37 join with a label, 1 municipalities
+05:37:22 Villa Hidalgo: 37 AGEB, box ~325x335 px @10 m
+05:37:22 already here: 32_zacatecas.zip (74.4 MB)
+05:37:22 reading 32a.shp
+05:37:22 connected mass: 34 of 43 AGEB, 9 satellites dropped
+05:37:22 Villanueva: 34 polygons, 32 join with a label, 1 municipalities
+05:37:22 Villanueva: 32 AGEB, box ~381x410 px @10 m
+05:37:22 already here: 17_morelos.zip (63.4 MB)
+05:37:22 reading 17a.shp
+05:37:22 Xochitepec: 173 polygons, 172 join with a label, 7 municipalities
+05:37:22 Xochitepec: 172 AGEB, box ~1715x2313 px @10 m
+05:37:22 already here: 17_morelos.zip (63.4 MB)
+05:37:22 reading 17a.shp
+05:37:23 Yautepec: 202 polygons, 199 join with a label, 6 municipalities
+05:37:23 Yautepec: 199 AGEB, box ~3243x1604 px @10 m
+05:37:23 already here: 14_jalisco.zip (142.6 MB)
+05:37:23 reading 14a.shp
+05:37:23 Zapotiltic: 64 polygons, 63 join with a label, 2 municipalities
+05:37:23 Zapotiltic: 63 AGEB, box ~965x907 px @10 m
+05:37:23 already here: 14_jalisco.zip (142.6 MB)
+05:37:23 reading 14a.shp
+05:37:23 Zapotlán el Grande: 86 polygons, 80 join with a label, 2 municipalities
+05:37:23 Zapotlán el Grande: 80 AGEB, box ~723x1223 px @10 m
+05:37:23 already here: 16_michoacandeocampo.zip (122.2 MB)
+05:37:23 reading 16a.shp
+05:37:23 Zitácuaro: 41 polygons, 41 join with a label, 1 municipalities
+05:37:23 Zitácuaro: 41 AGEB, box ~1116x661 px @10 m
+05:37:23 already here: 15_mexico.zip (226.7 MB)
+05:37:23 reading 15a.shp
+05:37:24 Zumpango: 186 polygons, 184 join with a label, 10 municipalities
+05:37:24 Zumpango: 184 AGEB, box ~3045x2582 px @10 m
+05:37:24 already here: 11_guanajuato.zip (133.2 MB)
+05:37:24 reading 11a.shp
+05:37:24 connected mass: 88 of 126 AGEB, 38 satellites dropped
+05:37:24 Acámbaro: 88 polygons, 82 join with a label, 1 municipalities
+05:37:24 Acámbaro: 82 AGEB, box ~666x992 px @10 m
+05:37:24 already here: 07_chiapas.zip (108.8 MB)
+05:37:24 reading 07a.shp
+05:37:24 Comitán de Domínguez: 100 polygons, 100 join with a label, 2 municipalities
+05:37:24 Comitán de Domínguez: 100 AGEB, box ~1261x1162 px @10 m
+05:37:24 already here: 11_guanajuato.zip (133.2 MB)
+05:37:24 reading 11a.shp
+05:37:25 connected mass: 60 of 74 AGEB, 14 satellites dropped
+05:37:25 Comonfort: 60 polygons, 51 join with a label, 2 municipalities
+05:37:25 Comonfort: 51 AGEB, box ~417x1544 px @10 m
+05:37:25 already here: 25_sinaloa.zip (71.9 MB)
+05:37:25 reading 25a.shp
+05:37:25 connected mass: 572 of 653 AGEB, 81 satellites dropped
+05:37:25 Culiacán: 572 polygons, 529 join with a label, 2 municipalities
+05:37:25 Culiacán: 529 AGEB, box ~2479x2024 px @10 m
+05:37:25 already here: 15_mexico.zip (226.7 MB)
+05:37:25 reading 15a.shp
+05:37:25 Ecatepec de Morelos: 800 polygons, 798 join with a label, 13 municipalities
+05:37:25 Ecatepec de Morelos: 798 AGEB, box ~2439x3068 px @10 m
+05:37:25 already here: 23_quintanaroo.zip (37.9 MB)
+05:37:25 reading 23a.shp
+05:37:25 connected mass: 37 of 67 AGEB, 30 satellites dropped
+05:37:26 Felipe Carrillo Puerto: 37 polygons, 37 join with a label, 1 municipalities
+05:37:26 Felipe Carrillo Puerto: 37 AGEB, box ~523x417 px @10 m
+05:37:26 already here: 32_zacatecas.zip (74.4 MB)
+05:37:26 reading 32a.shp
+05:37:26 connected mass: 312 of 345 AGEB, 33 satellites dropped
+05:37:26 Guadalupe: 312 polygons, 288 join with a label, 3 municipalities
+05:37:26 Guadalupe: 288 AGEB, box ~1419x2120 px @10 m
+05:37:26 already here: 11_guanajuato.zip (133.2 MB)
+05:37:26 reading 11a.shp
+05:37:26 connected mass: 178 of 183 AGEB, 5 satellites dropped
+05:37:26 Guanajuato: 178 polygons, 165 join with a label, 3 municipalities
+05:37:26 Guanajuato: 165 AGEB, box ~1413x2904 px @10 m
+05:37:26 already here: 15_mexico.zip (226.7 MB)
+05:37:26 reading 15a.shp
+05:37:27 Naucalpan de Juárez: 400 polygons, 396 join with a label, 5 municipalities
+05:37:27 Naucalpan de Juárez: 396 AGEB, box ~2527x2397 px @10 m
+05:37:27 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+05:37:27 reading 30a.shp
+05:37:27 connected mass: 52 of 57 AGEB, 5 satellites dropped
+05:37:27 Papantla: 52 polygons, 52 join with a label, 1 municipalities
+05:37:27 Papantla: 52 AGEB, box ~791x1329 px @10 m
+05:37:27 already here: 26_sonora.zip (74.0 MB)
+05:37:27 reading 26a.shp
+05:37:27 connected mass: 239 of 291 AGEB, 52 satellites dropped
+05:37:27 San Luis Río Colorado: 239 polygons, 218 join with a label, 1 municipalities
+05:37:27 San Luis Río Colorado: 218 AGEB, box ~1340x1114 px @10 m
+05:37:27 already here: 07_chiapas.zip (108.8 MB)
+05:37:27 reading 07a.shp
+05:37:27 connected mass: 162 of 207 AGEB, 45 satellites dropped
+05:37:27 Tapachula: 162 polygons, 162 join with a label, 1 municipalities
+05:37:27 Tapachula: 162 AGEB, box ~985x1147 px @10 m
+05:37:27 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+05:37:27 reading 05a.shp
+05:37:28 Torreón: 355 polygons, 345 join with a label, 2 municipalities
+05:37:28 Torreón: 345 AGEB, box ~2425x1850 px @10 m
+05:37:28 already here: 24_sanluispotosi.zip (91.2 MB)
+05:37:28 reading 24a.shp
+05:37:28 connected mass: 21 of 76 AGEB, 55 satellites dropped
+05:37:28 Villa de Ramos: 21 polygons, 20 join with a label, 1 municipalities
+05:37:28 Villa de Ramos: 20 AGEB, box ~276x386 px @10 m
+expanded pool · radius 0 · 630704 labelled training instances
+grade distribution: [140382, 225247, 193370, 62124, 9581]
+epoch 1 · loss 1.5241 · AUROC(>=High) 0.821 · Spearman +0.421
+epoch 2 · loss 1.4251 · AUROC(>=High) 0.822 · Spearman +0.447
+epoch 3 · loss 1.4050 · AUROC(>=High) 0.833 · Spearman +0.452
+epoch 4 · loss 1.3864 · AUROC(>=High) 0.836 · Spearman +0.463
+epoch 5 · loss 1.3659 · AUROC(>=High) 0.836 · Spearman +0.472
+epoch 6 · loss 1.3577 · AUROC(>=High) 0.836 · Spearman +0.474
+
+===== CEILING =====
+radius 0 · instance level, fully supervised: AUROC 0.836 · pooled Spearman +0.474 · within-bag +0.209 over 34 bags
