@@ -14,7 +14,7 @@
 \linenumbers
 \graphicspath{{figures/}}
 
-\title{\textbf{Mapping neighbourhood deprivation from municipal statistics and
+\title{\textbf{Mapping neighborhood deprivation from municipal statistics and
 satellite imagery}}
 \author[1]{Dagoberto Pulido Arias}
 \affil[1]{Independent researcher, Mexico. Correspondence: dagopa.1010@gmail.com}
@@ -25,9 +25,9 @@ satellite imagery}}
 
 \begin{abstract}
 \noindent Most countries publish social statistics as administrative aggregates;
-almost none publish them at neighbourhood level. We measure how much neighbourhood
+almost none publish them at neighborhood level. We measure how much neighborhood
 detail aggregates and free satellite imagery jointly recover. Trained only on five-level
-deprivation aggregates of Mexican municipalities --- never on spatial annotation --- and
+deprivation aggregates of Mexican municipalities, with no spatial annotation, and
 scored against fully held-out census-tract grades, the map reaches a
 within-municipality rank correlation of $\rho = 0.20$ on fourteen test cities opened
 once, with frozen models: 84\% of what the same features attain there under full tract
@@ -50,9 +50,9 @@ space~\cite{jean2016,yeh2020,chi2022,burke2021}, and derived global products alr
 steer programme targeting~\cite{chi2022,aiken2022}. Predicting an aggregate
 somewhere else and disaggregating it in place are different tasks, and the second is the
 one targeting decisions require: a mayor already knows the municipality is poor but
-lacks a map of which neighbourhoods are poorest.
+lacks a map of which neighborhoods are poorest.
 
-We ask the disaggregation question quantitatively: how much neighbourhood detail can be
+We ask the disaggregation question quantitatively: how much neighborhood detail can be
 recovered from a country's published aggregates combined with free imagery? We frame the
 answer as an exchange rate between the number and granularity of published aggregates
 and the within-municipality detail they recover, and we measure it in a country that
@@ -75,7 +75,7 @@ measured upper bound.
 
 \subsection*{The exchange rate}
 
-Figure~\ref{fig:curve} shows the measurement on a pool of 771 municipal bags --- the 110
+Figure~\ref{fig:curve} shows the measurement on a pool of 771 municipal bags: the 110
 training cities plus 213 municipalities added expressly to cover the deprived half of
 urban Mexico that large-city samples miss (Fig.~\ref{fig:design}a; municipalities
 overlapping any held-out city's ground are excluded, Methods). Every row below was scored once on the fourteen test cities with frozen,
@@ -90,23 +90,23 @@ city-clustered bootstrap puts the test fraction at $0.85$ with a wide interval
 consistent across splits, that the title claims. The test curve reproduces the rise
 through 400 aggregates almost exactly and flattens at the top: the final gain observed
 on validation for the full supply is not fully reproduced. \textbf{Granularity}
-(Fig.~\ref{fig:curve}b): relabelling the same bags with state-level aggregates cuts the
+(Fig.~\ref{fig:curve}b): relabeling the same bags with state-level aggregates cuts the
 map from $0.225$ to $\rho = 0.152$ on validation and from $0.195$ to $0.168$ on test; a
 single national aggregate erases it ($0.009$ validation, $0.004$ test). Recovered map
 quality falls monotonically with coarser publication on both splits.
 \textbf{Content} (Fig.~\ref{fig:curve}c): block-averaging the optical input to the
 radar's 20 m effective resolution costs little on validation ($0.183 \to 0.172$) and
 more on test ($0.179 \to 0.129$), while radar sits far below both ($0.006$ validation,
-$0.084$ test) --- despite having been, in our feature-based phase-one baseline, the best
-single sensor at detecting high-deprivation tracts (per-city AUROC 0.773 against 0.747
-optical). Sensor content dominates ground sampling distance, with resolution carrying a
+$0.084$ test), despite having been the best single sensor at detecting
+high-deprivation tracts in our feature-based phase-one baseline (per-city AUROC 0.773
+against 0.747 optical). Sensor content dominates ground sampling distance, with resolution carrying a
 real secondary cost on test; a sensor's prediction accuracy is a poor guide to its map
 quality.
 
 \subsection*{Failure mode of attention-based pooling, and an instance-level alternative}
 
-The standard weakly supervised localizer --- gated-attention multiple-instance learning
-(ABMIL~\cite{ilse2018}, with the CLAM instance constraint~\cite{lu2021}) --- predicts
+The standard weakly supervised localizer, gated-attention multiple-instance learning
+(ABMIL~\cite{ilse2018} with the CLAM instance constraint~\cite{lu2021}), predicts
 municipal labels well (quadratic-weighted $\kappa = 0.62$) and produces a map at chance
 (AUROC 0.463; Fig.~\ref{fig:dissociation}a; these diagnostics ran on the national-set
 pool). An entropy penalty that flattens the attention to near-uniform costs no bag
@@ -114,32 +114,32 @@ AUROC (0.899 $\to$ 0.895): the bag task is solvable from the plain feature mean,
 attention weights receive no gradient that rewards localization.
 
 Reversing the order of prediction and aggregation removes the failure. Predicting every
-token and averaging the predictions --- deep learning from label
-proportions~\cite{quadrianto2009,ardehaly2017,dulac2019} --- ties the training signal
+token and averaging the predictions (deep learning from label
+proportions~\cite{quadrianto2009,ardehaly2017,dulac2019}) ties the training signal
 directly to the token scores that form the map: AUROC 0.761 under the same features,
 bags and labels on that national-set pool, and 0.802 for the swept head with 480 m of
-neighbourhood context on the expanded pool of Fig.~\ref{fig:curve}. Because
+neighborhood context on the expanded pool of Fig.~\ref{fig:curve}. Because
 Mexican municipal grades are population-weighted aggregates of tract grades, the setting
 is label proportions with \emph{known} instance weights; weighting each token by its
 tract's census population is a robustness variant that performs equivalently
 ($\rho = 0.232$ against $0.227$ on validation; $0.182$ against $0.196$ on test).
 
 The sweep also quantified a limitation of model selection under weak supervision.
-Across the fourteen configurations, bag-level error --- the only selection signal weak
-supervision may legitimately use --- has a rank correlation of $-0.14$ with
+Across the fourteen configurations, bag-level error, the only selection signal weak
+supervision may legitimately use, has a rank correlation of $-0.14$ with
 within-municipality map quality and $+0.62$ with the map's pooled AUROC, the wrong sign
 for a selection criterion (Fig.~\ref{fig:dissociation}b). Fourteen configurations give
 these correlations a standard error near $0.27$, so the estimate is coarse; what it
 supports is that selection on bag error is close to uninformative about the quantity
 that matters. Whether this extends beyond settings where the bag label is an average of
-instance states is open, but any pipeline whose product is the map --- computational
-pathology included --- is affected, which is why the benchmark includes held-out
-instance labels.
+instance states is open, but any pipeline whose product is the map is affected,
+computational pathology included, which is why the benchmark includes held-out instance
+labels.
 
 \subsection*{External validity}
 
 We ran four independent comparisons to test whether the map measures deprivation or a
-pipeline artefact (Fig.~\ref{fig:validation}). Against the leading downloadable product, Meta's Relative
+pipeline artifact (Fig.~\ref{fig:validation}). Against the leading downloadable product, Meta's Relative
 Wealth Index~\cite{chi2022}, scored per tract on an identical universe
 with a city-clustered bootstrap of the paired difference (2{,}958 shared AGEB), the map
 wins in 18 of 22 municipalities: $\Delta\rho = +0.22$ [$+0.08, +0.29$]; on the test
@@ -153,21 +153,22 @@ therefore split-dependent; what holds on both splits is their edge on the bag ta
 error 0.095 against 0.110) and, on test, on high-deprivation detection (AUROC 0.821
 against 0.781). Much of the within-municipality ordering is captured by land cover
 alone. This is consistent with the exchange rate, which measures what the published
-supervision recovers for a fixed feature set, whichever encoder produces it. Against an index from an institution whose data never entered training --- CONAPO's
+supervision recovers for a fixed feature set, whichever encoder produces it. Against an index from an institution whose data never entered training (CONAPO's
 continuous urban marginalization index, built from a different indicator set over the
-same census --- the map correlates at $\rho = 0.361
+same census), the map correlates at $\rho = 0.361
 \pm 0.073$ within municipalities on validation and $0.257 \pm 0.146$ on test, in both
 cases at least as high as against its own five-level training construct, consistent
 with the continuous index resolving ties that five levels cannot
 (Fig.~\ref{fig:validation}b). In simulated
 geographic targeting with fractional funding of the marginal tract, allocating by the
 map instead of the municipal aggregate closes 26--43\% of the gap to census-guided
-allocation on validation at budgets of 10\% and above --- losing at the tightest budget
-(5\%), where errors at the top of the ranking are most costly --- and 31--66\% on the
-test cities, with no crossover there (Fig.~\ref{fig:validation}c). The map is also not an administrative
-artefact. Crossing a municipal border where deprivation does not change moves it by
+allocation on validation at budgets of 10\% and above, and 31--66\% on the test
+cities with no crossover there (Fig.~\ref{fig:validation}c). At the tightest validation
+budget (5\%), where errors at the top of the ranking are most costly, the map loses to
+the aggregate. The map is also not an administrative
+artifact. Crossing a municipal border where deprivation does not change moves it by
 $+0.019$ [$-0.002$, $+0.155$], and tract borders inside municipalities are crossed
-smoothly ($+0.001$). An earlier $+0.14$ border jump traced to bag-limited neighbourhood
+smoothly ($+0.001$). An earlier $+0.14$ border jump traced to bag-limited neighborhood
 adjacency at inference and disappeared after the adjacency was computed city-wide. The
 test cities contain too few same-grade cross-border pairs to repeat this control there.
 
@@ -185,13 +186,13 @@ detection does not follow from it.
 
 \subsection*{Limits}
 
-The upper bound itself is low: even with full tract labels and neighbourhood context,
-160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test
---- sufficient to order neighbourhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
+The upper bound itself is low: even with full tract labels and neighborhood context,
+160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test:
+sufficient to order neighborhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
 size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--49
 tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
 tracts; the test split reproduces the pattern noisily, peaking at $0.38$ and collapsing
-in its single large-tract municipality --- the modifiable areal unit problem,
+in its single large-tract municipality. This is the modifiable areal unit problem,
 quantified here by tract size (Supplementary Table~2). Ecological caution applies throughout: the model recovers where deprived tracts are, and
 tract grades are themselves aggregates over households; neither the labels nor the maps
 identify deprived households, and the targeting simulation counts the population of
@@ -215,8 +216,8 @@ work.
 Mexico's dual-level publication made the calibration possible; the measured fractions
 can be extrapolated to countries that publish only aggregates, and the Bogot\'a
 transfer is a first test of that extrapolation. Extending the dual calibration to
-Colombia's own strata --- holding out the block-level strata and building coarse
-aggregates from them --- is the natural next measurement, and every number here is
+Colombia's own strata, holding out the block-level strata and building coarse
+aggregates from them, is the natural next measurement, and every number here is
 reproducible from the released frozen features.
 
 \section*{Methods}
@@ -233,8 +234,8 @@ WorldCover 2020~\cite{worldcover}, Meta RWI~\cite{chi2022}, IBGE AGSN
 \textbf{Bags and instances.} A bag is a municipality (771 after exclusions); instances
 are 16-pixel tokens (160 m) encoded by a frozen DOFA foundation
 model~\cite{xiong2024}, both sensors fused per token. Municipalities contributing
-ground to any held-out city are excluded from the expansion --- an earlier version
-leaked nine validation municipalities this way, detectable only at bag level, and every
+ground to any held-out city are excluded from the expansion; an earlier version leaked
+nine validation municipalities this way, detectable only at bag level, and every
 affected number was re-measured.
 \textbf{Model.} A two-layer head on standardized frozen features predicts four
 cumulative-grade probabilities per token; the bag prediction is the mean of token
@@ -260,10 +261,10 @@ restricted to tokens with WorldCover built fraction $\geq 0.10$.
 standardization), then a combination round; standardized inputs with binary
 cross-entropy won on bag error over five grouped training folds.
 \textbf{Targeting simulation.} For each validation city and budget $q \in \{5, 10, 20,
-30\}\%$ of population, tracts are funded in the order given by each allocator ---
-municipal aggregate (ties broken at random, 200 draws), the map's tract-mean score, or
-tract truth --- with the marginal tract funded fractionally, so the truth ordering upper-bounds
-both by construction. The outcome is the population living in high or very-high grade
+30\}\%$ of population, tracts are funded in the order given by each allocator (municipal aggregate with ties
+broken at random over 200 draws, the map's tract-mean score, or tract truth), with the
+marginal tract funded fractionally, so the truth ordering upper-bounds both by
+construction. The outcome is the population living in high or very-high grade
 tracts among those reached, pooled over cities before the gap ratio is formed.
 \textbf{RWI pairing.} Each AGEB takes the RWI value of the nearest grid point to its
 centroid; the model is averaged token-to-tract; both are scored on the 2{,}958 shared
@@ -332,8 +333,8 @@ accessed August 2026).
 \end{thebibliography}
 
 \section*{Data availability}
-The frozen benchmark --- foundation-model vectors for every bag, municipal and tract
-labels, splits and the evaluation protocol --- will be deposited on Zenodo with a DOI at
+The frozen benchmark (foundation-model vectors for every bag, municipal and tract
+labels, splits, and the evaluation protocol) will be deposited on Zenodo with a DOI at
 publication. All source data are public: Copernicus Sentinel via Microsoft Planetary
 Computer, CONEVAL, CONAPO, INEGI, ESA WorldCover, Meta RWI (HDX), IBGE, and Bogot\'a's
 open-data portal.
@@ -388,7 +389,7 @@ selection (error bars, s.d. over seeds); orange, the 14 test cities scored once 
 frozen models; dashed and dotted lines, the fully supervised oracle upper bound on each split
 ($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
 many municipal aggregates supervise training (nested, grade-stratified sampling).
-\textbf{b}, The same 771 bags relabelled with coarser aggregates. \textbf{c},
+\textbf{b}, The same 771 bags relabeled with coarser aggregates. \textbf{c},
 Single-sensor configurations: degrading optical resolution to the radar's 20 m grain
 costs little on validation and a real but secondary amount on test; radar sits far
 below both.}
@@ -405,7 +406,7 @@ Fig.~2. Attention pooling solves the bag task from the feature mean and receives
 localization gradient; predicting instances and averaging predictions makes the map the
 mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
 folds of the national set), the only criterion weak supervision may monitor is nearly
-uncorrelated with within-municipality map quality --- and positively correlated
+uncorrelated with within-municipality map quality, and positively correlated
 ($+0.62$) with the pooled AUROC it would seem to proxy.}
 \label{fig:dissociation}
 \end{figure}

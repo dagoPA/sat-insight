@@ -2,13 +2,13 @@
 
 Dear Editors,
 
-Please consider our manuscript, "Mapping neighbourhood deprivation from municipal
+Please consider our manuscript, "Mapping neighborhood deprivation from municipal
 statistics and satellite imagery", for publication in Nature Communications.
 
 Nearly every country publishes social statistics as administrative aggregates; almost
-none publishes them at neighbourhood level. Our study measures, for the first time
-against a fully held-out neighbourhood-level ground truth at national scale, how much
-neighbourhood detail those aggregates recover when combined with free satellite
+none publishes them at neighborhood level. Our study measures, for the first time
+against a fully held-out neighborhood-level ground truth at national scale, how much
+neighborhood detail those aggregates recover when combined with free satellite
 imagery. Mexico publishes its deprivation index at both municipal and census-tract
 level, which lets us calibrate the exchange rate between the two: models trained only on
 municipal aggregates reach 84–90% of the tract-level ordering that the same satellite
