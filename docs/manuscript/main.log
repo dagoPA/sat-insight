@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  31 AUG 2026 16:19
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  31 AUG 2026 19:05
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -318,32 +318,51 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
 Package: setspace 2022/12/04 v6.7b set line spacing
 )
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lineno/lineno.sty
+Package: lineno 2025/01/29 line numbers on paragraphs v5.4
+\linenopenalty=\count305
+\output=\toks26
+\linenoprevgraf=\count306
+\linenumbersep=\dimen178
+\linenumberwidth=\dimen179
+\c@linenumber=\count307
+\c@pagewiselinenumber=\count308
+\c@LN@truepage=\count309
+\c@internallinenumber=\count310
+\c@internallinenumbers=\count311
+\quotelinenumbersep=\dimen180
+\bframerule=\dimen181
+\bframesep=\dimen182
+\bframebox=\box54
+\@LN@amsmath@ams@eqpen=\count312
+LaTeX Info: Redefining \\ on input line 3187.
+)
 (/usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count305
-\l__pdf_internal_box=\box54
+\l__color_backend_stack_int=\count313
+\l__pdf_internal_box=\box55
 )
 (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 21.
-LaTeX Font Info:    ... okay on input line 21.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -381,17 +400,17 @@ LaTeX Font Info:    ... okay on input line 21.
 
 (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count306
-\scratchdimen=\dimen178
-\scratchbox=\box55
-\nofMPsegments=\count307
-\nofMParguments=\count308
-\everyMPshowfont=\toks26
-\MPscratchCnt=\count309
-\MPscratchDim=\dimen179
-\MPnumerator=\count310
-\makeMPintoPDFobject=\count311
-\everyMPtoPDFconversion=\toks27
+\scratchcounter=\count314
+\scratchdimen=\dimen183
+\scratchbox=\box56
+\nofMPsegments=\count315
+\nofMParguments=\count316
+\everyMPshowfont=\toks27
+\MPscratchCnt=\count317
+\MPscratchDim=\dimen184
+\MPnumerator=\count318
+\makeMPintoPDFobject=\count319
+\everyMPtoPDFconversion=\toks28
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
@@ -401,7 +420,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-Package hyperref Info: Link coloring OFF on input line 21.
+Package hyperref Info: Link coloring OFF on input line 23.
 
 (./main.out) (./main.out)
 \@outlinefile=\write3
@@ -423,53 +442,79 @@ al/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}]
 [5]
 
 [6]
+Underfull \hbox (badness 1888) in paragraph at lines 325--328
+[]\T1/cmr/m/n/10.95 IBGE. Aglom-er-a-dos sub-nor-mais 2019: clas-si-fi-cação pr
+e-lim-i-nar. []$\T1/cmtt/m/n/10.95 https : / / www . ibge .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 325--328
+\T1/cmtt/m/n/10.95 gov . br / geociencias / organizacao-[]do-[]territorio / tip
+ologias-[]do-[]territorio /
+ []
+
+
+Underfull \hbox (badness 3872) in paragraph at lines 328--332
+[]\T1/cmr/m/n/10.95 Secretaría Dis-tri-tal de Planeación. Es-trat-i-fi-cación s
+o-cioe-conómica ur-bana de Bo-
+ []
+
+
+Underfull \hbox (badness 1270) in paragraph at lines 328--332
+\T1/cmr/m/n/10.95 gotá D.C. Datos Abier-tos Bo-gotá []$\T1/cmtt/m/n/10.95 https
+ : / / datosabiertos . bogota . gov . co / dataset /
+ []
+
+
 
 [7]
-<figures/fig1_design.pdf, id=114, 505.92409pt x 485.41301pt>
+
+[8]
+<figures/fig1_design.pdf, id=139, 505.92409pt x 485.41301pt>
 File: figures/fig1_design.pdf Graphic file (type pdf)
 <use figures/fig1_design.pdf>
-Package pdftex.def Info: figures/fig1_design.pdf  used on input line 337.
+Package pdftex.def Info: figures/fig1_design.pdf  used on input line 368.
 (pdftex.def)             Requested size: 455.24411pt x 436.80101pt.
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig2_curve.pdf, id=115, 528.775pt x 181.87903pt>
+<figures/fig2_curve.pdf, id=140, 528.775pt x 181.87903pt>
 File: figures/fig2_curve.pdf Graphic file (type pdf)
 <use figures/fig2_curve.pdf>
-Package pdftex.def Info: figures/fig2_curve.pdf  used on input line 354.
+Package pdftex.def Info: figures/fig2_curve.pdf  used on input line 384.
 (pdftex.def)             Requested size: 455.24411pt x 156.59329pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig3_dissociation.pdf, id=116, 528.77113pt x 196.33302pt>
+<figures/fig3_dissociation.pdf, id=141, 528.77113pt x 196.33302pt>
 File: figures/fig3_dissociation.pdf Graphic file (type pdf)
 <use figures/fig3_dissociation.pdf>
-Package pdftex.def Info: figures/fig3_dissociation.pdf  used on input line 370.
+Package pdftex.def Info: figures/fig3_dissociation.pdf  used on input line 400.
 
 (pdftex.def)             Requested size: 455.24411pt x 169.03783pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig4_validation.pdf, id=117, 528.775pt x 174.65202pt>
+<figures/fig4_validation.pdf, id=142, 528.775pt x 174.65202pt>
 File: figures/fig4_validation.pdf Graphic file (type pdf)
 <use figures/fig4_validation.pdf>
-Package pdftex.def Info: figures/fig4_validation.pdf  used on input line 385.
+Package pdftex.def Info: figures/fig4_validation.pdf  used on input line 415.
 (pdftex.def)             Requested size: 455.24411pt x 150.37103pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
 
-[8
+[9
 
 ]
 
-[9 <./figures/fig1_design.pdf>]
+[10 <./figures/fig1_design.pdf>]
 
-[10 <./figures/fig2_curve.pdf> <./figures/fig3_dissociation.pdf>]
+[11 <./figures/fig2_curve.pdf> <./figures/fig3_dissociation.pdf>]
 
-[11 <./figures/fig4_validation.pdf>] (./main.aux)
+[12 <./figures/fig4_validation.pdf>] (./main.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -478,13 +523,13 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 10536 strings out of 473190
- 160443 string characters out of 5715801
- 576114 words of memory out of 5000000
- 33617 multiletter control sequences out of 15000+600000
- 573327 words of font info for 67 fonts, out of 8000000 for 9000
+ 10809 strings out of 473190
+ 165038 string characters out of 5715801
+ 583401 words of memory out of 5000000
+ 33881 multiletter control sequences out of 15000+600000
+ 574852 words of font info for 69 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,1040b,442s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,6n,79p,1068b,620s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><
 /usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></
@@ -497,12 +542,13 @@ texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/te
 xlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texl
 ive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texliv
 e/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/
-2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/local/texlive/20
-25/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb>
-Output written on main.pdf (11 pages, 2959219 bytes).
+2025/texmf-dist/fonts/type1/public/cm-super/sfss0800.pfb></usr/local/texlive/20
+25/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/local/texlive/2025
+/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb>
+Output written on main.pdf (12 pages, 2986486 bytes).
 PDF statistics:
- 568 PDF objects out of 1000 (max. 8388607)
- 214 compressed objects within 3 object streams
- 48 named destinations out of 1000 (max. 500000)
+ 597 PDF objects out of 1000 (max. 8388607)
+ 240 compressed objects within 3 object streams
+ 51 named destinations out of 1000 (max. 500000)
  21 words of extra memory for PDF output out of 10000 (max. 10000000)
 

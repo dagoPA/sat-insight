@@ -11,8 +11,8 @@
 \renewcommand{\tablename}{Supplementary Table}
 
 \title{\textbf{Supplementary Information}\\
-\large Municipal aggregates recover ninety per cent of the neighbourhood deprivation
-ordering that their satellite features support}
+\large Published municipal aggregates approach the ceiling of satellite-based
+neighbourhood deprivation mapping}
 \author{}
 \date{}
 
@@ -28,17 +28,18 @@ Fig.~1c. Every token inherits the held-out GRS grade of the AGEB it falls in.}
 
 \begin{table}[h]
 \centering
-\caption{The supervision-efficiency curve (main-text Fig.~2a). Mean over three seeds on
-the 14 validation cities; s.d. over seeds.}
-\begin{tabular}{rcccc}
+\caption{The supervision-efficiency curve (main-text Fig.~2a). Mean over three seeds;
+validation cities were used for selection, test cities were scored once with frozen
+models.}
+\begin{tabular}{rcc}
 \toprule
-Bags & Within-$\rho$ & s.d. & Map AUROC & Bag MAE\\
+Bags & Validation within-$\rho$ (s.d.) & Test within-$\rho$\\
 \midrule
-50 & 0.150 & 0.021 & 0.789 & 0.138\\
-100 & 0.141 & 0.021 & 0.792 & 0.130\\
-200 & 0.151 & 0.022 & 0.784 & 0.115\\
-400 & 0.182 & 0.020 & 0.778 & 0.102\\
-771 & 0.227 & 0.010 & 0.802 & 0.098\\
+50 & 0.150 (0.021) & 0.156\\
+100 & 0.141 (0.021) & 0.158\\
+200 & 0.151 (0.022) & 0.161\\
+400 & 0.182 (0.020) & 0.192\\
+771 & 0.227 (0.010) & 0.185 (retrained); 0.196 (saved weights)\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -64,7 +65,7 @@ $\geq$50 & 79 & 3{,}561 & 2 & 0.127\\
 \centering
 \caption{Municipalities excluded from the expansion for insufficient optical depth or
 persistent acquisition errors; the guard requires eight observations per pixel and
-excludes rather than composits shallow ground.}
+excludes shallow ground instead of compositing it.}
 \begin{tabular}{ll}
 \toprule
 Municipality & Reason\\
