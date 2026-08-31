@@ -14,8 +14,8 @@
 \linenumbers
 \graphicspath{{figures/}}
 
-\title{\textbf{Published municipal aggregates approach the ceiling of
-satellite-based neighbourhood deprivation mapping}}
+\title{\textbf{Mapping neighbourhood deprivation from municipal statistics and
+satellite imagery}}
 \author[1]{Dagoberto Pulido Arias}
 \affil[1]{Independent researcher, Mexico. Correspondence: dagopa.1010@gmail.com}
 \date{}
@@ -69,7 +69,7 @@ because ordering tracts across cities is mostly solved by knowing which city is 
 (pooled correlations run near 0.46 against 0.23 within, at the same operating point).
 And an oracle trained directly on the held-out tract labels bounds what the frozen
 representation supports, so weak supervision is always reported as a fraction of a
-measured ceiling.
+measured upper bound.
 
 \section*{Results}
 
@@ -82,8 +82,8 @@ overlapping any held-out city's ground are excluded, Methods). Every row below w
 validation-selected models after all development ended; validation values are shown
 beside them as the selection benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a):
 fifty aggregates yield $\rho \approx 0.15$ within municipalities; the full national
-supply yields $0.196$ on test against a test ceiling of $0.233$ (per-point values in
-Supplementary Table~1), an 84\% recovery
+supply yields $0.196$ on test against a fully supervised upper bound of $0.233$ there
+(per-point values in Supplementary Table~1), an 84\% recovery
 (validation: $0.227$ of $0.251$, 90\%). Pairing model and oracle by municipality, the
 city-clustered bootstrap puts the test fraction at $0.85$ with a wide interval
 [$0.30$, $1.86$]; fourteen cities bound the precision, and it is the point estimate,
@@ -185,8 +185,8 @@ detection does not follow from it.
 
 \subsection*{Limits}
 
-The ceiling itself is low: even with full tract labels and neighbourhood context, 160 m
-tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test
+The upper bound itself is low: even with full tract labels and neighbourhood context,
+160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test
 --- sufficient to order neighbourhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
 size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--49
 tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
@@ -385,7 +385,7 @@ validation median ($\rho = 0.47$), chosen as a median-performing, representative
 \caption{\textbf{The exchange rate between aggregates and maps.} All panels: mean over
 three seeds against held-out tract grades; blue, the 14 validation cities used for
 selection (error bars, s.d. over seeds); orange, the 14 test cities scored once with
-frozen models; dashed and dotted lines, the instance-supervised oracle on each split
+frozen models; dashed and dotted lines, the fully supervised oracle upper bound on each split
 ($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
 many municipal aggregates supervise training (nested, grade-stratified sampling).
 \textbf{b}, The same 771 bags relabelled with coarser aggregates. \textbf{c},
