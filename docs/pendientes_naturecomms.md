@@ -22,11 +22,11 @@ borrando. `[~]` marca herramienta escrita y encolada; `[x]` hecho.
 - [~] **A5. Modelo del proceso de agregación.** Peso poblacional, orden de clases y
       redondeo dentro de la pérdida. Capítulo metodológico; si mejora, entra a la curva
       como configuración; si no, se reporta como ablación negativa.
-- [~] **A6. Transferencia a Brasil.** Etiquetas descargadas y verificadas: 13,151
+- [x] **A6. Transferencia a Brasil (zero-shot).** Etiquetas descargadas y verificadas: 13,151
       polígonos AGSN 2019 del IBGE, módulo `transfer.py` con columnas fijadas. Falta el
       circuito de imagen (AOI desde las etiquetas, compuestos, vectores) y la puntuación
       zero-shot.
-- [~] **A7. Transferencia a Colombia.** Estratificación de Bogotá descargada: estrato 1–6
+- [x] **A7. Transferencia a Colombia (zero-shot).** Estratificación de Bogotá descargada: estrato 1–6
       por manzana en GPKG oficial del distrito. Mismo faltante que Brasil: el circuito de
       imagen y la puntuación.
 - [ ] **A8. Apertura única del conjunto de prueba.** Al final, con configuración y curva
@@ -90,7 +90,7 @@ A3 puede correr en paralelo desde ya porque solo compite por disco y GPU con la 
       agrupado). Faltan GHSL y luces nocturnas VIIRS (VIIRS pide registro en EOG).
 - [~] **E3. Replicación CONAPO.** IMU 2020 descargado: IM continuo + GM por AGEB, 50,790
       claves que cruzan al 100%. Herramienta escrita, encolada.
-- [~] **E4. Suite de falsificación.** Discontinuidad en fronteras municipales dentro de
+- [x] **E4. Suite de falsificación.** Discontinuidad en fronteras municipales dentro de
       metrópolis + batería de placebos. La pieza creativa; necesita las predicciones
       persistidas y las geometrías de frontera.
 - [ ] **E5. Capa de incertidumbre.** Ensamble calibrado + conformal agrupado; auditoría
