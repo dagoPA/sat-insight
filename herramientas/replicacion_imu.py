@@ -36,6 +36,10 @@ def main() -> None:
     imu = pd.ExcelFile("data/externos/IMU_2020.xls").parse("IMU_2020")
     imu = imu.rename(columns={"CVE_AGEB": "cvegeo"})[["cvegeo", "IM_2020", "GM_2020"]]
     imu["cvegeo"] = imu.cvegeo.astype(str)
+    # IM_2020 is a DP2 distance to the ideal: it grows toward LESS marginacion, and the
+    # grade means confirm it (Muy alto 110.6 < Muy bajo 124.9). The comparable direction
+    # is deprivation, so the sign flips here, once, at the door.
+    imu["deprivation"] = -imu.IM_2020
 
     # promedio del ensamble por token, luego promedio por AGEB
     per_token = scores.groupby(
@@ -49,9 +53,9 @@ def main() -> None:
 
     within, per_bag = [], []
     for municipality, group in joined.groupby("municipality", observed=True):
-        if len(group) < 20 or group.IM_2020.nunique() < 2:
+        if len(group) < 20 or group.deprivation.nunique() < 2:
             continue
-        rho = float(spearmanr(group.score, group.IM_2020).statistic)
+        rho = float(spearmanr(group.score, group.deprivation).statistic)
         within.append(rho)
         per_bag.append((municipality, rho))
     city_of = dict(zip(joined.municipality, joined.city, strict=False))
@@ -59,7 +63,7 @@ def main() -> None:
 
     high = joined.GM_2020.isin(HIGH_GRADES).astype(int)
     auroc = float(roc_auc_score(high, joined.score)) if high.nunique() == 2 else float("nan")
-    pooled = float(spearmanr(joined.score, joined.IM_2020).statistic)
+    pooled = float(spearmanr(joined.score, joined.deprivation).statistic)
 
     result = {
         "agebs": len(joined),
@@ -72,7 +76,7 @@ def main() -> None:
     pd.DataFrame([result]).to_csv("data/replicacion_imu.csv", index=False)
     print("\n===== CONAPO REPLICATION =====", flush=True)
     print(
-        f"within-municipality Spearman vs IM_2020: {mean:+.3f} ± {half:.3f} "
+        f"within-municipality Spearman vs CONAPO deprivation: {mean:+.3f} ± {half:.3f} "
         f"over {len(within)} municipalities · pooled {pooled:+.3f} · "
         f"AUROC(GM high) {auroc:.3f}",
         flush=True,

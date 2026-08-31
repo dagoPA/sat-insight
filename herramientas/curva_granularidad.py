@@ -54,7 +54,11 @@ def shares_by(table: pd.DataFrame, keys: list[str] | None) -> dict | np.ndarray:
 
     if keys is None:
         return of(table)
-    return {name: of(group) for name, group in table.groupby(keys, observed=True)}
+    # pandas hands back tuple keys when grouping by a list, even a list of one column
+    return {
+        (name[0] if isinstance(name, tuple) else name): of(group)
+        for name, group in table.groupby(keys, observed=True)
+    }
 
 
 def relabel(bags, level, table):

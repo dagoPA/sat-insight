@@ -1,0 +1,5 @@
+2958 AGEB scored · 2752 matched to IMU
+
+===== CONAPO REPLICATION =====
+within-municipality Spearman vs IM_2020: -0.366 ± 0.073 over 21 municipalities · pooled -0.505 · AUROC(GM high) 0.788
+reference: +0.182 within against the GRS grade it was trained toward

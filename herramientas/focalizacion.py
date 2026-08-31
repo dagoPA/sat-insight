@@ -88,8 +88,17 @@ def main() -> None:
     result = pd.DataFrame(rows)
     result.to_csv("data/focalizacion.csv", index=False)
     print("===== TARGETING =====", flush=True)
-    summary = result.groupby("budget")[["gap_closed"]].agg(["mean", "median", "count"])
-    print(summary.round(3).to_string(), flush=True)
+    # per-city ratios explode when a city's gap is near zero; the honest figure pools
+    # people first — reached people are additive, ratios of averages are not
+    pooled = result.groupby("budget")[["aggregate", "map", "oracle"]].sum()
+    pooled["gap_closed"] = (
+        (pooled["map"] - pooled.aggregate_)
+        if False
+        else ((pooled["map"] - pooled["aggregate"]) / (pooled["oracle"] - pooled["aggregate"]))
+    )
+    print(pooled.round(3).to_string(), flush=True)
+    print("\nper-city median of the ratio:", flush=True)
+    print(result.groupby("budget").gap_closed.median().round(3).to_string(), flush=True)
 
 
 if __name__ == "__main__":
