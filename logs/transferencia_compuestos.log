@@ -1,0 +1,25 @@
+16:40:19 Bogota: 39150 stratified blocks
+bogota: bbox (-74.235, 4.448, -73.988, 4.845) · ~(4419, 2740) px
+16:40:22 grid 2745x4393 px @10 m in EPSG:32618
+16:40:22 bogota/s2: 292 scenes, grid 12.1 MP
+16:40:27 292 scenes in useful tiles of 292
+17:37:52 saved bogota_s2.tif (B04, B03, B02, B08, B11, 12.1 MP)
+OK bogota/s2
+17:37:53 grid 2745x4393 px @10 m in EPSG:32618
+17:37:54 bogota/s1: 58 scenes, grid 12.1 MP
+17:38:03 S1 orbit descending relative 69: covers 100%
+18:03:24 saved bogota_s1.tif (vv, vh, 12.1 MP)
+OK bogota/s1
+18:03:25 Rio de Janeiro: 778 AGSN polygons
+riodejaneiro: bbox (-43.754, -23.049, -43.086, -22.736) · ~(3490, 6852) px
+18:03:26 grid 6893x3546 px @10 m in EPSG:32723
+18:03:26 riodejaneiro/s2: 73 scenes, grid 24.4 MP
+18:03:28 73 scenes in useful tiles of 73
+19:10:51 saved riodejaneiro_s2.tif (B04, B03, B02, B08, B11, 24.4 MP)
+OK riodejaneiro/s2
+19:10:52 grid 6893x3546 px @10 m in EPSG:32723
+19:10:52 riodejaneiro/s1: 60 scenes, grid 24.4 MP
+19:10:56 S1 orbit descending relative 155: covers 51%
+19:36:49 saved riodejaneiro_s1.tif (vv, vh, 24.4 MP)
+OK riodejaneiro/s1
+END: 0 failed []

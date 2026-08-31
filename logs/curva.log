@@ -1,0 +1,300 @@
+17:10:17 138 cities with at least 150 AGEB
+17:10:17 138 cities with at least 150 AGEB
+17:10:17 430 cities with at least 30 AGEB
+17:10:17 292 municipalities beyond the national set
+17:10:17 138 cities with at least 150 AGEB
+17:10:18 430 cities with at least 30 AGEB
+17:10:18 292 municipalities beyond the national set
+17:10:18 138 cities with at least 150 AGEB
+17:10:18 430 cities with at least 30 AGEB
+17:10:18 292 municipalities beyond the national set
+17:10:18 138 cities with at least 150 AGEB
+17:10:18 430 cities with at least 30 AGEB
+17:10:18 292 municipalities beyond the national set
+17:10:18 aguascalientes: 803 instances without a counterpart dropped
+17:10:18 champoton: 21 instances without a counterpart dropped
+17:10:21 morelia: 103 instances without a counterpart dropped
+17:10:21 patzcuaro: 53 instances without a counterpart dropped
+17:10:22 santodomingotehuantepec: 117 instances without a counterpart dropped
+17:10:23 trancoso: 2 instances without a counterpart dropped
+17:10:23 zacapu: 67 instances without a counterpart dropped
+17:10:23 acuna: 167 instances without a counterpart dropped
+17:10:23 no bags for amozoc
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/amozoc_s2.parquet'
+17:10:23 angostura: 5 instances without a counterpart dropped
+17:10:23 arandas: 18 instances without a counterpart dropped
+17:10:23 ascension: 20 instances without a counterpart dropped
+17:10:23 atotonilcoelalto: 13 instances without a counterpart dropped
+17:10:23 ayotlan: 7 instances without a counterpart dropped
+17:10:24 bocoyna: 4 instances without a counterpart dropped
+17:10:24 buenaventura: 16 instances without a counterpart dropped
+17:10:24 campeche: 177 instances without a counterpart dropped
+17:10:24 no bags for comalcalco
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/comalcalco_s2.parquet'
+17:10:24 cosamaloapandecarpio: 42 instances without a counterpart dropped
+17:10:25 no bags for elmarques
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/elmarques_s2.parquet'
+17:10:25 encarnaciondediaz: 6 instances without a counterpart dropped
+17:10:25 generalpanfilonatera: 1 instances without a counterpart dropped
+17:10:25 no bags for hidalgodelparral
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/hidalgodelparral_s2.parquet'
+17:10:26 jalostotitlan: 2 instances without a counterpart dropped
+17:10:26 kanasin: 341 instances without a counterpart dropped
+17:10:26 no bags for lagosdemoreno
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/lagosdemoreno_s2.parquet'
+17:10:26 no bags for laindependencia
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/laindependencia_s2.parquet'
+17:10:26 loreto32024: 2 instances without a counterpart dropped
+17:10:27 mulege: 4 instances without a counterpart dropped
+17:10:27 namiquipa: 60 instances without a counterpart dropped
+17:10:27 no bags for nuevocasasgrandes
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 64, in load_city
+    instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 671, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 253, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+              ^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 939, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/instances/nuevocasasgrandes_s2.parquet'
+17:10:27 ojocaliente: 5 instances without a counterpart dropped
+17:10:27 parras: 30 instances without a counterpart dropped
+17:10:27 progreso: 301 instances without a counterpart dropped
+17:10:27 puruandiro: 30 instances without a counterpart dropped
+17:10:27 salinacruz: 56 instances without a counterpart dropped
+17:10:27 salvadoralvarado: 65 instances without a counterpart dropped
+17:10:28 sanjuandeloslagos: 20 instances without a counterpart dropped
+17:10:28 sanmiguelelalto: 16 instances without a counterpart dropped
+17:10:29 teocaltiche: 11 instances without a counterpart dropped
+17:10:29 tepatitlandemorelos: 49 instances without a counterpart dropped
+17:10:30 no bags for villadetututepec
+Traceback (most recent call last):
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 126, in load_split
+    bags.extend(load_city(city, sensor, root, fuse=fuse))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dagopa/projects/CLAUDE/satinsight/src/satinsight/bagdata.py", line 88, in load_city
+    vectors = np.hstack([vectors[keep], other_vectors[np.array(rows)[keep]]])
+                         ~~~~~~~^^^^^^
+IndexError: arrays used as indices must be of integer (or boolean) type
+17:10:30 villagonzalezortega: 5 instances without a counterpart dropped
+17:10:30 villahidalgo: 7 instances without a counterpart dropped
+17:10:30 1144 bags of 394 cities · 945655 instances · median 438 per bag
+17:10:31 villaderamos: 1 instances without a counterpart dropped
+17:10:31 37 bags of 14 cities · 40113 instances · median 541 per bag
+17:10:31 already here: 11_guanajuato.zip (133.2 MB)
+17:10:31 reading 11a.shp
+17:10:31 connected mass: 88 of 126 AGEB, 38 satellites dropped
+17:10:31 Acámbaro: 88 polygons, 82 join with a label, 1 municipalities
+17:10:31 Acámbaro: 82 AGEB, box ~666x992 px @10 m
+17:10:31 already here: 07_chiapas.zip (108.8 MB)
+17:10:31 reading 07a.shp
+17:10:31 Comitán de Domínguez: 100 polygons, 100 join with a label, 2 municipalities
+17:10:31 Comitán de Domínguez: 100 AGEB, box ~1261x1162 px @10 m
+17:10:31 already here: 11_guanajuato.zip (133.2 MB)
+17:10:31 reading 11a.shp
+17:10:31 connected mass: 60 of 74 AGEB, 14 satellites dropped
+17:10:31 Comonfort: 60 polygons, 51 join with a label, 2 municipalities
+17:10:31 Comonfort: 51 AGEB, box ~417x1544 px @10 m
+17:10:31 already here: 25_sinaloa.zip (71.9 MB)
+17:10:31 reading 25a.shp
+17:10:32 connected mass: 572 of 653 AGEB, 81 satellites dropped
+17:10:32 Culiacán: 572 polygons, 529 join with a label, 2 municipalities
+17:10:32 Culiacán: 529 AGEB, box ~2479x2024 px @10 m
+17:10:32 already here: 15_mexico.zip (226.7 MB)
+17:10:32 reading 15a.shp
+17:10:32 Ecatepec de Morelos: 800 polygons, 798 join with a label, 13 municipalities
+17:10:32 Ecatepec de Morelos: 798 AGEB, box ~2439x3068 px @10 m
+17:10:32 already here: 23_quintanaroo.zip (37.9 MB)
+17:10:32 reading 23a.shp
+17:10:32 connected mass: 37 of 67 AGEB, 30 satellites dropped
+17:10:32 Felipe Carrillo Puerto: 37 polygons, 37 join with a label, 1 municipalities
+17:10:32 Felipe Carrillo Puerto: 37 AGEB, box ~523x417 px @10 m
+17:10:32 already here: 32_zacatecas.zip (74.4 MB)
+17:10:32 reading 32a.shp
+17:10:33 connected mass: 312 of 345 AGEB, 33 satellites dropped
+17:10:33 Guadalupe: 312 polygons, 288 join with a label, 3 municipalities
+17:10:33 Guadalupe: 288 AGEB, box ~1419x2120 px @10 m
+17:10:33 already here: 11_guanajuato.zip (133.2 MB)
+17:10:33 reading 11a.shp
+17:10:33 connected mass: 178 of 183 AGEB, 5 satellites dropped
+17:10:33 Guanajuato: 178 polygons, 165 join with a label, 3 municipalities
+17:10:33 Guanajuato: 165 AGEB, box ~1413x2904 px @10 m
+17:10:33 already here: 15_mexico.zip (226.7 MB)
+17:10:33 reading 15a.shp
+17:10:33 Naucalpan de Juárez: 400 polygons, 396 join with a label, 5 municipalities
+17:10:33 Naucalpan de Juárez: 396 AGEB, box ~2527x2397 px @10 m
+17:10:33 already here: 30_veracruzignaciodelallave.zip (183.8 MB)
+17:10:33 reading 30a.shp
+17:10:34 connected mass: 52 of 57 AGEB, 5 satellites dropped
+17:10:34 Papantla: 52 polygons, 52 join with a label, 1 municipalities
+17:10:34 Papantla: 52 AGEB, box ~791x1329 px @10 m
+17:10:34 already here: 26_sonora.zip (74.0 MB)
+17:10:34 reading 26a.shp
+17:10:34 connected mass: 239 of 291 AGEB, 52 satellites dropped
+17:10:34 San Luis Río Colorado: 239 polygons, 218 join with a label, 1 municipalities
+17:10:34 San Luis Río Colorado: 218 AGEB, box ~1340x1114 px @10 m
+17:10:34 already here: 07_chiapas.zip (108.8 MB)
+17:10:34 reading 07a.shp
+17:10:34 connected mass: 162 of 207 AGEB, 45 satellites dropped
+17:10:34 Tapachula: 162 polygons, 162 join with a label, 1 municipalities
+17:10:34 Tapachula: 162 AGEB, box ~985x1147 px @10 m
+17:10:34 already here: 05_coahuiladezaragoza.zip (67.3 MB)
+17:10:34 reading 05a.shp
+17:10:34 Torreón: 355 polygons, 345 join with a label, 2 municipalities
+17:10:34 Torreón: 345 AGEB, box ~2425x1850 px @10 m
+17:10:34 already here: 24_sanluispotosi.zip (91.2 MB)
+17:10:34 reading 24a.shp
+17:10:35 connected mass: 21 of 76 AGEB, 55 satellites dropped
+17:10:35 Villa de Ramos: 21 polygons, 20 join with a label, 1 municipalities
+17:10:35 Villa de Ramos: 20 AGEB, box ~276x386 px @10 m
+pool of 1144 bags · sizes (50, 100, 200, 400, None) · seeds (0, 1, 2)
+17:10:53 seed 0 ·   50 bags · map AUROC 0.776 · within +0.151 · bag MAE 0.1302
+17:11:20 seed 0 ·  100 bags · map AUROC 0.796 · within +0.223 · bag MAE 0.1292
+17:11:52 seed 0 ·  200 bags · map AUROC 0.797 · within +0.198 · bag MAE 0.1166
+17:13:10 seed 0 ·  400 bags · map AUROC 0.799 · within +0.199 · bag MAE 0.0978
+17:17:53 seed 0 · 1144 bags · map AUROC 0.811 · within +0.233 · bag MAE 0.0869
+17:18:08 seed 1 ·   50 bags · map AUROC 0.799 · within +0.155 · bag MAE 0.1296
+17:18:34 seed 1 ·  100 bags · map AUROC 0.831 · within +0.173 · bag MAE 0.1150
+17:19:21 seed 1 ·  200 bags · map AUROC 0.807 · within +0.175 · bag MAE 0.1065
+17:20:13 seed 1 ·  400 bags · map AUROC 0.819 · within +0.203 · bag MAE 0.1049
+17:23:33 seed 1 · 1144 bags · map AUROC 0.804 · within +0.206 · bag MAE 0.0871
+17:23:48 seed 2 ·   50 bags · map AUROC 0.793 · within +0.132 · bag MAE 0.1284
+17:24:09 seed 2 ·  100 bags · map AUROC 0.819 · within +0.156 · bag MAE 0.1281
+17:24:25 seed 2 ·  200 bags · map AUROC 0.810 · within +0.121 · bag MAE 0.1287
+17:25:58 seed 2 ·  400 bags · map AUROC 0.827 · within +0.200 · bag MAE 0.1097
+17:27:28 seed 2 · 1144 bags · map AUROC 0.797 · within +0.200 · bag MAE 0.0973
+
+===== THE CURVE =====
+      auroc_high  spearman_within  bag_mae
+bags                                      
+50        0.7891           0.1461   0.1294
+100       0.8151           0.1840   0.1241
+200       0.8049           0.1645   0.1173
+400       0.8149           0.2007   0.1041
+1144      0.8040           0.2130   0.0904
+ceiling with instance supervision and context: within +0.239
