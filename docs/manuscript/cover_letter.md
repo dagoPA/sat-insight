@@ -2,9 +2,8 @@
 
 Dear Editors,
 
-Please consider our manuscript, "Published municipal aggregates approach the ceiling of
-satellite-based neighbourhood deprivation mapping", for publication in Nature
-Communications.
+Please consider our manuscript, "Mapping neighbourhood deprivation from municipal
+statistics and satellite imagery", for publication in Nature Communications.
 
 Nearly every country publishes social statistics as administrative aggregates; almost
 none publishes them at neighbourhood level. Our study measures, for the first time
