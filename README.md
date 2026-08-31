@@ -14,12 +14,12 @@ calibrate that curve because it publishes ground truth at both levels at once.
 
 ## Layout
 
-- `src/satinsight/` — installable library: STAC catalog queries, windowed COG reads,
+- `src/satinsight/`: installable library: STAC catalog queries, windowed COG reads,
   annual median composites (Sentinel-1 RTC and Sentinel-2 L2A), tiling into bags, frozen
   DOFA encoding, label-proportion models, evaluation.
-- `herramientas/` — experiment drivers (Spanish filenames, English code).
-- `tests/` — network-free tests over pure logic. `uv run pytest`.
-- `data/` — regenerable; ignored by git.
+- `herramientas/`: experiment drivers (Spanish filenames, English code).
+- `tests/`: network-free tests over pure logic. `uv run pytest`.
+- `data/`: regenerable; ignored by git.
 
 ## Conventions
 

@@ -1,4 +1,4 @@
-# Ruta a Nature Communications — lista de pendientes
+# Ruta a Nature Communications: lista de pendientes
 
 Objetivo declarado el 30 de agosto de 2026: Nature Communications como destino, Remote
 Sensing of Environment como plan B, y el benchmark a NeurIPS Datasets & Benchmarks como
