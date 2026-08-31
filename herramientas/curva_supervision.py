@@ -41,10 +41,18 @@ from satinsight.splits import cities_of  # noqa: E402
 
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+SENSOR = sys.argv[4] if len(sys.argv) > 4 else "s2"
+FUSE = SENSOR == "s2"
 SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
 SEEDS = (0, 1, 2)
 PATIENCE = 8
-OUT = f"data/curva_supervision_r{RADIUS}.csv" if RADIUS != 1 else "data/curva_supervision.csv"
+OUT = (
+    f"data/curva_supervision_{SENSOR}.csv"
+    if SENSOR != "s2"
+    else f"data/curva_supervision_r{RADIUS}.csv"
+    if RADIUS != 1
+    else "data/curva_supervision.csv"
+)
 
 log = logging.getLogger("curve")
 
@@ -146,8 +154,8 @@ def main() -> None:
         f"expansion trains on held-out ground: {sorted(held_muns & extra_muns)}"
     )
 
-    pool = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    pool = load_split(train_cities, SENSOR, fuse=FUSE)
+    val_bags = load_split(val_cities, SENSOR, fuse=FUSE)
     grades = grades_of(val_cities, catalogue)
     print(f"pool of {len(pool)} bags · sizes {SIZES} · seeds {SEEDS}", flush=True)
 
