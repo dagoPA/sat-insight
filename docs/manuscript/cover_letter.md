@@ -2,8 +2,8 @@
 
 Dear Editors,
 
-Please consider our manuscript, "Mapping neighborhood deprivation from municipal
-statistics and satellite imagery", for publication in Nature Communications.
+Please consider our manuscript, "Using only municipal statistics and satellite
+imagery to map neighborhood deprivation", for publication in Nature Communications.
 
 Nearly every country publishes social statistics as administrative aggregates; almost
 none publishes them at neighborhood level. Our study measures, for the first time
