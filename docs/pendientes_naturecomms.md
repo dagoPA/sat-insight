@@ -1,3 +1,12 @@
+# NOTA (01/09/2026): el destino cambió a Remote Sensing of Environment
+
+Decisión del usuario tras el veredicto honesto: la cota superior medida (0.233 dentro
+del municipio) acota el fenómeno, y el paper se publica por lo que es, un trabajo de
+método riguroso con negativos útiles, en RSE vía Your Paper Your Way. Los pendientes
+específicos de Nature (reporting summary, checklist editorial, límite de 150 palabras)
+quedan obsoletos; sobreviven los universales: depósito del benchmark en Zenodo con DOI,
+repo público con URL, ORCID y ciudad de afiliación del autor, y el preprint en arXiv.
+
 # Ruta a Nature Communications: lista de pendientes
 
 Objetivo declarado el 30 de agosto de 2026: Nature Communications como destino, Remote
