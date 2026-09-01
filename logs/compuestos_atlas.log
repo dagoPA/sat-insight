@@ -1,0 +1,4 @@
+medellin: bbox (-75.7, 6.05, -75.2, 6.55) · ~(5566, 5532) px
+21:44:33 grid 5536x5533 px @10 m in EPSG:32618
+21:44:33 medellin/s2: 290 scenes, grid 30.6 MP
+21:44:36 290 scenes in useful tiles of 290
