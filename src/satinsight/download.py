@@ -81,6 +81,14 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 )
 
+PLAIN_USER_AGENT = "satinsight/1.0 (research pipeline)"
+"""Identity for hosts that a browser string makes things worse with.
+
+Figshare sits behind an AWS WAF that answers a browser user agent with a bot challenge:
+status 202, zero bytes, no error. Announcing a script gets the file. The two conventions
+pull in opposite directions, which is why the caller picks.
+"""
+
 TIMEOUT = (30, 300)
 """Seconds to wait to connect and to read. Government portals are slow."""
 
@@ -94,12 +102,24 @@ def _is_zip(path: Path) -> bool:
         return False
 
 
-def download(url: str, destination: Path, *, force: bool = False, attempts: int = 3) -> Path:
+def download(
+    url: str,
+    destination: Path,
+    *,
+    force: bool = False,
+    attempts: int = 3,
+    user_agent: str = USER_AGENT,
+) -> Path:
     """Brings a file to disk when it is missing, checking that it arrives whole.
 
     A corrupt zip or an error page dressed as a download are detected and retried. The file
     is written first as `.partial` and renamed at the end, so an interruption never leaves
     a half-written file that looks valid.
+
+    Two ways of arriving empty are rejected explicitly, because `raise_for_status` lets
+    both through. A bot challenge answers 202 with no body, and a server that sends no
+    content-length defeats the truncation check by leaving the expected size at zero. A
+    download of zero bytes is never the file that was asked for.
     """
     if destination.exists() and not force:
         log.info("already here: %s (%.1f MB)", destination.name, destination.stat().st_size / 1e6)
@@ -117,9 +137,14 @@ def download(url: str, destination: Path, *, force: bool = False, attempts: int 
         try:
             log.info("downloading %s (attempt %d/%d)", destination.name, attempt, attempts)
             with requests.get(
-                url, stream=True, timeout=TIMEOUT, headers={"User-Agent": USER_AGENT}
+                url, stream=True, timeout=TIMEOUT, headers={"User-Agent": user_agent}
             ) as r:
                 r.raise_for_status()
+                if r.status_code != 200:
+                    raise OSError(
+                        f"the server answered {r.status_code} instead of 200, which is how "
+                        f"a bot challenge looks"
+                    )
                 total = int(r.headers.get("content-length", 0))
                 written = 0
                 with partial.open("wb") as f:
@@ -128,6 +153,8 @@ def download(url: str, destination: Path, *, force: bool = False, attempts: int 
                         written += len(chunk)
                 if total and written != total:
                     raise OSError(f"truncated download: {written} of {total} bytes")
+                if written == 0:
+                    raise OSError("the server sent an empty body")
 
             if destination.suffix == ".zip" and not _is_zip(partial):
                 raise OSError("the file received is not a valid zip")

@@ -1,3 +1,30 @@
+# ACTUALIZACIÓN (01/09/2026, tarde): cerrado E2 y E5
+
+Se corrieron los dos huecos que un revisor de RSE señalaría primero, y ambos entraron al
+manuscrito con figura 5 nueva, tablas suplementarias 4 a 6 y su driver versionado
+(`herramientas/figura_incumbentes.py`).
+
+- **E2 completo.** Cuatro productos globales gratuitos bajo el protocolo del RWI, en
+  validación y prueba: GHSL construido, altura de edificación y población (JRC R2023A,
+  100 m) más luces nocturnas armonizadas 2020 (Li et al., 30 arcsec). Resultado honesto:
+  solo la población se separa del mapa en prueba (+0.19 [+0.05, +0.29]); construido y
+  altura llevan ventaja con intervalos que cruzan el cero; **las luces nocturnas empatan
+  en ambos cortes** y el signo se voltea. En AUROC agrupado los cuatro le ganan al mapa.
+  VIIRS de EOG queda descartado por exigir registro, y se declara en Methods.
+- **E5 completo.** El desacuerdo entre semillas no sirve como capa de incertidumbre:
+  ordena el error a rho 0.084 en validación y 0.044 en prueba, y el descarte selectivo no
+  compra nada con el panel de municipios fijo. Conformal partido calibrado en validación:
+  la regla marginal da ±1.29 grados y sub-cubre en 10 de 14 ciudades; la agrupada por
+  ciudad cubre 0.953 a costa de ±1.68 grados. Auditoría con nombre: Guerrero (Chihuahua)
+  a rho −0.51 es la peor de las catorce.
+- **Decisión del usuario del 01/09.** Se autorizó puntuar ambos análisis sobre prueba
+  usando las predicciones ya congeladas. No se reentrenó ni reseleccionó nada, así que la
+  frase de Methods sobre la apertura única sigue siendo cierta y se dejó intacta.
+
+Quedan abiertos de la lista E: E6 mapa nacional, E7 recalibración test-time, E8
+validación sub-AGEB por manzana, E9 calibraciones duales completas (descartada con el
+atlas). Y los administrativos del envío: DOI de Zenodo, URL del repo, ORCID y preprint.
+
 # NOTA (01/09/2026): el destino cambió a Remote Sensing of Environment
 
 Decisión del usuario tras el veredicto honesto: la cota superior medida (0.233 dentro

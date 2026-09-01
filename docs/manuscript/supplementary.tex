@@ -78,4 +78,73 @@ El Marqu\'es & repeated acquisition timeouts\\
 \end{tabular}
 \end{table}
 
+\begin{table}[h]
+\centering
+\caption{Free global products under the map's own protocol. Within-$\rho$ is the mean
+over municipalities of the within-municipality Spearman correlation against the held-out
+tract grade, on the identical universe; $\Delta$ is the paired difference with a
+city-clustered bootstrap interval; AUROC is pooled detection of high and very-high grade
+tracts across the split. Orientation was fixed before measurement: deprivation is the
+negative of every product. The nighttime-light row rests on interior-point sampling for 63\%
+of tracts, which are smaller than one of its 30 arcsec cells.}
+\begin{tabular}{lccccc}
+\toprule
+Product & Split & Map & Product & $\Delta$ [95\% CI] & AUROC map / product\\
+\midrule
+GHSL built-up surface & val & 0.354 & 0.202 & $+0.152$ [$-0.103$, $+0.303$] & 0.828 / 0.866\\
+ & test & 0.232 & 0.174 & $+0.059$ [$-0.098$, $+0.160$] & 0.829 / 0.908\\
+GHSL building height & val & 0.354 & 0.226 & $+0.128$ [$-0.096$, $+0.291$] & 0.828 / 0.859\\
+ & test & 0.232 & 0.119 & $+0.113$ [$-0.062$, $+0.233$] & 0.829 / 0.886\\
+GHSL population & val & 0.354 & 0.065 & $+0.289$ [$-0.001$, $+0.497$] & 0.828 / 0.872\\
+ & test & 0.232 & 0.045 & $+0.188$ [$+0.051$, $+0.289$] & 0.829 / 0.855\\
+Nighttime lights & val & 0.364 & 0.327 & $+0.037$ [$-0.109$, $+0.149$] & 0.828 / 0.840\\
+ & test & 0.210 & 0.249 & $-0.039$ [$-0.245$, $+0.104$] & 0.829 / 0.831\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Conformal grade intervals at 90\% nominal coverage, calibrated on the validation
+cities and evaluated on the test cities. The marginal rule assumes all tracts
+exchangeable; the clustered rule takes each calibration city's quantile and then the 90th
+percentile across cities.}
+\begin{tabular}{lccccc}
+\toprule
+Rule & Half-width (grades) & Coverage & Worst city & Worst city coverage & Cities below\\
+\midrule
+Marginal & 1.29 & 0.869 & La Paz & 0.768 & 10 of 14\\
+Clustered by city & 1.68 & 0.953 & Madera & 0.870 & 1 of 14\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{The fourteen test cities ranked by the within-municipality correlation their map
+achieves, worst first. Tract-mean scores. Spread is the median across tracts of the
+standard deviation over three seeds, which does not separate the failures from the
+successes.}
+\begin{tabular}{lrrrr}
+\toprule
+City & Municipalities & Tracts & Within-$\rho$ & Median seed spread\\
+\midrule
+Guerrero & 1 & 21 & $-0.510$ & 0.101\\
+Ciudad del Carmen & 1 & 54 & $-0.267$ & 0.069\\
+Esc\'arcega & 1 & 24 & $-0.001$ & 0.093\\
+Madera & 1 & 46 & $0.052$ & 0.133\\
+Quer\'etaro & 3 & 514 & $0.091$ & 0.109\\
+Zapopan & 2 & 335 & $0.105$ & 0.104\\
+Garc\'ia & 3 & 324 & $0.257$ & 0.088\\
+Nogales & 1 & 171 & $0.261$ & 0.093\\
+Victoria & 1 & 165 & $0.373$ & 0.102\\
+Hidalgo & 1 & 71 & $0.425$ & 0.098\\
+Irapuato & 1 & 214 & $0.465$ & 0.121\\
+Ixtapaluca & 4 & 463 & $0.471$ & 0.097\\
+La Paz & 1 & 276 & $0.534$ & 0.095\\
+Iguala de la Independencia & 1 & 133 & $0.639$ & 0.125\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \end{document}

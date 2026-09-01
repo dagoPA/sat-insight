@@ -36,8 +36,11 @@ keep buying map, state aggregates forfeit part of it, one national figure erases
 optical content matters where resolution does not. The maps close 31--66\% of the
 aggregate-to-census targeting gap on test, replicate against an independent
 institution's index, beat the incumbent wealth index where selection occurred and match
-it on test, and order Bogot\'a's block strata without retraining. Attention-based
-multiple-instance learning fails here for a measurable, structural reason.
+it on test, and order Bogot\'a's block strata without retraining. Against free global
+grids the margin is resolvable only for population; nighttime lights order tracts inside a
+municipality as well as the maps do. Attention-based multiple-instance learning fails here
+for a measurable, structural reason, and ensembling over seeds yields no usable
+uncertainty layer: an honest 90\% grade interval spans 1.7 of the five levels.
 \end{abstract}
 
 \section{Introduction}
@@ -144,6 +147,37 @@ tracts among those reached, pooled over cities before the gap ratio is formed.
 centroid; the model is averaged token-to-tract; both are scored on the 2{,}958 shared
 AGEB in the 22 municipalities with at least 20 scored tracts and more than one grade,
 and the interval is a city-clustered bootstrap of the per-municipality difference.
+
+\subsection{Global product comparison}
+\noindent Four free global products stand in for what a practitioner would download
+instead of training anything: GHSL built-up surface (R2023A, 2020 epoch, 100 m), GHSL
+average net building height (R2023A, 2018, the only epoch published), GHSL residential
+population (R2023A, 2020)~\cite{ghsl2023}, and the harmonized global nighttime lights of
+2020, VIIRS-derived and expressed on the DMSP digital-number scale at 30
+arcsec~\cite{li2020}. Nighttime lights come from the harmonized series because
+the EOG annual composite requires an account; the harmonized layer is the same
+VIIRS observation on a coarser grid and a compressed scale, which is a handicap for
+intra-urban ranking and is reported as such. Each product is averaged over the pixels
+whose centres fall inside a tract, in the product's own grid so nothing resamples it; a
+tract smaller than one cell takes the value at a representative interior point, and the
+count of such fallbacks is reported. All four are used in practice as development proxies, so
+deprivation is taken as the negative of each, an orientation fixed before any correlation
+was computed. Scoring is the RWI protocol unchanged.
+
+\subsection{Uncertainty and intervals}
+\noindent Uncertainty is read from the three training seeds: a tract's map value is the
+mean of its per-seed tract means and its spread is their standard deviation, a quantity
+computable with no labels. Three things are then asked of that spread. Whether it ranks
+the errors, as the within-municipality correlation between spread and the absolute
+distance from an isotonic score-to-grade map fitted on validation. Whether discarding the
+least confident tracts inside each municipality raises the correlation over what remains;
+the panel of municipalities is fixed to those that stay above twenty tracts at every point
+of the sweep, so the curve cannot rise by attrition. And whether an interval can be
+attached, by split conformal calibrated on the validation cities and evaluated on the test
+cities, with the absolute isotonic residual as the nonconformity score. Two rules are
+compared: the marginal quantile, which treats all tracts as exchangeable, and a clustered
+rule that takes each calibration city's quantile and then the 90th percentile across
+cities. Per-city coverage is reported for both.
 
 \subsection{MAUP bins}
 \noindent Tracts are binned by tokens contained (1--3, 4--9, 10--19, 20--49,
@@ -268,6 +302,31 @@ smoothly ($+0.001$). An earlier $+0.14$ border jump traced to bag-limited neighb
 adjacency at inference and disappeared after the adjacency was computed city-wide. The
 test cities contain too few same-grade cross-border pairs to repeat this control there.
 
+The sharper version of the question is what a practitioner would get for free. Four global
+products were scored on the identical universe under the identical protocol
+(Fig.~\ref{fig:incumbents}a, Supplementary Table~4). Against GHSL residential population the map wins clearly,
+$\Delta\rho = +0.29$ [$-0.00$, $+0.50$] on validation and $+0.19$ [$+0.05$, $+0.29$] on
+test, the only one of the four that separates on test. Against GHSL built-up surface
+($+0.15$ [$-0.10$, $+0.30$]; $+0.06$ [$-0.10$, $+0.16$]) and GHSL building height ($+0.13$
+[$-0.10$, $+0.29$]; $+0.11$ [$-0.06$, $+0.23$]) the map leads on both splits and wins in
+16 of 22 municipalities on test, with intervals that include zero throughout. Against
+nighttime lights the two are tied and the sign flips between splits: $+0.04$ [$-0.11$,
+$+0.15$] on validation, $-0.04$ [$-0.25$, $+0.10$] on test. A 1 km light product, free and
+requiring no model, orders tracts inside a Mexican municipality about as well as the map
+does. That comparison is handicapped in the light product's disfavor by resolution, since
+63\% of test tracts are smaller than one of its cells and take the value at an interior
+point, and it is reported at face value regardless: within the precision fourteen
+cities allow, we cannot show the map beats nighttime lights.
+
+The pooled comparison points the other way, and in doing so repeats the dissociation of
+the previous section on external ground. For detecting high and very-high grade tracts
+across the whole test set, all four products land at or above the map: built-up surface
+reaches AUROC 0.908, building height 0.886, population 0.855 and nighttime lights 0.831,
+against the map's 0.829 (Fig.~\ref{fig:incumbents}b). The products carry more of the national gradient, which is the
+easy half of the problem and the half gridded global layers are built for. What the
+supervision buys, where it buys anything, is the ordering inside a municipality, the half
+a targeting decision needs and the half no global product was built to deliver.
+
 \subsection{Zero-shot transfer to Bogot\'a and Rio de Janeiro}
 
 Applied unchanged to Bogot\'a, the model orders Colombia's block-level socioeconomic
@@ -279,6 +338,46 @@ deprivation ordering as the GRS over the whole urban fabric, while the AGSN mask
 delimits informality, a partly orthogonal notion. The model learned a deprivation
 gradient from the aggregates, and that gradient transfers across countries; informality
 detection does not follow from it.
+
+\subsection{Uncertainty, and the cities where the map fails}
+
+A map offered for targeting has to say where it is unsure. The ensemble of three seeds
+supplies the obvious candidate, and it does not work. Seed disagreement ranks the tract
+errors at $\rho = 0.084$ [$0.002$, $0.140$] within municipalities on validation and
+$0.044$ [$-0.011$, $0.084$] on test: a signal too weak to act on, and on test
+indistinguishable from none. Acting on it anyway buys nothing. Setting aside the least
+confident tracts inside each municipality, over a panel of municipalities held fixed at
+every depth so attrition cannot manufacture a trend, leaves map quality flat: $0.390$ to
+$0.369$ from no discard to half discarded on validation, $0.317$ to $0.327$ on test, every
+point inside every other point's interval. (These are tract-mean correlations, higher than
+the token-level figures quoted above because averaging tokens to tracts removes noise; the
+comparison here is internal, so the estimator only has to be consistent with itself.)
+Ensembling over seeds does not produce an uncertainty layer for this problem, and we
+report no confidence raster.
+
+What can be attached is an interval. Split conformal calibrated on the validation cities
+and evaluated on the test cities~\cite{vovk2005} gives, at 90\% nominal coverage, a
+half-width of 1.29 grades under the marginal rule, and that rule undercovers: 0.869
+overall and below nominal in 10 of the 14 test cities, worst at La Paz (0.768). Pricing in
+that cities are not exchangeable with one another, by taking each calibration city's own
+quantile and then the 90th percentile across cities, restores coverage to 0.953 with only
+Madera below nominal, at the cost of a half-width of 1.68 grades
+(Fig.~\ref{fig:incumbents}c). On a five-level scale
+that interval spans most of the range. The honest statement is that the map orders
+neighborhoods and cannot commit to a grade, and that any interval which ignores
+between-city variation will be too narrow.
+
+The failures are concentrated and can be named. Ranking the fourteen test cities by the
+within-municipality correlation their map achieves, three sit at or below zero: Guerrero,
+Chihuahua ($-0.51$ over 21 tracts), Ciudad del Carmen, Campeche ($-0.27$ over 54), and
+Escárcega, Campeche ($-0.00$ over 24). All three are small, and the top of the ranking is
+not: Iguala de la Independencia ($+0.64$ over 133 tracts), La Paz ($+0.53$ over 276) and
+Ixtapaluca ($+0.47$ over 463). The pattern in the ranking is tract count rather than
+deprivation share, which is the modifiable-areal-unit effect of the Limits section
+arriving as a per-city failure mode: a municipality carved into two dozen tracts offers
+too few ranks for the correlation to stabilize, and the map's ordering inside it should
+not be used. Seed spread does not flag these cities either; Guerrero's median spread
+(0.101) sits at the middle of the fourteen.
 
 \subsection{Limits}
 
@@ -309,6 +408,19 @@ close to uninformative about map quality, and informality detection does not fol
 from a deprivation gradient. All three will recur in other weakly supervised mapping
 work.
 
+The comparison against free global grids sets the operational recommendation more
+honestly than an accuracy table would. On the pooled task every downloadable product
+outperforms the map, and within municipalities only the population grid separates from it
+on test, with nighttime lights matching it on both splits. So where the question is which
+municipalities are poor, a global layer answers it today at no cost; where the question is
+which neighborhoods inside a municipality are poorest, the aggregate-trained map is the
+better instrument, by a margin smaller than the enthusiasm in this literature would
+suggest. The missing uncertainty layer sharpens the same point. Seeds disagree where the
+map is right about as often as where it is wrong, and the interval that does hold its
+coverage across cities spans 1.7 of the five grades. What this method supports publishing
+is a ranking with the small municipalities named and excluded; a graded raster would
+overstate it.
+
 Mexico's dual-level publication made the calibration possible; the measured fractions
 can be extrapolated to countries that publish only aggregates, and the Bogot\'a
 transfer is a first test of that extrapolation. Extending the dual calibration to
@@ -330,8 +442,12 @@ and sensor content matters more than resolution. Two methodological results trav
 beyond the application: attention-based multiple-instance learning produces chance-level
 maps whenever the bag task is solvable from the feature mean, and model selection on
 bag-level error is close to uninformative about map quality, which argues for benchmarks
-with held-out instance labels wherever maps are the product. All data, frozen features,
-labels, splits and code are released.
+with held-out instance labels wherever maps are the product. A third caution is
+operational: measured against the free global grids a practitioner already has, the map's
+advantage is confined to the within-municipality ordering and is resolvable on fourteen
+test cities only against gridded population, while ensembling supplies no uncertainty
+layer and an honest grade interval spans 1.7 of the five levels. All data, frozen
+features, labels, splits and code are released.
 
 \bibliographystyle{naturemag}
 \begin{thebibliography}{10}
@@ -371,6 +487,15 @@ J.-P. Deep multi-class learning from label proportions. \emph{arXiv:1905.12909} 
 foundation model for Earth observation. \emph{arXiv:2403.15356} (2024).
 \bibitem{worldcover} Zanaga, D. \emph{et al.} ESA WorldCover 10 m 2020 v100. Zenodo
 \url{https://doi.org/10.5281/zenodo.5571936} (2021).
+\bibitem{ghsl2023} Pesaresi, M. \& Politis, P. GHS-BUILT-S and GHS-BUILT-H R2023A, and
+Schiavina, M., Freire, S. \& MacManus, K. GHS-POP R2023A. European Commission, Joint
+Research Centre \url{https://human-settlement.emergency.copernicus.eu/} (2023; accessed
+September 2026).
+\bibitem{li2020} Li, X., Zhou, Y., Zhao, M. \& Zhao, X. A harmonized global nighttime
+light dataset 1992--2018. \emph{Sci. Data} \textbf{7}, 168 (2020). 2020 layer, Figshare
+\url{https://doi.org/10.6084/m9.figshare.9828827}.
+\bibitem{vovk2005} Vovk, V., Gammerman, A. \& Shafer, G. \emph{Algorithmic Learning in a
+Random World} (Springer, 2005).
 \bibitem{ibge2019} IBGE. Aglomerados subnormais 2019: classifica\c{c}\~ao preliminar.
 \url{https://www.ibge.gov.br/geociencias/organizacao-do-territorio/tipologias-do-territorio/15788-aglomerados-subnormais.html}
 (2020; accessed August 2026).
@@ -384,8 +509,9 @@ accessed August 2026).
 The frozen benchmark (foundation-model vectors for every bag, municipal and tract
 labels, splits, and the evaluation protocol) will be deposited on Zenodo with a DOI at
 publication. All source data are public: Copernicus Sentinel via Microsoft Planetary
-Computer, CONEVAL, CONAPO, INEGI, ESA WorldCover, Meta RWI (HDX), IBGE, and Bogot\'a's
-open-data portal.
+Computer, CONEVAL, CONAPO, INEGI, ESA WorldCover, Meta RWI (HDX), the GHSL R2023A grids
+from the JRC data portal, the harmonized nighttime-light layer from Figshare, IBGE, and
+Bogot\'a's open-data portal.
 
 \section*{Code availability}
 The full pipeline (MIT licence) is available at the project repository, pinned by
@@ -471,6 +597,22 @@ Rio's mapped informal settlements among built-up tokens ($n = 34{,}331$). The mo
 transfers to a graded deprivation target and fails on informality, a different
 construct.}
 \label{fig:validation}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig5_incumbents.pdf}
+\caption{\textbf{Free products, and the confidence the map can carry.}
+\textbf{a}, Paired within-municipality difference between the map and each downloadable
+global product on the identical tract universe, grey validation and red test, with
+city-clustered bootstrap intervals; only gridded population separates from the map on
+test, and nighttime lights straddle zero on both splits. \textbf{b}, Pooled detection of
+high and very-high grade tracts across the test cities: all four products land at or
+above the map, which is the bag-versus-map dissociation of Fig.~3 arriving on external ground.
+\textbf{c}, Conformal coverage per test city at 90\% nominal, calibrated on the
+validation cities. The marginal rule falls below nominal in ten of fourteen cities; the
+clustered rule restores coverage at a half-width of 1.68 of the five grades.}
+\label{fig:incumbents}
 \end{figure}
 
 
