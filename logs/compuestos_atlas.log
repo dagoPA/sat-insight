@@ -2,3 +2,44 @@ medellin: bbox (-75.7, 6.05, -75.2, 6.55) · ~(5566, 5532) px
 21:44:33 grid 5536x5533 px @10 m in EPSG:32618
 21:44:33 medellin/s2: 290 scenes, grid 30.6 MP
 21:44:36 290 scenes in useful tiles of 290
+22:59:54 saved medellin_s2.tif (B04, B03, B02, B08, B11, 30.6 MP)
+OK medellin/s2
+22:59:56 grid 5536x5533 px @10 m in EPSG:32618
+22:59:56 medellin/s1: 116 scenes, grid 30.6 MP
+23:00:17 S1 orbit descending relative 142: covers 100%
+00:18:30 saved medellin_s1.tif (vv, vh, 30.6 MP)
+OK medellin/s1
+cali: bbox (-76.6, 3.3, -76.24, 3.56) · ~(2894, 4000) px
+00:18:33 grid 4005x2881 px @10 m in EPSG:32618
+00:18:33 cali/s2: 290 scenes, grid 11.5 MP
+00:18:36 290 scenes in useful tiles of 290
+00:47:32 saved cali_s2.tif (B04, B03, B02, B08, B11, 11.5 MP)
+OK cali/s2
+00:47:33 grid 4005x2881 px @10 m in EPSG:32618
+00:47:33 cali/s1: 83 scenes, grid 11.5 MP
+00:47:50 S1 orbit descending relative 142: covers 100%
+01:18:27 saved cali_s1.tif (vv, vh, 11.5 MP)
+OK cali/s1
+saopaulo: bbox (-46.85, -23.75, -46.3, -23.35) · ~(4452, 5612) px
+01:18:29 grid 5664x4492 px @10 m in EPSG:32723
+01:18:29 saopaulo/s2: 146 scenes, grid 25.4 MP
+01:18:33 146 scenes in useful tiles of 146
+02:46:48 saved saopaulo_s2.tif (B04, B03, B02, B08, B11, 25.4 MP)
+OK saopaulo/s2
+02:46:50 grid 5664x4492 px @10 m in EPSG:32723
+02:46:50 saopaulo/s1: 117 scenes, grid 25.4 MP
+02:47:04 S1 orbit descending relative 53: covers 100%
+03:46:15 saved saopaulo_s1.tif (vv, vh, 25.4 MP)
+OK saopaulo/s1
+belohorizonte: bbox (-44.2, -20.05, -43.85, -19.75) · ~(3339, 3663) px
+03:46:18 grid 3684x3342 px @10 m in EPSG:32723
+03:46:18 belohorizonte/s2: 509 scenes, grid 12.3 MP
+03:46:23 509 scenes in useful tiles of 509
+04:17:35 saved belohorizonte_s2.tif (B04, B03, B02, B08, B11, 12.3 MP)
+OK belohorizonte/s2
+04:17:36 grid 3684x3342 px @10 m in EPSG:32723
+04:17:36 belohorizonte/s1: 89 scenes, grid 12.3 MP
+04:17:45 S1 orbit descending relative 53: covers 100%
+04:49:46 saved belohorizonte_s1.tif (vv, vh, 12.3 MP)
+OK belohorizonte/s1
+END: 0 failed []

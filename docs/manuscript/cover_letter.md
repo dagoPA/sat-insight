@@ -1,38 +1,35 @@
-# Cover letter, Nature Communications
+# Cover letter, Remote Sensing of Environment
 
 Dear Editors,
 
-Please consider our manuscript, "Using only municipal statistics and satellite
-imagery to map neighborhood deprivation", for publication in Nature Communications.
+Please consider our manuscript "Mapping intra-urban social deprivation from Sentinel
+imagery using only municipal aggregate labels" for publication in Remote Sensing of
+Environment.
 
-Nearly every country publishes social statistics as administrative aggregates; almost
-none publishes them at neighborhood level. Our study measures, for the first time
-against a fully held-out neighborhood-level ground truth at national scale, how much
-neighborhood detail those aggregates recover when combined with free satellite
-imagery. Mexico publishes its deprivation index at both municipal and census-tract
-level, which lets us calibrate the exchange rate between the two: models trained only on
-municipal aggregates reach 84–90% of the tract-level ordering that the same satellite
-features support under full supervision. The calibration axes are operational, how many
-aggregates, at what granularity, from which sensor, and the result is priced in policy
-units through a targeting simulation.
+The study asks how much neighborhood-scale detail can be recovered when the only
+training signal is the aggregate statistics a country already publishes. Mexico
+publishes its social deprivation grade at both municipal and census-tract level, which
+allowed a calibration that the literature has lacked: models trained purely on municipal
+aggregates, validated against 61,430 fully held-out urban tracts, with an oracle trained
+on the tract labels bounding what the frozen features support. Weak supervision recovers
+84% of that upper bound on test cities opened exactly once, and the supervision
+efficiency analysis (number of aggregates, label granularity, sensor and resolution) is
+reported on both splits.
 
-Three findings extend beyond our study system. Attention-based multiple-instance
-learning, the standard weakly supervised localizer, produces maps at chance for a
-structural reason we isolate. Model selection under weak supervision is close to
-uninformative about map quality, which affects any pipeline whose product is the map,
-computational pathology included. And the learned deprivation gradient transfers
-zero-shot to Bogotá's block-level strata while informality detection in Rio does not
-follow, separating two constructs the literature often conflates.
+Three methodological results should interest this audience beyond the application.
+Attention-based multiple-instance learning, the standard weakly supervised localizer,
+produces chance-level maps for a reason we isolate and fix by learning from label
+proportions. Model selection under weak supervision is close to uninformative about map
+quality, which affects any remote sensing pipeline whose product is a map. And a
+land-cover baseline ties the foundation-model features within municipalities, locating
+the value of learned representations in bag-level prediction rather than intra-urban
+ordering. Negative results are reported at the same level of evidence as positive ones.
 
-The test cities were opened exactly once, after all development ended, and every
-headline number carries its confirmatory test value. All data are public; the frozen
-benchmark (features, labels, splits, protocol) accompanies the submission.
+All data are public, the pipeline is released, and a frozen benchmark (features, labels,
+splits, protocol) accompanies the submission so every number is reproducible without the
+satellite pipeline.
 
-Suggested referees: researchers in satellite-based welfare measurement (the
-Jean/Yeh/Chi lineage), weakly supervised learning, and small-area estimation.
-
-The manuscript is not under consideration elsewhere. A preprint will be posted to arXiv
-upon submission.
+The manuscript is not under consideration elsewhere.
 
 Sincerely,
 Dagoberto Pulido Arias

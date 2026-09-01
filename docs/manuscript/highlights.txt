@@ -1,0 +1,7 @@
+Highlights (Remote Sensing of Environment)
+
+- Municipal aggregates alone train maps scored on 61,430 held-out census tracts
+- Weak supervision recovers 84-90% of the fully supervised upper bound
+- Attention-based MIL yields chance-level maps; label proportions do not
+- Bag-level error is nearly uninformative for selecting good maps
+- The learned deprivation gradient transfers zero-shot to Bogota block strata
