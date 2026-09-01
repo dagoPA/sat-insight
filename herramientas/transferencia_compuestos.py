@@ -27,7 +27,20 @@ from satinsight.transfer import agsn_of_city, bogota_strata  # noqa: E402
 MARGIN_M = 2000
 
 
+HAND_BOXES = {
+    # metro training boxes for the tri-country atlas; the box just has to cover the
+    # conurbation, municipal assignment comes later from each country's boundaries
+    "medellin": ("Valle de Aburr\u00e1", "Colombia", (-75.70, 6.05, -75.20, 6.55)),
+    "cali": ("Cali y alrededores", "Colombia", (-76.60, 3.30, -76.24, 3.56)),
+    "saopaulo": ("S\u00e3o Paulo metro", "Brazil", (-46.85, -23.75, -46.30, -23.35)),
+    "belohorizonte": ("Belo Horizonte metro", "Brazil", (-44.20, -20.05, -43.85, -19.75)),
+}
+
+
 def transfer_aoi(key: str) -> AOI:
+    if key in HAND_BOXES:
+        name, country, bbox = HAND_BOXES[key]
+        return AOI(key=key, name=name, state=country, bbox=bbox)
     if key == "bogota":
         return AOI.from_polygons(
             "bogota", "Bogotá D.C.", "Colombia", bogota_strata(), margin_m=MARGIN_M
