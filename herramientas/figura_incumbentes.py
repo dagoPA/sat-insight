@@ -28,13 +28,15 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 import seaborn as sns  # noqa: E402
 
+from satinsight.manuscript import INK, MUTED, STYLE, TEST, VALIDATION  # noqa: E402
+
 SHORT = {
     "built_surface": "GHSL built-up",
     "built_height": "GHSL height",
     "population": "GHSL population",
     "nightlights": "Night lights",
 }
-SPLIT_COLOR = {"val": "#7f8c8d", "test": "#c0392b"}
+SPLIT_COLOR = {"val": VALIDATION, "test": TEST}
 NOMINAL = 0.90
 
 
@@ -66,7 +68,7 @@ def _differences(ax) -> None:
             markersize=6,
             label="Validation" if split == "val" else "Test",
         )
-    ax.axvline(0, color="#2c3e50", ls="--", lw=1.1)
+    ax.axvline(0, color=INK, ls="--", lw=1.1)
     ax.set_yticks(range(len(order)))
     ax.set_yticklabels([SHORT[p] for p in order])
     ax.invert_yaxis()
@@ -80,7 +82,7 @@ def _detection(ax) -> None:
     table = pd.read_csv("data/incumbentes_globales_test.csv")
     names = [SHORT[p] for p in table["product"]] + ["Map"]
     values = [*table.proxy_auc_high, float(table.ours_auc_high.iloc[0])]
-    colors = ["#95a5a6"] * len(table) + ["#c0392b"]
+    colors = [MUTED] * len(table) + [TEST]
     order = sorted(range(len(values)), key=lambda i: values[i])
     ax.barh(
         [names[i] for i in order],
@@ -88,7 +90,7 @@ def _detection(ax) -> None:
         color=[colors[i] for i in order],
     )
     ax.set_xlim(0.5, 0.95)
-    ax.axvline(0.5, color="#2c3e50", ls="--", lw=1.1)
+    ax.axvline(0.5, color=INK, ls="--", lw=1.1)
     ax.set_xlabel("Pooled AUROC, high-grade tracts (test)")
     ax.set_title("b  Pooled detection: products at or above the map")
     for index, position in enumerate(order):
@@ -108,8 +110,8 @@ def _coverage(ax) -> None:
     marginal = table[table.rule == "marginal"].sort_values("coverage")
     order = list(marginal.city)
     for rule, color, label in (
-        ("marginal", "#95a5a6", "Marginal"),
-        ("clustered", "#2980b9", "Clustered by city"),
+        ("marginal", MUTED, "Marginal"),
+        ("clustered", INK, "Clustered by city"),
     ):
         rows = table[table.rule == rule].set_index("city").loc[order]
         width = float(rows.half_width_grades.iloc[0])
@@ -122,7 +124,7 @@ def _coverage(ax) -> None:
             markersize=5,
             label=f"{label} ($\\pm${width:.2f} grades)",
         )
-    ax.axhline(NOMINAL, color="#c0392b", ls="--", lw=1.2, label="Nominal 90%")
+    ax.axhline(NOMINAL, color=TEST, ls="--", lw=1.2, label="Nominal 90%")
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([names.get(key, key) for key in order], rotation=45, ha="right", size=8)
     ax.set_ylabel("Empirical coverage")
@@ -131,7 +133,7 @@ def _coverage(ax) -> None:
 
 
 def draw(destination: str) -> None:
-    sns.set_theme(style="whitegrid", context="talk", font_scale=0.66)
+    sns.set_theme(**STYLE)
     figure, axes = plt.subplots(1, 3, figsize=(19, 5.4))
     _differences(axes[0])
     _detection(axes[1])

@@ -30,7 +30,21 @@ whole-scene downloads.
 
 ## Reproducing
 
-Each figure and table of the paper maps to a driver in `herramientas/`. A frozen benchmark
-(DOFA vectors, labels, splits, evaluation protocol) is being packaged so heads can be
-trained in minutes without the satellite pipeline; until it is published, `satinsight
-probe` verifies the live data access the pipeline needs.
+Each figure of the paper maps to one driver in `herramientas/`:
+
+| Figure | Driver |
+| --- | --- |
+| 1, study design | `figura_diseno.py` |
+| 2, supervision efficiency | `figura_curva.py` |
+| 3, prediction against localization | `figura_disociacion.py` |
+| 4, external validity | `figura_validez.py` |
+| 5, free products and uncertainty | `figura_incumbentes.py` |
+
+Drivers 2 to 5 recompute every quantity they draw from the per-seed artifacts and stop if
+one departs from `data/canon_manuscrito.json`, so a stale artifact fails the build instead
+of quietly redrawing the page. `datos_fuente.py` exports the per-panel source data.
+
+`empaquetar_benchmark.py` builds the frozen benchmark (DOFA vectors, labels, splits,
+evaluation protocol) under `dist/benchmark`, so heads can be trained in minutes without
+the satellite pipeline. Until it is deposited, `satinsight probe` verifies the live data
+access the pipeline needs.

@@ -6,6 +6,9 @@ __pycache__/
 
 # datos descargados — se regeneran con los scripts
 data/
+# el canon no se regenera: es el registro de resultados que el manuscrito cita y que los
+# drivers de figuras contrastan, así que viaja con el repositorio
+!data/canon_manuscrito.json
 cache/
 *.tif
 *.tiff

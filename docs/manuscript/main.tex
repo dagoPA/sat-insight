@@ -515,7 +515,12 @@ Bogot\'a's open-data portal.
 
 \section*{Code availability}
 The full pipeline (MIT licence) is available at the project repository, pinned by
-\texttt{uv.lock}; each figure maps to one driver script.
+\texttt{uv.lock}. Each figure maps to one driver script under \texttt{herramientas/}:
+\texttt{figura\_diseno.py} for Fig.~1, \texttt{figura\_curva.py} for Fig.~2,
+\texttt{figura\_disociacion.py} for Fig.~3, \texttt{figura\_validez.py} for Fig.~4 and
+\texttt{figura\_incumbentes.py} for Fig.~5. Each recomputes the quantities it draws from
+the per-seed artifacts and halts if any of them departs from the canonical results file,
+so a figure and the text cannot disagree silently.
 
 \section*{Acknowledgements}
 This research received no external funding.
@@ -555,8 +560,8 @@ validation median ($\rho = 0.47$), chosen as a median-performing, representative
 \includegraphics[width=\linewidth]{fig2_curve.pdf}
 \caption{\textbf{The exchange rate between aggregates and maps.} All panels: mean over
 three seeds against held-out tract grades; blue, the 14 validation cities used for
-selection (error bars, s.d. over seeds); orange, the 14 test cities scored once with
-frozen models; dashed and dotted lines, the fully supervised oracle upper bound on each split
+selection (error bars, s.d. over seeds); red, the 14 test cities scored once with frozen
+models and drawn without a spread; dashed and dotted lines, the fully supervised oracle upper bound on each split
 ($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
 many municipal aggregates supervise training (nested, grade-stratified sampling).
 \textbf{b}, The same 771 bags relabeled with coarser aggregates. \textbf{c},
@@ -584,11 +589,13 @@ uncorrelated with within-municipality map quality, and positively correlated
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{fig4_validation.pdf}
-\caption{\textbf{External validity.} Blue/dark bars, validation; orange/light bars,
-test (single opening). \textbf{a}, Within-municipality agreement on the identical AGEB
+\caption{\textbf{External validity.} Blue, validation; red, test (single opening);
+purple in \textbf{d}, which belongs to neither split. \textbf{a}, Within-municipality agreement on the identical AGEB
 universe reached by the incumbent's grid; annotation, city-clustered bootstraps of the
 paired difference per split. \textbf{b}, Replication against an independent
-institution's continuous index (error bars, city-clustered bootstrap half-widths).
+institution's continuous index, beside the map's agreement with the construct it was
+trained toward (error bars: s.d. over seeds on the CONEVAL bars, city-clustered bootstrap
+half-widths on the CONAPO bars).
 \textbf{c}, Share of the aggregate-to-census targeting gap closed at each budget,
 people pooled per split; validation loses at the tightest budget, test does not.
 \textbf{d}, Zero-shot transfer: the Mexican model, unchanged and unadapted, ordering
@@ -604,7 +611,7 @@ construct.}
 \includegraphics[width=\linewidth]{fig5_incumbents.pdf}
 \caption{\textbf{Free products, and the confidence the map can carry.}
 \textbf{a}, Paired within-municipality difference between the map and each downloadable
-global product on the identical tract universe, grey validation and red test, with
+global product on the identical tract universe, blue validation and red test, with
 city-clustered bootstrap intervals; only gridded population separates from the map on
 test, and nighttime lights straddle zero on both splits. \textbf{b}, Pooled detection of
 high and very-high grade tracts across the test cities: all four products land at or

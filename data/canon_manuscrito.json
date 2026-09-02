@@ -1,0 +1,343 @@
+{
+ "curve": {
+  "50": {
+   "auroc_high": 0.789,
+   "spearman_within": 0.1502,
+   "spearman_pooled": 0.4025,
+   "bag_mae": 0.1379
+  },
+  "100": {
+   "auroc_high": 0.7921,
+   "spearman_within": 0.1412,
+   "spearman_pooled": 0.3953,
+   "bag_mae": 0.1299
+  },
+  "200": {
+   "auroc_high": 0.7839,
+   "spearman_within": 0.1511,
+   "spearman_pooled": 0.4205,
+   "bag_mae": 0.1151
+  },
+  "400": {
+   "auroc_high": 0.7779,
+   "spearman_within": 0.1822,
+   "spearman_pooled": 0.4375,
+   "bag_mae": 0.102
+  },
+  "771": {
+   "auroc_high": 0.8022,
+   "spearman_within": 0.227,
+   "spearman_pooled": 0.4628,
+   "bag_mae": 0.0975
+  }
+ },
+ "granularity": {
+  "municipality": {
+   "auroc_high": 0.8021,
+   "spearman_within": 0.2248
+  },
+  "national": {
+   "auroc_high": 0.511,
+   "spearman_within": 0.0086
+  },
+  "state": {
+   "auroc_high": 0.7777,
+   "spearman_within": 0.1517
+  }
+ },
+ "ceiling": {
+  "0": 0.2023,
+  "1": 0.251
+ },
+ "ceiling_auroc": {
+  "0": 0.8373,
+  "1": 0.8511
+ },
+ "radius_sweep": {
+  "0": 0.1785,
+  "2": 0.2281,
+  "1": 0.227
+ },
+ "a5_weighted": {
+  "auroc_high": 0.8013,
+  "spearman_within": 0.2325,
+  "bag_mae": 0.0953
+ },
+ "conapo": {
+  "agebs": 2752,
+  "municipalities_scored": 21,
+  "spearman_within": 0.3606,
+  "ci95_half": 0.0734,
+  "spearman_pooled": 0.4775,
+  "auroc_high": 0.7923
+ },
+ "rwi_paired": {
+  "agebs": 2958,
+  "municipalities": 22,
+  "ours_within": 0.3538,
+  "rwi_within": 0.1352,
+  "difference": 0.2186,
+  "ci_low": 0.0793,
+  "ci_high": 0.2876,
+  "wins": 18
+ },
+ "targeting_pooled": {
+  "0.05": -0.05,
+  "0.1": 0.255,
+  "0.2": 0.345,
+  "0.3": 0.434
+ },
+ "border": [
+  {
+   "crossing": "municipal",
+   "excess": 0.0187,
+   "ci_low": -0.0024,
+   "ci_high": 0.1551
+  },
+  {
+   "crossing": "ageb",
+   "excess": 0.0009,
+   "ci_low": -0.0196,
+   "ci_high": 0.0059
+  }
+ ],
+ "maup": [
+  {
+   "tokens_low": 1,
+   "tokens_high": 3,
+   "agebs": 567,
+   "median_population": 211.0,
+   "municipalities": 15,
+   "spearman_within": 0.257
+  },
+  {
+   "tokens_low": 4,
+   "tokens_high": 9,
+   "agebs": 849,
+   "median_population": 1948.0,
+   "municipalities": 16,
+   "spearman_within": 0.338
+  },
+  {
+   "tokens_low": 10,
+   "tokens_high": 19,
+   "agebs": 999,
+   "median_population": 2644.0,
+   "municipalities": 20,
+   "spearman_within": 0.352
+  },
+  {
+   "tokens_low": 20,
+   "tokens_high": 49,
+   "agebs": 464,
+   "median_population": 3230.5,
+   "municipalities": 14,
+   "spearman_within": 0.432
+  },
+  {
+   "tokens_low": 50,
+   "tokens_high": 10000,
+   "agebs": 79,
+   "median_population": 3560.0,
+   "municipalities": 2,
+   "spearman_within": 0.127
+  }
+ ],
+ "zeroshot": [
+  {
+   "city": "riodejaneiro",
+   "tokens": 34331,
+   "positive_share": 0.055,
+   "auroc": 0.557,
+   "spearman": NaN
+  },
+  {
+   "city": "bogota",
+   "tokens": 14132,
+   "positive_share": 0.415,
+   "auroc": 0.716,
+   "spearman": 0.318
+  }
+ ],
+ "modality_optical": {
+  "within": 0.1831,
+  "auroc": 0.8116,
+  "bag_mae": 0.1092,
+  "seeds": 3
+ },
+ "modality_radar": {
+  "within": 0.0057,
+  "auroc": 0.6402,
+  "bag_mae": 0.1347,
+  "seeds": 3
+ },
+ "modality_fused": {
+  "within": 0.181,
+  "auroc": 0.808,
+  "bag_mae": 0.0998,
+  "seeds": 3
+ },
+ "modality_degraded": {
+  "within": 0.1715,
+  "auroc": 0.7863,
+  "bag_mae": 0.1037,
+  "seeds": 3
+ },
+ "modality_worldcover": {
+  "within": 0.1496,
+  "auroc": 0.8109,
+  "bag_mae": 0.127,
+  "seeds": 3
+ },
+ "abmil": {
+  "map_auroc": 0.463,
+  "pooled_spearman": -0.107,
+  "bag_kappa": 0.621,
+  "entropy_flat": {
+   "bag_auroc_before": 0.899,
+   "after": 0.895
+  },
+  "llp_kfold_auroc": 0.761,
+  "llp_kfold_within": 0.165,
+  "note": "110-city national pool; predates and is unaffected by the expansion leak"
+ },
+ "sweep_blindness": {
+  "rank_corr_mae_vs_within": -0.141,
+  "rank_corr_mae_vs_auroc": 0.617,
+  "configs": 14
+ },
+ "pool": {
+  "bags_clean": 771,
+  "extra_municipalities": 213,
+  "national_cities": 138,
+  "municipalities_with_grs": 2469
+ },
+ "phase1_percity_auroc_high": {
+  "optical": 0.747,
+  "radar": 0.773,
+  "fused": 0.771
+ },
+ "phase1_kappa": {
+  "optical": 0.516,
+  "radar": 0.443,
+  "fused": 0.538
+ },
+ "test": {
+  "headline_token_within": 0.196,
+  "headline_token_within_ensemble": 0.198,
+  "headline_auroc": 0.8215,
+  "ceiling_r1": 0.2327,
+  "ceiling_r0": 0.2027,
+  "fraction": 0.84,
+  "curve": {
+   "100": 0.1577,
+   "200": 0.1606,
+   "400": 0.1923,
+   "50": 0.156,
+   "771": 0.1851
+  },
+  "granularity": {
+   "municipality": 0.1948,
+   "national": 0.0045,
+   "state": 0.1679
+  },
+  "modality": {
+   "degraded": 0.1289,
+   "optical": 0.1787,
+   "radar": 0.084,
+   "worldcover": 0.219
+  },
+  "weighted": 0.1815,
+  "wc_paired": {
+   "municipalities": 29,
+   "ours_within": 0.1956,
+   "wc_within": 0.219,
+   "difference": -0.0234,
+   "ci_low": -0.183,
+   "ci_high": 0.1001,
+   "wins": 16
+  },
+  "rwi_paired": {
+   "agebs": 2811,
+   "municipalities": 22,
+   "ours_within": 0.2324,
+   "rwi_within": 0.103,
+   "difference": 0.1294,
+   "ci_low": -0.0648,
+   "ci_high": 0.2579,
+   "wins": 15
+  },
+  "conapo": {
+   "agebs": 2618,
+   "municipalities_scored": 20,
+   "spearman_within": 0.2573,
+   "ci95_half": 0.1456,
+   "spearman_pooled": 0.3885,
+   "auroc_high": 0.7682
+  },
+  "targeting": {
+   "0.05": 0.305,
+   "0.1": 0.34,
+   "0.2": 0.491,
+   "0.3": 0.66
+  },
+  "maup": [
+   {
+    "tokens_low": 1,
+    "tokens_high": 3,
+    "agebs": 503,
+    "median_population": 222.0,
+    "municipalities": 13,
+    "spearman_within": 0.282
+   },
+   {
+    "tokens_low": 4,
+    "tokens_high": 9,
+    "agebs": 851,
+    "median_population": 1946.0,
+    "municipalities": 17,
+    "spearman_within": 0.254
+   },
+   {
+    "tokens_low": 10,
+    "tokens_high": 19,
+    "agebs": 890,
+    "median_population": 2722.5,
+    "municipalities": 20,
+    "spearman_within": 0.377
+   },
+   {
+    "tokens_low": 20,
+    "tokens_high": 49,
+    "agebs": 480,
+    "median_population": 3011.0,
+    "municipalities": 16,
+    "spearman_within": 0.286
+   },
+   {
+    "tokens_low": 50,
+    "tokens_high": 10000,
+    "agebs": 87,
+    "median_population": 2998.0,
+    "municipalities": 1,
+    "spearman_within": -0.129
+   }
+  ],
+  "border": "underpowered: no usable same-grade municipal-border pairs among test cities",
+  "note": "single opening 31-08-2026; selection anchored to validation; nothing may be tuned against these numbers"
+ },
+ "fraction_ci": {
+  "val": {
+   "fraction": 0.956,
+   "ci_low": 0.636,
+   "ci_high": 1.292,
+   "municipalities": 33
+  },
+  "test": {
+   "fraction": 0.85,
+   "ci_low": 0.304,
+   "ci_high": 1.857,
+   "municipalities": 29
+  }
+ }
+}
