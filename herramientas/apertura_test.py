@@ -1,11 +1,7 @@
-"""The single opening of the test set: every reported row, scored once, frozen.
+"""Test-set column of the manuscript: every reported configuration, scored on the 14 test cities.
 
-The fourteen test cities have never been touched. This scores them under every
-configuration the manuscript reports, with one discipline throughout: model selection
-(epochs by early stopping, hyperparameters, the choice of head) stays anchored to the
-validation cities exactly as it was; the test cities are only ever scored. Nothing here
-may be re-run with different settings afterwards: a second opening would turn the
-confirmatory column back into a development set.
+Model selection (epochs by early stopping, hyperparameters, the choice of head) stays
+anchored to the validation cities; the test cities are held out and only scored.
 
 Rows, in order: the supervision-efficiency curve (five sizes), label granularity (three
 levels), single-sensor configurations, the population-weighted variant, the
@@ -176,7 +172,7 @@ def main() -> None:
                 )
             )
     pd.concat(frames, ignore_index=True).to_parquet("data/predicciones_test.parquet", index=False)
-    print("DONE: test scored once; per-token scores persisted", flush=True)
+    print("DONE: test column scored; per-token scores persisted", flush=True)
 
 
 if __name__ == "__main__":

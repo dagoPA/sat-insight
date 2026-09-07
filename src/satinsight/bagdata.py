@@ -53,12 +53,41 @@ class Bag:
         return len(self.instances)
 
 
-def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = False) -> list[Bag]:
+def _by_position(instances: pd.DataFrame, source: str, root: Path) -> tuple[np.ndarray, np.ndarray]:
+    """Rows of another feature file matched to `instances` by grid position.
+
+    Returns the matched vectors and a mask of the instances that found a counterpart.
+    Matching by position rather than by index is what keeps a token paired with its own
+    ground when one source dropped a token the other kept.
+    """
+    where = paths(root)
+    pair = pd.read_parquet(where["instances"] / f"{instances.ciudad.iloc[0]}_{source}.parquet")
+    vectors, _ = load(where["vectors"] / f"{instances.ciudad.iloc[0]}_{source}.npz")
+    index = {(y, x): i for i, (y, x) in enumerate(zip(pair.y0, pair.x0, strict=True))}
+    rows = np.array(
+        [index.get((y, x), -1) for y, x in zip(instances.y0, instances.x0, strict=True)]
+    )
+    keep = rows >= 0
+    return vectors[rows[keep]], keep
+
+
+def load_city(
+    city: str,
+    sensor: str,
+    root: Path = DATA_ROOT,
+    *,
+    fuse: bool = False,
+    extras: tuple[str, ...] = (),
+) -> list[Bag]:
     """Bags of one city, joining vectors, instances and labels.
 
     With `fuse` the two modalities are concatenated per instance. That needs both to have
     tiled identically, which they do because the window grid is derived from the composite
     shape and both composites share the grid of the city.
+
+    `extras` names further per-token feature files, "wc" or "aux", appended after the
+    sensor vectors in the order given. They share the optical instance table, so the
+    match by position is exact and only the fusion with radar can drop rows.
     """
     where = paths(root)
     instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
@@ -72,20 +101,18 @@ def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = Fa
     if "cvegeo" in tags and not (tags["cvegeo"] == instances.cvegeo.to_numpy()).all():
         raise ValueError(f"{city}/{sensor}: the vectors do not line up with the instances")
 
-    if fuse:
-        other = "s1" if sensor == "s2" else "s2"
-        pair = pd.read_parquet(where["instances"] / f"{city}_{other}.parquet")
-        other_vectors, _ = load(where["vectors"] / f"{city}_{other}.npz")
-        # the two modalities tile the same grid, so an instance is identified by where it
-        # sits; matching by position would silently pair different ground when one of the
-        # two dropped a token for want of observed pixels
-        index = {(y, x): i for i, (y, x) in enumerate(zip(pair.y0, pair.x0, strict=True))}
-        rows = [index.get((y, x), -1) for y, x in zip(instances.y0, instances.x0, strict=True)]
-        keep = np.array([r >= 0 for r in rows])
+    # the sources tile the same grid, so an instance is identified by where it sits;
+    # matching by index would silently pair different ground when one of them dropped a
+    # token for want of observed pixels
+    sources = (["s1" if sensor == "s2" else "s2"] if fuse else []) + list(extras)
+    for source in sources:
+        matched, keep = _by_position(instances, source, root)
         if not keep.all():
-            log.info("%s: %d instances without a counterpart dropped", city, (~keep).sum())
+            log.info(
+                "%s/%s: %d instances without a counterpart dropped", city, source, (~keep).sum()
+            )
         instances = instances[keep].reset_index(drop=True)
-        vectors = np.hstack([vectors[keep], other_vectors[np.array(rows)[keep]]])
+        vectors = np.hstack([vectors[keep], matched])
 
     grades = dict(zip(labels.municipio, labels.ordinal, strict=True))
     columns = [f"p{k}" for k in range(1, 5)]
@@ -117,13 +144,18 @@ def load_city(city: str, sensor: str, root: Path = DATA_ROOT, *, fuse: bool = Fa
 
 
 def load_split(
-    cities: list[str], sensor: str, root: Path = DATA_ROOT, *, fuse: bool = False
+    cities: list[str],
+    sensor: str,
+    root: Path = DATA_ROOT,
+    *,
+    fuse: bool = False,
+    extras: tuple[str, ...] = (),
 ) -> list[Bag]:
     """Bags of every city of one split. A city that fails does not stop the rest."""
     bags: list[Bag] = []
     for city in cities:
         try:
-            bags.extend(load_city(city, sensor, root, fuse=fuse))
+            bags.extend(load_city(city, sensor, root, fuse=fuse, extras=extras))
         except Exception:
             log.warning("no bags for %s", city, exc_info=True)
     if not bags:

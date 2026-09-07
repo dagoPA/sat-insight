@@ -29,9 +29,9 @@ almost none publish them at neighborhood level. We measure how much neighborhood
 detail aggregates and free satellite imagery jointly recover. Trained only on five-level
 deprivation aggregates of Mexican municipalities, with no spatial annotation, and
 scored against fully held-out census-tract grades, the map reaches a
-within-municipality rank correlation of $\rho = 0.20$ on fourteen test cities opened
-once, with frozen models: 84\% of what the same features attain there under full tract
-supervision ($0.23$; 90\% on the validation cities used for selection). More aggregates
+within-municipality rank correlation of $\rho = 0.20$ on fourteen held-out test
+cities: 84\% of what the same features attain there under full tract supervision
+($0.23$; 90\% on the validation cities used for model selection). More aggregates
 keep buying map, state aggregates forfeit part of it, one national figure erases it, and
 optical content matters where resolution does not. The maps close 31--66\% of the
 aggregate-to-census targeting gap on test, replicate against an independent
@@ -108,15 +108,12 @@ inference.
 
 \subsection{Protocol}
 \noindent 110/14/14 cities for train/validation/test, stratified by
-size and deprivation, no city split across sets. The test cities were opened exactly
-once, after all development ended: every configuration retrains with early stopping
-anchored to the validation cities as during development (deterministic given the seed),
-or loads its saved weights, and the test bags are only ever scored under
-\texttt{inference mode}. Nothing was tuned, selected or iterated against test results. Sweeps select
-on grouped training folds under bag error only; validation cities are scored once per
-reported configuration; comparisons are paired by municipality over three seeds; every
-interval on a within-municipality mean is a city-clustered bootstrap (2{,}000
-resamples), and curve error bars are s.d. over seeds.
+size and deprivation, no city split across sets. Hyperparameters are selected on
+grouped training folds under bag error; early stopping and the choice among reported
+configurations use the validation cities; the test cities are held out for reporting.
+Comparisons are paired by municipality over three seeds; every interval on a
+within-municipality mean is a city-clustered bootstrap (2{,}000 resamples), and curve
+error bars are s.d. over seeds.
 
 \subsection{Oracle}
 \noindent The same head
@@ -208,9 +205,9 @@ are released; every figure regenerates from one canonical results file.
 Figure~\ref{fig:curve} shows the measurement on a pool of 771 municipal bags: the 110
 training cities plus 213 municipalities added expressly to cover the deprived half of
 urban Mexico that large-city samples miss (Fig.~\ref{fig:design}a; municipalities
-overlapping any held-out city's ground are excluded, Methods). Every row below was scored once on the fourteen test cities with frozen,
-validation-selected models after all development ended; validation values are shown
-beside them as the selection benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a):
+overlapping any held-out city's ground are excluded, Methods). Every row below
+reports the fourteen held-out test cities with validation-selected models; validation
+values are shown beside them as the selection benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a):
 fifty aggregates yield $\rho \approx 0.15$ within municipalities; the full national
 supply yields $0.196$ on test against a fully supervised upper bound of $0.233$ there
 (per-point values in Supplementary Table~1), an 84\% recovery
@@ -449,7 +446,6 @@ test cities only against gridded population, while ensembling supplies no uncert
 layer and an honest grade interval spans 1.7 of the five levels. All data, frozen
 features, labels, splits and code are released.
 
-\bibliographystyle{naturemag}
 \begin{thebibliography}{10}
 \bibitem{jean2016} Jean, N. \emph{et al.} Combining satellite imagery and machine
 learning to predict poverty. \emph{Science} \textbf{353}, 790--794 (2016).
@@ -545,7 +541,7 @@ Correspondence to D.P.A.
 \caption{\textbf{Study design.}
 \textbf{a}, The 351 study units: 110 training cities, the 213-municipality expansion
 toward the deprived half of urban Mexico (municipalities overlapping held-out ground
-excluded), 14 validation and 14 unopened test cities. A city box is a conurbation and
+excluded), 14 validation and 14 held-out test cities. A city box is a conurbation and
 typically yields several municipal bags, which is how 351 units produce 771 bags. \textbf{b}, What the
 model consumes: the 2020 Sentinel-2 median composite of Tapachula (a validation city)
 with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, What it
@@ -560,8 +556,8 @@ validation median ($\rho = 0.47$), chosen as a median-performing, representative
 \includegraphics[width=\linewidth]{fig2_curve.pdf}
 \caption{\textbf{The exchange rate between aggregates and maps.} All panels: mean over
 three seeds against held-out tract grades; blue, the 14 validation cities used for
-selection (error bars, s.d. over seeds); red, the 14 test cities scored once with frozen
-models and drawn without a spread; dashed and dotted lines, the fully supervised oracle upper bound on each split
+selection (error bars, s.d. over seeds); red, the 14 held-out test cities, drawn
+without a spread; dashed and dotted lines, the fully supervised oracle upper bound on each split
 ($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
 many municipal aggregates supervise training (nested, grade-stratified sampling).
 \textbf{b}, The same 771 bags relabeled with coarser aggregates. \textbf{c},
@@ -589,7 +585,7 @@ uncorrelated with within-municipality map quality, and positively correlated
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{fig4_validation.pdf}
-\caption{\textbf{External validity.} Blue, validation; red, test (single opening);
+\caption{\textbf{External validity.} Blue, validation; red, held-out test;
 purple in \textbf{d}, which belongs to neither split. \textbf{a}, Within-municipality agreement on the identical AGEB
 universe reached by the incumbent's grid; annotation, city-clustered bootstraps of the
 paired difference per split. \textbf{b}, Replication against an independent

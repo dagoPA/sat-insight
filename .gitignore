@@ -23,3 +23,17 @@ features/
 
 # sistema
 .DS_Store
+
+# compilados de LaTeX; el manuscrito se compila desde main.tex
+docs/manuscript/*.aux
+docs/manuscript/*.log
+docs/manuscript/*.out
+docs/manuscript/*.pdf
+docs/manuscript/*.bbl
+docs/manuscript/*.blg
+docs/manuscript/*.fls
+docs/manuscript/*.fdb_latexmk
+docs/manuscript/*.synctex.gz
+
+# paquete del benchmark; se distribuye por Zenodo, nunca por el repo
+dist/

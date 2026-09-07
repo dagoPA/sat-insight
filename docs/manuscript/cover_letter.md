@@ -12,7 +12,7 @@ publishes its social deprivation grade at both municipal and census-tract level,
 allowed a calibration that the literature has lacked: models trained purely on municipal
 aggregates, validated against 61,430 fully held-out urban tracts, with an oracle trained
 on the tract labels bounding what the frozen features support. Weak supervision recovers
-84% of that upper bound on test cities opened exactly once, and the supervision
+84% of that upper bound on held-out test cities, and the supervision
 efficiency analysis (number of aggregates, label granularity, sensor and resolution) is
 reported on both splits.
 
