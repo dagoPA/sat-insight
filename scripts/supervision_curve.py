@@ -14,11 +14,12 @@ does not come out all comfortable by chance, and nested: the bags of a smaller N
 contained in every larger N of the same seed. Nesting removes sampling noise from the
 shape of the curve, which is the object of interest.
 
-Usage: supervision_curve.py [epochs] [radius] [sizes] [sensor] [extras]
+Usage: supervision_curve.py [epochs] [radius] [sizes] [sensor] [extras] [late]
 
 Radius sweeps the context sensitivity on the expanded pool. Sizes "full" runs only the
 whole-pool point, which is what the radius sensitivity needs. Extras is a comma-separated
-list of per-token feature files ("wc", "aux") fused after the sensor vectors.
+list of per-token feature files ("wc", "aux") fused after the sensor vectors. "late"
+routes those columns around the projection, straight into the scoring layer.
 """
 
 import logging
@@ -46,7 +47,8 @@ SENSOR = sys.argv[4] if len(sys.argv) > 4 else "s2"
 FUSE = SENSOR == "s2"
 SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
 EXTRAS = tuple(e for e in (sys.argv[5] if len(sys.argv) > 5 else "").split(",") if e)
-TAG = "".join(f"_{e}" for e in EXTRAS)
+LATE = len(sys.argv) > 6 and sys.argv[6] == "late"
+TAG = "".join(f"_{e}" for e in EXTRAS) + ("_late" if LATE else "")
 SEEDS = (0, 1, 2)
 PATIENCE = 8
 OUT = (
@@ -101,11 +103,28 @@ def nested_sample(bags, seed):
     return order
 
 
+def extra_dims(cities) -> int:
+    """Width of the fused extra columns, read from the first city that has them."""
+    from satinsight.dataset import paths
+    from satinsight.encoders import load
+
+    where = paths()
+    for city in cities:
+        try:
+            return sum(load(where["vectors"] / f"{city}_{e}.npz")[0].shape[1] for e in EXTRAS)
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(f"no city carries {EXTRAS}")
+
+
 def train_once(train_bags, val_bags, val_links, grades, seed, torch, device):
     from torch import nn
 
     torch.manual_seed(seed)
-    model = build(train_bags[0].instances.shape[1], radius=RADIUS, standardize=True).to(device)
+    aux_dims = extra_dims({b.city for b in val_bags}) if LATE and EXTRAS else 0
+    model = build(
+        train_bags[0].instances.shape[1], radius=RADIUS, standardize=True, aux_dims=aux_dims
+    ).to(device)
     rng_stats = np.random.default_rng(seed)
     sample = np.vstack([b.instances[rng_stats.permutation(len(b))[:200]] for b in train_bags])
     model.fit_scaler(sample.mean(axis=0), sample.std(axis=0))
@@ -162,6 +181,7 @@ def main() -> None:
     grades = grades_of(val_cities, catalogue)
     print(
         f"pool of {len(pool)} bags · sizes {SIZES} · seeds {SEEDS} · extras {EXTRAS} · "
+        f"late {LATE} · "
         f"{pool[0].instances.shape[1]} dims",
         flush=True,
     )

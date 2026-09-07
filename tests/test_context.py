@@ -1,6 +1,7 @@
 """The adjacency is pure geometry, so it is checked without torch or network."""
 
 import numpy as np
+import pytest
 
 from satinsight.context import STRIDE, adjacency
 
@@ -45,3 +46,19 @@ def test_isolated_instance_has_no_neighbours():
     found = neighbours_of([(0, 0), (5, 5), (5, 6)])
     assert found[0] == set()
     assert found[1] == {2}
+
+
+def test_late_fusion_routes_the_last_columns_around_the_projection():
+    """The auxiliary columns reach the scoring layer without passing the projection."""
+    pytest.importorskip("torch")
+    import torch
+
+    from satinsight.llp import build
+
+    model = build(10, radius=0, standardize=False, aux_dims=4).eval()
+    assert model.project[0].in_features == 6
+    assert model.score.in_features == model.project[0].out_features + 4
+    x = torch.zeros(5, 10)
+    x[:, -4:] = 1.0
+    bag, per_instance = model(x)
+    assert bag.shape == (4,) and per_instance.shape == (5, 4)

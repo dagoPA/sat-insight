@@ -247,7 +247,7 @@ def agebs_of_city(
         city.name,
         len(geometry),
         len(joined),
-        joined["municipality_key"].nunique() if len(joined) else 0,
+        joined["cve_mun"].nunique() if len(joined) else 0,  # INEGI field, kept as published
     )
 
     if min_population:

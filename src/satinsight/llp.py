@@ -42,8 +42,16 @@ def build(
     radius: int = 0,
     dropout: float = DROPOUT,
     standardize: bool = False,
+    aux_dims: int = 0,
 ):
-    """Builds the per-instance predictor. Torch is imported here, not at module level."""
+    """Builds the per-instance predictor. Torch is imported here, not at module level.
+
+    `aux_dims` marks the last columns of the input as auxiliary product features that
+    bypass the projection: they are standardised, then concatenated to the hidden
+    representation right before scoring. Mixed into the first layer they are four columns
+    among fifteen hundred and the gradient from a few hundred bag labels never finds them;
+    with a pathway of their own the scoring layer gives each one a weight per threshold.
+    """
     import torch
     from torch import nn
 
@@ -60,9 +68,12 @@ def build(
             self.register_buffer("centre", torch.zeros(dim_in))
             self.register_buffer("spread", torch.ones(dim_in))
             self.standardize = standardize
-            self.project = nn.Sequential(nn.Linear(dim_in, hidden), nn.ReLU(), nn.Dropout(dropout))
+            self.aux_dims = aux_dims
+            self.project = nn.Sequential(
+                nn.Linear(dim_in - aux_dims, hidden), nn.ReLU(), nn.Dropout(dropout)
+            )
             self.neighbourhood = build_layer(hidden) if radius else None
-            width = self.neighbourhood.out_features if radius else hidden
+            width = (self.neighbourhood.out_features if radius else hidden) + aux_dims
             self.score = nn.Linear(width, n_thresholds)
 
         def fit_scaler(self, mean, deviation):
@@ -89,11 +100,16 @@ def build(
             """
             if self.standardize:
                 instances = (instances - self.centre) / self.spread
-            h = self.project(instances)
+            main, aux = instances, None
+            if self.aux_dims:
+                main, aux = instances[:, : -self.aux_dims], instances[:, -self.aux_dims :]
+            h = self.project(main)
             if self.neighbourhood is not None:
                 if src is None:
                     raise ValueError("a model built with a radius needs the bag adjacency")
                 h = self.neighbourhood(h, src, dst)
+            if aux is not None:
+                h = torch.cat([h, aux], dim=1)
             per_instance = torch.sigmoid(self.score(h))
             return per_instance.mean(dim=0), per_instance
 
