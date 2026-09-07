@@ -2,9 +2,9 @@
 
 Panel a: every municipality of the study on the national map, colored by role. Panel b:
 the true-color composite of one held-out city with its AGEB boundaries, the imagery the
-model actually consumes. Panels c and d: the held-out tract truth and the token-level
-prediction for the same city, painted as one continuous lattice of 160 m cells on one
-color scale. Acámbaro is the display city: all five grades present and the highest
+model actually consumes. Panels c and d: the held-out tract truth drawn as its AGEB polygons and the
+token-level prediction drawn as its 160 m lattice, each in its own unit, on one color
+scale. Acámbaro is the display city: all five grades present and the highest
 within-municipality rho among validation municipalities that hold every grade, so the
 example shows what the map looks like where it works, with the median stated in the
 caption.
@@ -184,23 +184,36 @@ def main() -> None:
         .score.mean()
         .reset_index()
     )
-    grades = dict(zip(layer.cvegeo, layer.ordinal.astype(int), strict=True))
     norm = colors.Normalize(vmin=0, vmax=4)
     shape = rgb.shape[:2]
-    truth = tokens.cvegeo.map(grades).to_numpy(dtype="float32")
-    panels = (
-        ("c  Tract truth (held out)", token_raster(tokens, truth, shape)),
-        (
-            "d  Prediction, weak supervision",
-            token_raster(tokens, tokens.score.to_numpy(), shape),
-        ),
+    # c, the truth in its own unit: the AGEB polygons, filled with their grade
+    ax = fig.add_subplot(grid_spec[1, 1])
+    ax.imshow(rgb * 0.35)
+    from matplotlib.patches import Polygon
+
+    for geometry, ordinal in zip(bounds.geometry, bounds.ordinal.astype(int), strict=True):
+        for part in getattr(geometry, "geoms", [geometry]):
+            xs, ys = part.exterior.xy
+            pixels = [inverse * (x, y) for x, y in zip(xs, ys, strict=True)]
+            ax.add_patch(
+                Polygon(pixels, closed=True, facecolor=CMAP(norm(ordinal)), edgecolor="none")
+            )
+    ax.set_xlim(0, shape[1])
+    ax.set_ylim(shape[0], 0)
+    ax.set_axis_off()
+    ax.set_title("c  Tract truth (held out)", loc="left", fontsize=9, fontweight="bold")
+
+    # d, the prediction in its own unit: the 160 m token lattice
+    ax = fig.add_subplot(grid_spec[1, 2])
+    ax.imshow(rgb * 0.35)
+    image = ax.imshow(
+        token_raster(tokens, tokens.score.to_numpy(), shape),
+        cmap=CMAP,
+        norm=norm,
+        interpolation="nearest",
     )
-    for column, (title, raster) in enumerate(panels, start=1):
-        ax = fig.add_subplot(grid_spec[1, column])
-        ax.imshow(rgb * 0.35)
-        image = ax.imshow(raster, cmap=CMAP, norm=norm, interpolation="nearest")
-        ax.set_axis_off()
-        ax.set_title(title, loc="left", fontsize=9, fontweight="bold")
+    ax.set_axis_off()
+    ax.set_title("d  Prediction, weak supervision", loc="left", fontsize=9, fontweight="bold")
     colourbar = fig.colorbar(image, ax=ax, fraction=0.04, pad=0.02)
     colourbar.set_label("deprivation grade", fontsize=7)
     colourbar.set_ticks([0, 4])
