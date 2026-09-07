@@ -44,7 +44,7 @@ from satinsight.splits import cities_of  # noqa: E402
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 1
 SENSOR = sys.argv[4] if len(sys.argv) > 4 else "s2"
-FUSE = SENSOR == "s2"
+FUSE = SENSOR.startswith("s2")
 SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
 EXTRAS = tuple(e for e in (sys.argv[5] if len(sys.argv) > 5 else "").split(",") if e)
 LATE = len(sys.argv) > 6 and sys.argv[6] == "late"

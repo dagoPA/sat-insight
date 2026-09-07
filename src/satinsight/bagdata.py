@@ -53,6 +53,15 @@ class Bag:
         return len(self.instances)
 
 
+def fusion_partner(sensor: str) -> str:
+    """The other modality of a sensor name, keeping any backbone suffix: s2_dofal, s1_dofal."""
+    if sensor.startswith("s2"):
+        return "s1" + sensor[2:]
+    if sensor.startswith("s1"):
+        return "s2" + sensor[2:]
+    raise KeyError(f"no fusion partner for sensor {sensor!r}")
+
+
 def _by_position(
     city: str, instances: pd.DataFrame, source: str, root: Path
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -107,7 +116,7 @@ def load_city(
     # the sources tile the same grid, so an instance is identified by where it sits;
     # matching by index would silently pair different ground when one of them dropped a
     # token for want of observed pixels
-    sources = (["s1" if sensor == "s2" else "s2"] if fuse else []) + list(extras)
+    sources = ([fusion_partner(sensor)] if fuse else []) + list(extras)
     for source in sources:
         matched, keep = _by_position(city, instances, source, root)
         if not keep.all():

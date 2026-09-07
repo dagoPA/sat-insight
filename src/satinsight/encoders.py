@@ -128,7 +128,12 @@ class DofaEncoder:
         if constructor is None:
             available = sorted(n for n in dir(models) if n.startswith("dofa_"))
             raise KeyError(f"unknown checkpoint {checkpoint!r}. Available: {available}")
-        weights = models.DOFABase16_Weights.DOFA_MAE if "base" in checkpoint else None
+        if "base" in checkpoint:
+            weights = models.DOFABase16_Weights.DOFA_MAE
+        elif "large" in checkpoint:
+            weights = models.DOFALarge16_Weights.DOFA_MAE
+        else:
+            weights = None
         return constructor(weights=weights)
 
     def _tensor(self, batch: np.ndarray):
@@ -170,6 +175,111 @@ class DofaEncoder:
         return state[:, 1:].float().cpu().numpy()
 
 
+CFM_WAVELENGTHS_NM = {
+    "B02": (492.4, 66.0),
+    "B03": (559.8, 36.0),
+    "B04": (664.6, 31.0),
+    "B08": (832.8, 106.0),
+    "B11": (1613.7, 91.0),
+    "vv": (5.55e7, 1e9),
+    "vh": (5.55e7, 1e9),
+}
+"""Central wavelength and bandwidth in nanometres, the units Copernicus-FM conditions on.
+
+Sentinel-2A band centres and widths from the ESA mission handbook. The radar pair is
+given the C-band wavelength (5.405 GHz, 5.55 cm) with a nominal bandwidth, the way the
+Copernicus-FM release treats Sentinel-1 GRD; VV and VH share one kernel, as in DOFA.
+"""
+
+CFM_REFERENCE_DAY = 18444.0
+"""Days since 1970-01-01 for 2020-07-01, the middle of the annual composites."""
+
+
+class CopernicusFmEncoder(DofaEncoder):
+    """Copernicus-FM, a spectral-hypernetwork foundation model with metadata conditioning.
+
+    Like DOFA it generates its patch projection from the wavelength of each channel, and
+    on top it embeds the location, the date and the footprint of every window, so the
+    extraction hands it those from the grid. The per-token path replicates
+    `forward_features` up to the final norm, as the DOFA path does.
+    """
+
+    needs_metadata = True
+
+    def __init__(self, checkpoint: str = "copernicusfm_base", device: str | None = None):
+        super().__init__(checkpoint, device)
+
+    def _load(self, checkpoint: str):
+        import torchgeo.models as models
+
+        if checkpoint != "copernicusfm_base":
+            raise KeyError(f"unknown Copernicus-FM checkpoint {checkpoint!r}")
+        return models.copernicusfm_base(weights=models.CopernicusFM_Base_Weights.CopernicusFM_ViT)
+
+    def embed(self, batch, wavelengths, metadata=None):
+        return self.embed_tokens(batch, wavelengths, metadata).mean(axis=1)
+
+    def embed_tokens(self, batch, wavelengths, metadata=None):
+        """Every token of every window, conditioned on band physics and window metadata.
+
+        `wavelengths` are channel names here, resolved through `CFM_WAVELENGTHS_NM`;
+        `metadata` is (n, 4) of longitude, latitude, day and area in km2, NaN where
+        unknown, in which case the model falls back to its learned placeholder tokens.
+        """
+        torch = self._torch
+        model = self.model
+        tensor = self._tensor(batch)
+        names = list(wavelengths)
+        wvs = torch.tensor([CFM_WAVELENGTHS_NM[n][0] for n in names], device=tensor.device)
+        bws = torch.tensor([CFM_WAVELENGTHS_NM[n][1] for n in names], device=tensor.device)
+        if metadata is None:
+            metadata = np.full((len(batch), 4), np.nan, dtype="float32")
+        meta = torch.from_numpy(np.asarray(metadata, dtype="float32")).to(tensor.device)
+        with torch.inference_mode():
+            x = model.patch_embed_spectral(tensor, wavelengths=wvs.float(), bandwidths=bws.float())
+            pos_embed = model.pos_embed
+            embed_dim = pos_embed.shape[-1]
+            lons, lats, times, areas = meta[:, 0], meta[:, 1], meta[:, 2], meta[:, 3]
+            if torch.isnan(lons).any() or torch.isnan(lats).any():
+                coord = model.coord_token
+            else:
+                coord = model.get_coord_pos_embed(lons, lats, embed_dim)
+            coord = model.coord_fc(coord)
+            area = (
+                model.scale_token
+                if torch.isnan(areas).any()
+                else model.get_area_pos_embed(areas, embed_dim)
+            )
+            area = model.scale_fc(area)
+            time = (
+                model.time_token
+                if torch.isnan(times).any()
+                else model.get_time_pos_embed(times, embed_dim)
+            )
+            time = model.time_fc(time)
+            pos_embed = pos_embed + coord + area + time
+            x = x + pos_embed[:, 1:, :]
+            cls = (model.cls_token + pos_embed[:, :1, :]).expand(x.shape[0], -1, -1)
+            x = torch.cat((cls, x), dim=1)
+            for block in model.blocks:
+                x = block(x)
+            x = model.fc_norm(x)
+        return x[:, 1:].float().cpu().numpy()
+
+
+def window_metadata(windows: list, grid, day: float = CFM_REFERENCE_DAY) -> np.ndarray:
+    """Longitude, latitude, day and footprint area of each window, for Copernicus-FM."""
+    import rasterio.warp
+
+    rows = np.array([w.center_px[0] for w in windows])
+    cols = np.array([w.center_px[1] for w in windows])
+    x, y = grid.transform * (cols, rows)
+    lon, lat = rasterio.warp.transform(grid.crs, "EPSG:4326", np.atleast_1d(x), np.atleast_1d(y))
+    side_km = windows[0].size * abs(grid.transform.a) / 1000.0 if windows else 0.0
+    area = np.full(len(windows), side_km * side_km)
+    return np.column_stack([lon, lat, np.full(len(windows), day), area]).astype("float32")
+
+
 def extract(
     bands: dict[str, np.ndarray],
     windows: list,
@@ -179,11 +289,14 @@ def extract(
     batch: int = BATCH,
     token_size: int = TOKEN_SIZE,
     min_valid_fraction: float = MIN_VALID_FRACTION,
+    metadata: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list]:
     """Encodes every window of a city and returns one vector per surviving token.
 
     Gives back the vectors and the instances they belong to, in the same order, so the
-    two never have to be lined up again by hand later.
+    two never have to be lined up again by hand later. An encoder that declares
+    `needs_metadata` receives the channel names in place of DOFA's wavelengths, plus the
+    per-window `metadata` rows, which it resolves through its own tables.
     """
     from satinsight.tiling import instances, stack
 
@@ -191,7 +304,9 @@ def extract(
     missing = [n for n in order if n not in WAVELENGTHS_UM]
     if missing:
         raise KeyError(f"no wavelength registered for {missing}")
-    wavelengths_list = [WAVELENGTHS_UM[n] for n in order]
+    wavelengths_list = (
+        order if getattr(encoder, "needs_metadata", False) else [WAVELENGTHS_UM[n] for n in order]
+    )
 
     tokens, indices = instances(windows, bands, token_size, min_valid_fraction)
     if not windows:
@@ -202,7 +317,11 @@ def extract(
         batch_in = np.stack(
             [normalize(stack(bands, w, order), order) for w in windows[start : start + batch]]
         )
-        output = encoder.embed_tokens(batch_in, wavelengths_list)
+        if getattr(encoder, "needs_metadata", False):
+            chunk = None if metadata is None else metadata[start : start + batch]
+            output = encoder.embed_tokens(batch_in, wavelengths_list, chunk)
+        else:
+            output = encoder.embed_tokens(batch_in, wavelengths_list)
         vectors.append(output.reshape(-1, output.shape[-1]))
     matrix = np.concatenate(vectors)[indices]
     log.info("%d instances encoded into %d dimensions", *matrix.shape)
