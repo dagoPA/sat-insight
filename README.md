@@ -51,6 +51,7 @@ Each figure of the paper maps to one driver in `scripts/`:
 | 3, prediction against localization | `fig3_dissociation.py` |
 | 4, external validity | `fig4_validation.py` |
 | 5, free products and uncertainty | `fig5_incumbents.py` |
+| graphical abstract | `graphical_abstract.py` |
 
 Drivers 2 to 5 recompute every quantity they draw from the per-seed artifacts and stop if
 one departs from `docs/manuscript/canonical_results.json`, so a stale artifact fails the
