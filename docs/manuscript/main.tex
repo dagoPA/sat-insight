@@ -52,87 +52,211 @@ uncertainty layer: an honest 90\% grade interval spans 1.7 of the five levels.
 
 Census-quality social data is expensive, and most of the world sees it roughly once a
 decade. In between, and below the level the tables are published at, policy relies on
-aggregates: municipal indices and district averages. A rich literature has
-shown that satellite imagery plus machine learning predicts such indicators across
-space~\cite{jean2016,yeh2020,chi2022,burke2021}, and derived global products already
-steer programme targeting~\cite{chi2022,aiken2022}. Predicting an aggregate
-somewhere else and disaggregating it in place are different tasks, and the second is the
-one targeting decisions require: a mayor already knows the municipality is poor but
-lacks a map of which neighborhoods are poorest.
+aggregates: municipal indices and district averages. Predicting an aggregate somewhere
+else and disaggregating it in place are different tasks, and the second is the one
+targeting decisions require: a mayor already knows the municipality is poor but lacks a
+map of which neighborhoods are poorest.
+
+A decade of work has established that satellite imagery and machine learning predict
+socioeconomic indicators across space. Jean et al.~\cite{jean2016} transferred features
+learned from nighttime lights to daytime imagery and explained a large share of the
+variation in survey-measured consumption across African clusters; Yeh et
+al.~\cite{yeh2020} extended the approach to seventeen years and twenty-three countries;
+Head et al.~\cite{head2017} showed that the transfer degrades away from the settings it
+was fit in; Engstrom et al.~\cite{engstrom2022} and Ayush et al.~\cite{ayush2021} reached
+finer targets with sub-metre imagery; Rolf et al.~\cite{rolf2021} showed that random
+convolutional features suffice for many such tasks; Chi et al.~\cite{chi2022} released a
+global 2.4 km wealth grid, and Lee and Braithwaite~\cite{lee2022} district-level poverty
+maps for sub-Saharan Africa. Burke et al.~\cite{burke2021} review the field. The design
+these studies share is that labels come from household surveys at the cluster or
+district where they were collected, models are scored on held-out clusters or districts,
+and the products steer program targeting at that resolution~\cite{aiken2022}. Ordering
+neighborhoods inside a city is rarely the target and, because independent ground at
+that resolution is rare, rarely evaluated.
+
+Two literatures do address the intra-urban scale, from opposite directions. Slum mapping
+from imagery has fifteen years of results~\cite{kuffer2016}, almost all of them
+supervised by digitized settlement delineations, that is, by the fine labels a
+statistics office lacks. Dasymetric and disaggregation methods distribute a known
+aggregate over covariates~\cite{stevens2015,wardrop2018}, but they are validated where
+the aggregate is known and rarely against an independent fine-grained truth. Both
+inherit the caveats of any spatially aggregated label, the modifiable areal unit
+problem~\cite{openshaw1984} and the ecological fallacy, which we quantify rather than
+assume away.
+
+The learning problem in between, one label per administrative unit and a map wanted
+inside it, is weak supervision. Multiple-instance learning treats the unit as a bag of
+image tokens and the aggregate as its label~\cite{carbonneau2018}; attention-based
+pooling~\cite{ilse2018}, refined for computational pathology~\cite{lu2021}, is its
+standard localizer and the natural first candidate here. Learning from label
+proportions~\cite{quadrianto2009,yu2013,ardehaly2017,dulac2019} is the sibling
+formulation in which the bag label is the share of positive instances, which is
+literally what a municipal deprivation figure is. Weakly supervised segmentation of
+satellite imagery has used image-level tags~\cite{wang2020}, and the arrival of
+self-supervised Earth-observation foundation models~\cite{cong2022,wang2023,xiong2024}
+means the representation can be held fixed and the question reduced to what the weak
+labels can teach a small head on top of it.
 
 We ask the disaggregation question quantitatively: how much neighborhood detail can be
 recovered from a country's published aggregates combined with free imagery? We frame the
 answer as an exchange rate between the number and granularity of published aggregates
 and the within-municipality detail they recover, and we measure it in a country that
-publishes ground truth at both levels. Mexico publishes
-its Social Deprivation Grade (GRS) both as municipal aggregates and for 61{,}430 urban
-census tracts (AGEB)~\cite{coneval2020}; we train only on the former and score maps
-against the latter, held out entirely, in cities the model never saw
-(Fig.~\ref{fig:design}).
+publishes ground truth at both levels. Mexico publishes its Social Deprivation Grade
+(GRS) both as municipal aggregates and for 61{,}430 urban census tracts
+(AGEB)~\cite{coneval2020}; we train only on the former and score maps against the
+latter, held out entirely, in cities the model never saw (Fig.~\ref{fig:design}).
 
 Three design choices constrain the measurement. Supervision is weak: a model sees a bag
 of image tokens for a municipality and one vector, the population shares at each grade
-threshold, with no spatial annotation of any kind. Every comparison is scored \emph{within} municipalities,
-because ordering tracts across cities is mostly solved by knowing which city is poor
-(pooled correlations run near 0.46 against 0.23 within, at the same operating point).
-And an oracle trained directly on the held-out tract labels bounds what the frozen
-representation supports, so weak supervision is always reported as a fraction of a
-measured upper bound.
+threshold, with no spatial annotation of any kind. Every comparison is scored
+\emph{within} municipalities, because ordering tracts across cities is mostly solved by
+knowing which city is poor (pooled correlations run near 0.46 against 0.23 within, at
+the same operating point). And an oracle trained directly on the held-out tract labels
+bounds what the frozen representation supports, so weak supervision is always reported
+as a fraction of a measured upper bound.
 
-\section{Data}
+The contributions are the following. (1) A measured exchange rate: on fourteen held-out
+test cities, the national supply of municipal aggregates recovers 84\% of the fully
+supervised bound within municipalities, and the curve along the number of aggregates,
+their granularity and the sensor content is reported on both splits. (2) A structural
+failure of attention-based multiple-instance learning in this setting, with its cause,
+and the observation that the only selection signal weak supervision may use, bag error,
+is close to uninformative about map quality. (3) Four external checks of the map, against
+Meta's wealth index, an independent institution's index, simulated targeting, and free
+global grids as competitors and as inputs. (4) A replication of the design on Colombia's
+and Brazil's own municipal aggregates, scored against their own fine ground. (5) A frozen
+benchmark with held-out instance labels, released so that weakly supervised mapping can
+be evaluated on the quantity it claims.
 
-\subsection{Imagery}
-\noindent Sentinel-2 L2A and Sentinel-1 RTC annual median composites
-for 2020 (10 m grid, windowed COG reads from Microsoft Planetary Computer), for 424
-boxes covering the 138 cities of the national set and the 213-municipality expansion;
-city boxes are conurbations and typically span several municipalities.
+\section{Study area and data}
 
-\subsection{Labels}
-\noindent CONEVAL GRS 2020: municipal-level population shares at each of four
-grade thresholds supervise training; AGEB-level grades are used only for evaluation and
-for the oracle. Auxiliary evaluation sources: CONAPO IMU 2020~\cite{conapo2020}, ESA
-WorldCover 2020~\cite{worldcover}, Meta RWI~\cite{chi2022}, IBGE AGSN
-2019~\cite{ibge2019}, Bogot\'a's district stratification~\cite{bogota}. For training
-abroad: Colombia's municipal multidimensional poverty rate (DANE, census
-2018)~\cite{dane_ipm} with the MGN 2023 municipal boundaries~\cite{mgn2023}, and
-Brazil's municipal mean and tract median monthly income of the household head (IBGE,
-census 2022)~\cite{ibge2022} with the 2022 census tract geometries.
+The study covers urban Mexico: the 138 cities of the national set, stratified by size and
+deprivation, plus 213 municipalities added to reach the deprived half of the urban
+population that large-city samples miss, 424 boxes in all; a city box is a conurbation
+and typically spans several municipalities. Imagery is the Sentinel-2 L2A and Sentinel-1
+RTC annual median composites for 2020 on a 10 m grid, read by window from the
+cloud-optimized GeoTIFFs of Microsoft Planetary Computer. Labels are the CONEVAL GRS
+2020~\cite{coneval2020}: municipal-level population shares at each of four grade
+thresholds supervise training, and AGEB-level grades are used only for evaluation and
+for the oracle. Auxiliary evaluation sources are CONAPO's urban marginalization index
+2020~\cite{conapo2020}, ESA WorldCover 2020~\cite{worldcover}, Meta's Relative Wealth
+Index~\cite{chi2022}, the GHSL R2023A grids~\cite{ghsl2023}, harmonized nighttime
+lights~\cite{li2020}, IBGE's AGSN 2019~\cite{ibge2019} and Bogot\'a's district
+stratification~\cite{bogota}. For training abroad: Colombia's municipal
+multidimensional poverty rate (DANE, census 2018)~\cite{dane_ipm} with the MGN 2023
+municipal boundaries~\cite{mgn2023}, and Brazil's municipal mean and tract median
+monthly income of the household head (IBGE, census 2022)~\cite{ibge2022} with the 2022
+census tract geometries.
 
 \section{Methods}
 
-\subsection{Bags and instances}
-\noindent A bag is a municipality (771 after exclusions); instances
-are 16-pixel tokens (160 m) encoded by a frozen DOFA foundation
-model~\cite{xiong2024}, both sensors fused per token. Municipalities contributing
-ground to any held-out city are excluded from the expansion; an earlier version leaked
-nine validation municipalities this way, detectable only at bag level, and every
-affected number was re-measured.
+\subsection{Bags, labels and features}
 
-\subsection{Model}
-\noindent A two-layer head on standardized frozen features predicts four
-cumulative-grade probabilities per token; the bag prediction is the mean of token
-predictions, fit with binary cross-entropy; each token's hidden representation is
-concatenated with the mean of its 8 grid neighbours (480 m), computed city-wide at
-inference.
+A bag is a municipality (771 after exclusions) and its instances are 16-pixel tokens
+(160 m) encoded by a frozen DOFA foundation model~\cite{xiong2024}, both sensors fused
+per token. Municipalities contributing ground to any held-out city are excluded from
+the expansion; an earlier version leaked nine validation municipalities this way,
+detectable only at bag level, and every affected number was re-measured. A two-layer
+head on standardized frozen features predicts four cumulative-grade probabilities per
+token; the bag prediction is the mean of the token predictions, fit with binary
+cross-entropy against the municipal population shares; each token's hidden
+representation is concatenated with the mean of its 8 grid neighbors (480 m),
+computed city-wide at inference. Fourteen configurations varied one ingredient each
+(learning rate 5e-5 to 1e-3, hidden width 64 to 512, dropout 0 to 0.5, weight decay,
+loss, input standardization), then a combination round; standardized inputs with binary
+cross-entropy won on bag error over five grouped training folds. The oracle is the same
+head trained on tract labels with the same context, and bounds what the representation
+supports ($\rho = 0.251$ with context, $0.202$ without). The two other axes of the
+curve reuse the pool unchanged: granularity relabels every bag with its state's or the
+national aggregate, and content re-encodes the optical composite block-averaged to the
+radar's 20 m effective resolution, or uses each sensor alone.
 
-\subsection{Protocol}
-\noindent 110/14/14 cities for train/validation/test, stratified by
-size and deprivation, no city split across sets. Hyperparameters are selected on
+\subsection{Partition, selection and statistics}
+
+The 138 cities are dealt 110/14/14 into training, validation and test, stratified by
+size and deprivation, with no city split across sets. Hyperparameters are selected on
 grouped training folds under bag error; early stopping and the choice among reported
 configurations use the validation cities; the test cities are held out for reporting.
-Comparisons are paired by municipality over three seeds; every interval on a
-within-municipality mean is a city-clustered bootstrap (2{,}000 resamples), and curve
-error bars are s.d. over seeds.
+Comparisons are paired by municipality over three seeds (0, 1 and 2 throughout); every
+interval on a within-municipality mean is a city-clustered bootstrap (2{,}000
+resamples), and curve error bars are s.d. over seeds. The code is Python 3.12 with
+PyTorch, rasterio, geopandas and scikit-learn, pinned by the repository's
+\texttt{uv.lock}; all experiments ran on one Apple-silicon laptop (MPS backend). The
+seven municipalities excluded from the expansion for insufficient composite depth or
+persistent acquisition errors (Supplementary Table~3) are the only data exclusions. The
+full pipeline, frozen vectors, labels, splits and protocol are released, and every
+figure regenerates from one canonical results file.
 
-\subsection{Oracle}
-\noindent The same head
-trained on tract labels, with the same context, bounds the representation
-($\rho = 0.251$ with context, $0.202$ without). 
+\subsection{External checks}
+
+Five checks measure the map against ground that never entered training. \emph{RWI
+pairing}: each AGEB takes the RWI value of the nearest grid point to its centroid; the
+model is averaged token-to-tract; both are scored on the 2{,}958 shared AGEB in the 22
+municipalities with at least 20 scored tracts and more than one grade, and the interval
+is a city-clustered bootstrap of the per-municipality difference. \emph{Global
+products}: four free layers stand in for what a practitioner would download instead of
+training anything, GHSL built-up surface (R2023A, 2020 epoch, 100 m), GHSL average net
+building height (R2023A, 2018, the only epoch published), GHSL residential population
+(R2023A, 2020)~\cite{ghsl2023}, and the harmonized global nighttime lights of 2020,
+VIIRS-derived and expressed on the DMSP digital-number scale at 30
+arcsec~\cite{li2020}. Nighttime lights come from the harmonized series because the EOG
+annual composite requires an account; the harmonized layer is the same VIIRS
+observation on a coarser grid and a compressed scale, which is a handicap for
+intra-urban ranking and is reported as such. Each product is averaged over the pixels
+whose centers fall inside a tract, in the product's own grid so nothing resamples it; a
+tract smaller than one cell takes the value at a representative interior point, and the
+count of such fallbacks is reported. All four are used in practice as development
+proxies, so deprivation is taken as the negative of each, an orientation fixed before
+any correlation was computed; scoring is the RWI protocol unchanged.
+\emph{Targeting simulation}: for each validation city and budget $q \in \{5, 10, 20,
+30\}\%$ of population, tracts are funded in the order given by each allocator (municipal
+aggregate with ties broken at random over 200 draws, the map's tract-mean score, or
+tract truth), with the marginal tract funded fractionally, so the truth ordering
+upper-bounds both by construction; the outcome is the population living in high or
+very-high grade tracts among those reached, pooled over cities before the gap ratio is
+formed. \emph{Areal units}: tracts are binned by tokens contained (1--3, 4--9, 10--19,
+20--49, $\geq$50); within-municipality correlations use municipalities with at least
+ten tracts in the bin. \emph{Border test}: adjacent token pairs (160 m apart) are
+classed by what their midpoint crosses; the excess mean absolute score jump of
+same-grade municipal-border pairs over same-tract pairs is city-bootstrapped, and
+same-grade AGEB-border pairs inside one municipality are the placebo.
+
+\subsection{Uncertainty and intervals}
+
+Uncertainty is read from the three training seeds: a tract's map value is the mean of
+its per-seed tract means and its spread is their standard deviation, a quantity
+computable with no labels. Three things are then asked of that spread. Whether it ranks
+the errors, as the within-municipality correlation between spread and the absolute
+distance from an isotonic score-to-grade map fitted on validation. Whether discarding
+the least confident tracts inside each municipality raises the correlation over what
+remains; the panel of municipalities is fixed to those that stay above twenty tracts at
+every point of the sweep, so the curve cannot rise by attrition. And whether an interval
+can be attached, by split conformal calibrated on the validation cities and evaluated on
+the test cities, with the absolute isotonic residual as the nonconformity score. Two
+rules are compared: the marginal quantile, which treats all tracts as exchangeable, and
+a clustered rule that takes each calibration city's quantile and then the 90th
+percentile across cities. Per-city coverage is reported for both.
+
+\subsection{Global products as input features}
+
+The same four products, plus the eleven WorldCover class fractions and the NDVI mean and
+dispersion of the composite, are also tested as inputs. Each is reprojected onto the 10 m
+grid and averaged inside every 160 m token (population and built surface as
+$\log(1 + x)$), giving four GHSL and light columns and thirteen WorldCover columns
+appended to the 1{,}536 encoder dimensions. Two fusions are compared on the full pool,
+three seeds each, against the canonical head: early, the columns enter the projection
+with the encoder vector; late, they bypass it and enter the scoring layer beside the
+hidden representation, each with a weight of its own per threshold. The oracle is
+re-measured with the same inputs, standardized, since a nighttime-light column near 45
+on an unstandardized scale would dominate the first layer; its no-extras reference is
+re-run under the same standardization, and differences are paired by municipality with
+a city-clustered bootstrap.
+
 \subsection{Transfer to Colombia and Brazil}
-\noindent Zero-shot: Bogot\'a
-and Rio get the same 2020 composite protocol; tokens are scored by the three final seeds
-with Mexican standardization statistics, deliberately unadapted. Rio's evaluation is
-restricted to tokens with WorldCover built fraction $\geq 0.10$.
+
+Zero-shot: Bogot\'a and Rio get the same 2020 composite protocol; tokens are scored by
+the three final seeds with Mexican standardization statistics, deliberately unadapted.
+Rio's evaluation is restricted to tokens with WorldCover built fraction $\geq 0.10$.
 
 Training on local aggregates: six composited boxes (Bogot\'a, the Aburr\'a valley,
 Cali; Rio, S\~ao Paulo, Belo Horizonte) are cut into 160 m tokens, encoded by the same
@@ -151,97 +275,10 @@ training: Bogot\'a's block strata (nearest block within 120 m, inverted; 12{,}73
 tokens) and, in Brazil, minus the log median income of the household head in the census
 tract containing the token (110{,}728 tokens across 47 municipalities with at least 20
 such tokens). Two further rows share the folds: the Mexican heads fine-tuned on the local
-aggregates (projection and scaler loaded, scoring row initialised as the mean of the four
+aggregates (projection and scaler loaded, scoring row initialized as the mean of the four
 Mexican thresholds, learning rate $5 \times 10^{-5}$), and the oracle, the same head
 trained on the token truth. Colombia's truth exists in Bogot\'a alone, so its oracle folds
 over 3.2 km spatial cells inside the city; Brazil's oracle keeps the municipal folds.
-
-\subsection{Sweep}
-\noindent Fourteen configurations varied one ingredient each (learning rate
-5e-5--1e-3, hidden width 64--512, dropout 0--0.5, weight decay, loss, input
-standardization), then a combination round; standardized inputs with binary
-cross-entropy won on bag error over five grouped training folds.
-
-\subsection{Targeting simulation}
-\noindent For each validation city and budget $q \in \{5, 10, 20,
-30\}\%$ of population, tracts are funded in the order given by each allocator (municipal aggregate with ties
-broken at random over 200 draws, the map's tract-mean score, or tract truth), with the
-marginal tract funded fractionally, so the truth ordering upper-bounds both by
-construction. The outcome is the population living in high or very-high grade
-tracts among those reached, pooled over cities before the gap ratio is formed.
-
-\subsection{RWI pairing}
-\noindent Each AGEB takes the RWI value of the nearest grid point to its
-centroid; the model is averaged token-to-tract; both are scored on the 2{,}958 shared
-AGEB in the 22 municipalities with at least 20 scored tracts and more than one grade,
-and the interval is a city-clustered bootstrap of the per-municipality difference.
-
-\subsection{Global product comparison}
-\noindent Four free global products stand in for what a practitioner would download
-instead of training anything: GHSL built-up surface (R2023A, 2020 epoch, 100 m), GHSL
-average net building height (R2023A, 2018, the only epoch published), GHSL residential
-population (R2023A, 2020)~\cite{ghsl2023}, and the harmonized global nighttime lights of
-2020, VIIRS-derived and expressed on the DMSP digital-number scale at 30
-arcsec~\cite{li2020}. Nighttime lights come from the harmonized series because
-the EOG annual composite requires an account; the harmonized layer is the same
-VIIRS observation on a coarser grid and a compressed scale, which is a handicap for
-intra-urban ranking and is reported as such. Each product is averaged over the pixels
-whose centres fall inside a tract, in the product's own grid so nothing resamples it; a
-tract smaller than one cell takes the value at a representative interior point, and the
-count of such fallbacks is reported. All four are used in practice as development proxies, so
-deprivation is taken as the negative of each, an orientation fixed before any correlation
-was computed. Scoring is the RWI protocol unchanged.
-
-\subsection{Global products as input features}
-\noindent The same four products, plus the eleven WorldCover class fractions and the
-NDVI mean and dispersion of the composite, are also tested as inputs. Each is
-reprojected onto the 10 m grid and averaged inside every 160 m token (population and
-built surface as $\log(1 + x)$), giving four GHSL and light columns and thirteen
-WorldCover columns appended to the 1{,}536 encoder dimensions. Two fusions are
-compared on the full pool, three seeds each, against the canonical head: early, the
-columns enter the projection with the encoder vector; late, they bypass it and enter the
-scoring layer beside the hidden representation, each with a weight of its own per
-threshold. The oracle is re-measured with the same inputs, standardised, since a
-nighttime-light column near 45 on an unstandardised scale would dominate the first
-layer; its no-extras reference is re-run under the same standardisation, and differences
-are paired by municipality with a city-clustered bootstrap.
-
-\subsection{Uncertainty and intervals}
-\noindent Uncertainty is read from the three training seeds: a tract's map value is the
-mean of its per-seed tract means and its spread is their standard deviation, a quantity
-computable with no labels. Three things are then asked of that spread. Whether it ranks
-the errors, as the within-municipality correlation between spread and the absolute
-distance from an isotonic score-to-grade map fitted on validation. Whether discarding the
-least confident tracts inside each municipality raises the correlation over what remains;
-the panel of municipalities is fixed to those that stay above twenty tracts at every point
-of the sweep, so the curve cannot rise by attrition. And whether an interval can be
-attached, by split conformal calibrated on the validation cities and evaluated on the test
-cities, with the absolute isotonic residual as the nonconformity score. Two rules are
-compared: the marginal quantile, which treats all tracts as exchangeable, and a clustered
-rule that takes each calibration city's quantile and then the 90th percentile across
-cities. Per-city coverage is reported for both.
-
-\subsection{MAUP bins}
-\noindent Tracts are binned by tokens contained (1--3, 4--9, 10--19, 20--49,
-$\geq$50); within-municipality correlations use municipalities with at least ten tracts
-in the bin.
-
-\subsection{Border test}
-\noindent Adjacent token pairs (160 m apart) are classed by what their
-midpoint crosses; the excess mean absolute score jump of same-grade
-municipal-border pairs over same-tract pairs is city-bootstrapped; same-grade AGEB-border
-pairs inside one municipality are the placebo.
-
-\subsection{Software and compute}
-\noindent Python 3.12 with PyTorch, rasterio, geopandas and
-scikit-learn, pinned by the repository's \texttt{uv.lock}; all experiments ran on one
-Apple-silicon laptop (MPS backend). Seeds 0, 1 and 2 throughout. The seven
-municipalities excluded from the expansion for insufficient composite depth or
-persistent acquisition errors (Supplementary Table~3) are the only data exclusions.
-
-\subsection{Data and code}
-\noindent The full pipeline, frozen vectors, labels, splits and protocol
-are released; every figure regenerates from one canonical results file.
 
 \section{Results}
 
@@ -275,7 +312,7 @@ against 0.747 optical). Sensor content dominates ground sampling distance, with 
 real secondary cost on test; a sensor's prediction accuracy is a poor guide to its map
 quality.
 
-\subsection{Failure mode of attention-based pooling, and an instance-level alternative}
+\subsection{Why attention pooling fails, and what replaces it}
 
 The standard weakly supervised localizer, gated-attention multiple-instance learning
 (ABMIL~\cite{ilse2018} with the CLAM instance constraint~\cite{lu2021}), predicts
@@ -369,6 +406,20 @@ easy half of the problem and the half gridded global layers are built for. What 
 supervision buys, where it buys anything, is the ordering inside a municipality, the half
 a targeting decision needs and the half no global product was built to deliver.
 
+The products that match the map as competitors were also offered to it as inputs. With
+full tract supervision the four GHSL and light columns lift the standardized oracle from
+$\rho = 0.261$ to $0.291$ on validation (paired difference $+0.030$ [$+0.011$,
+$+0.050$] over 36 municipalities); the WorldCover fractions add $+0.014$ [$-0.004$,
+$+0.030$], and both together $+0.030$ [$+0.012$, $+0.046$]. Under municipal
+supervision none of it reaches the map. Early fusion gives $0.225$ with the GHSL and
+light columns, $0.212$ with WorldCover and $0.221$ with both, against the canonical
+$0.227$; late fusion, which hands the columns their own scoring weights, gives $0.210$
+and $0.226$ (Supplementary Table~7). Information that a tract-supervised head
+extracts from four columns is invisible to a gradient carried by a few hundred bag
+labels, and a dedicated pathway makes it worse rather than better, consistent with the
+rurality shortcut: built surface and population explain the municipal label well, the
+head leans on them, and the ordering inside the municipality degrades.
+
 \subsection{Transfer to Colombia and Brazil}
 
 Applied unchanged to Bogot\'a, the model orders Colombia's block-level socioeconomic
@@ -400,23 +451,7 @@ method replicates on labels of a different construct from a different office; wh
 two countries lack at this stage is the supply of aggregates, which is the axis the
 curve measures.
 
-\subsection{Global products as input features}
-
-The products that match the map as competitors were also offered to it as inputs. With
-full tract supervision the four GHSL and light columns lift the standardised oracle from
-$\rho = 0.261$ to $0.291$ on validation (paired difference $+0.030$ [$+0.011$,
-$+0.050$] over 36 municipalities); the WorldCover fractions add $+0.014$ [$-0.004$,
-$+0.030$], and both together $+0.030$ [$+0.012$, $+0.046$]. Under municipal
-supervision none of it reaches the map. Early fusion gives $0.225$ with the GHSL and
-light columns, $0.212$ with WorldCover and $0.221$ with both, against the canonical
-$0.227$; late fusion, which hands the columns their own scoring weights, gives $0.210$
-and $0.226$ (Supplementary Table~7). Information that a tract-supervised head
-extracts from four columns is invisible to a gradient carried by a few hundred bag
-labels, and a dedicated pathway makes it worse rather than better, consistent with the
-rurality shortcut: built surface and population explain the municipal label well, the
-head leans on them, and the ordering inside the municipality degrades.
-
-\subsection{Uncertainty, and the cities where the map fails}
+\subsection{Uncertainty and limits}
 
 A map offered for targeting has to say where it is unsure. The ensemble of three seeds
 supplies the obvious candidate, and it does not work. Seed disagreement ranks the tract
@@ -456,9 +491,7 @@ too few ranks for the correlation to stabilize, and the map's ordering inside it
 not be used. Seed spread does not flag these cities either; Guerrero's median spread
 (0.101) sits at the middle of the fourteen.
 
-\subsection{Limits}
-
-The upper bound itself is low: even with full tract labels and neighborhood context,
+Beyond the named failures, three limits bound every claim. The upper bound itself is low: even with full tract labels and neighborhood context,
 160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test:
 sufficient to order neighborhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
 size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--49
@@ -543,9 +576,46 @@ of wealth for all low- and middle-income countries. \emph{Proc. Natl Acad. Sci. 
 \bibitem{burke2021} Burke, M., Driscoll, A., Lobell, D. B. \& Ermon, S. Using satellite
 imagery to understand and promote sustainable development. \emph{Science} \textbf{371},
 eabe8628 (2021).
+\bibitem{head2017} Head, A., Manguin, M., Tran, N. \& Blumenstock, J. E. Can human
+development be measured with satellite imagery? \emph{Proc. ICTD} 8 (2017).
+\bibitem{engstrom2022} Engstrom, R., Hersh, J. \& Newhouse, D. Poverty from space: using
+high resolution satellite imagery for estimating economic well-being. \emph{World Bank
+Econ. Rev.} \textbf{36}, 382--412 (2022).
+\bibitem{ayush2021} Ayush, K., Uzkent, B., Tanmay, K., Burke, M., Lobell, D. \& Ermon, S.
+Efficient poverty mapping from high resolution remote sensing images. \emph{Proc. AAAI}
+\textbf{35}, 12--20 (2021).
+\bibitem{rolf2021} Rolf, E. \emph{et al.} A generalizable and accessible approach to
+machine learning with global satellite imagery. \emph{Nat. Commun.} \textbf{12}, 4392
+(2021).
+\bibitem{lee2022} Lee, K. \& Braithwaite, J. High-resolution poverty maps in Sub-Saharan
+Africa. \emph{World Dev.} \textbf{159}, 106028 (2022).
 \bibitem{aiken2022} Aiken, E., Bellue, S., Karlan, D., Udry, C. \& Blumenstock, J. E.
 Machine learning and phone data can improve targeting of humanitarian aid.
 \emph{Nature} \textbf{603}, 864--870 (2022).
+\bibitem{kuffer2016} Kuffer, M., Pfeffer, K. \& Sliuzas, R. Slums from space: 15 years
+of slum mapping using remote sensing. \emph{Remote Sens.} \textbf{8}, 455 (2016).
+\bibitem{stevens2015} Stevens, F. R., Gaughan, A. E., Linard, C. \& Tatem, A. J.
+Disaggregating census data for population mapping using random forests with
+remotely-sensed and ancillary data. \emph{PLoS ONE} \textbf{10}, e0107042 (2015).
+\bibitem{wardrop2018} Wardrop, N. A. \emph{et al.} Spatially disaggregated population
+estimates in the absence of national population and housing census data. \emph{Proc.
+Natl Acad. Sci. USA} \textbf{115}, 3529--3537 (2018).
+\bibitem{openshaw1984} Openshaw, S. \emph{The Modifiable Areal Unit Problem}. Concepts
+and Techniques in Modern Geography 38 (Geo Books, Norwich, 1984).
+\bibitem{carbonneau2018} Carbonneau, M.-A., Cheplygina, V., Granger, E. \& Gagnon, G.
+Multiple instance learning: a survey of problem characteristics and applications.
+\emph{Pattern Recognit.} \textbf{77}, 329--353 (2018).
+\bibitem{yu2013} Yu, F. X., Liu, D., Kumar, S., Jebara, T. \& Chang, S.-F. $\propto$SVM
+for learning with label proportions. \emph{Proc. ICML} 504--512 (2013).
+\bibitem{wang2020} Wang, S., Chen, W., Xie, S. M., Azzari, G. \& Lobell, D. B. Weakly
+supervised deep learning for segmentation of remote sensing imagery. \emph{Remote Sens.}
+\textbf{12}, 207 (2020).
+\bibitem{cong2022} Cong, Y. \emph{et al.} SatMAE: pre-training transformers for temporal
+and multi-spectral satellite imagery. \emph{Adv. Neural Inf. Process. Syst.} \textbf{35}
+(2022).
+\bibitem{wang2023} Wang, Y. \emph{et al.} SSL4EO-S12: a large-scale multimodal,
+multitemporal dataset for self-supervised learning in Earth observation. \emph{IEEE
+Geosci. Remote Sens. Mag.} \textbf{11}, 98--106 (2023).
 \bibitem{coneval2020} CONEVAL. Grado de Rezago Social por AGEB urbana 2020.
 \url{https://www.coneval.org.mx/Medicion/IRS} (2021; accessed August 2026).
 \bibitem{conapo2020} CONAPO. \'Indice de marginaci\'on urbana 2020.
