@@ -41,8 +41,9 @@ from satinsight.llp import build, evaluate_map  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
 
-EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+# the argument parsing tolerates importers that pass their own, differently shaped argv
+EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 30
+RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 1
 SENSOR = sys.argv[4] if len(sys.argv) > 4 else "s2"
 FUSE = SENSOR.startswith("s2")
 SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
