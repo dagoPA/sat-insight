@@ -38,7 +38,7 @@ official INEGI tract key. Tables written before this schema are converted in pla
 
 ## Reproducing
 
-`scripts/reproduce.sh` lists the canonical run in order. From the frozen vectors on,
+`scripts/reproduce.sh` lists the canonical run in order (run it with `sh`; file modes are not kept by the Overleaf sync). From the frozen vectors on,
 everything reproduces in a few hours on one GPU; the compositing and encoding steps
 before that take days of downloading.
 
