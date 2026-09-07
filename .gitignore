@@ -37,6 +37,7 @@ docs/manuscript/*.blg
 docs/manuscript/*.fls
 docs/manuscript/*.fdb_latexmk
 docs/manuscript/*.synctex.gz
+docs/manuscript/figures/graphical_abstract.html
 
 # assistant instructions, local only
 CLAUDE.md
