@@ -56,6 +56,13 @@ for tool in conapo_replication targeting rwi_paired maup border_discontinuity gl
 done
 uv run python scripts/wc_paired_test.py > logs/wc_paired_test.log 2>&1
 
+# 5b. the backbone ablation: DOFA large and Copernicus-FM vectors through the same protocol,
+#     then the pre-declared significance tests against DOFA base
+uv run python scripts/backbone_extract.py dofa_large > logs/backbone_dofa_large.log 2>&1
+sh scripts/backbone_queue.sh
+sh scripts/backbone_protocol_queue.sh s2_dofal
+uv run python scripts/backbone_significance.py dofal > logs/backbone_significance_dofal.log 2>&1
+
 # 6. figures and source data, each checked against docs/manuscript/canonical_results.json
 for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents; do
   uv run python scripts/$fig.py > logs/$fig.log 2>&1

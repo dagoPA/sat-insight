@@ -587,5 +587,122 @@
     }
    }
   }
+ },
+ "backbone": {
+  "rule": "replace the canonical backbone only if the predictor improves significantly on validation at the full pool",
+  "predictor": {
+   "val_token": {
+    "n": 34,
+    "base": 0.2345,
+    "large": 0.2434,
+    "difference": 0.0089,
+    "wins": 20,
+    "wilcoxon_p": 0.3429,
+    "sign_p": 0.3915,
+    "city_permutation_p": 0.5937
+   },
+   "val_ageb": {
+    "n": 34,
+    "base": 0.3035,
+    "large": 0.3149,
+    "difference": 0.0114,
+    "wins": 19,
+    "wilcoxon_p": 0.5259,
+    "sign_p": 0.4869,
+    "city_permutation_p": 0.6118
+   },
+   "test_token": {
+    "n": 29,
+    "base": 0.1976,
+    "large": 0.2418,
+    "difference": 0.0442,
+    "wins": 16,
+    "wilcoxon_p": 0.2652,
+    "sign_p": 0.7111,
+    "city_permutation_p": 0.4164
+   },
+   "test_ageb": {
+    "n": 28,
+    "base": 0.2693,
+    "large": 0.2723,
+    "difference": 0.003,
+    "wins": 13,
+    "wilcoxon_p": 0.9044,
+    "sign_p": 1.0,
+    "city_permutation_p": 0.9606
+   }
+  },
+  "oracle": {
+   "val": {
+    "n": 33,
+    "base": 0.2483,
+    "large": 0.3162,
+    "difference": 0.0679,
+    "wins": 25,
+    "wilcoxon_p": 0.0083,
+    "sign_p": 0.0046
+   },
+   "test": {
+    "n": 29,
+    "base": 0.2324,
+    "large": 0.2949,
+    "difference": 0.0625,
+    "wins": 25,
+    "wilcoxon_p": 0.0044,
+    "sign_p": 0.0001
+   }
+  },
+  "curve_val": {
+   "50": {
+    "base": 0.1502,
+    "base_sd": 0.0058,
+    "large": 0.1827,
+    "large_sd": 0.04,
+    "seeds_in_favor": 3,
+    "seeds": 3
+   },
+   "100": {
+    "base": 0.1412,
+    "base_sd": 0.006,
+    "large": 0.1993,
+    "large_sd": 0.0513,
+    "seeds_in_favor": 3,
+    "seeds": 3
+   },
+   "200": {
+    "base": 0.1511,
+    "base_sd": 0.006,
+    "large": 0.2307,
+    "large_sd": 0.023,
+    "seeds_in_favor": 3,
+    "seeds": 3
+   },
+   "400": {
+    "base": 0.1822,
+    "base_sd": 0.0169,
+    "large": 0.2223,
+    "large_sd": 0.0239,
+    "seeds_in_favor": 3,
+    "seeds": 3
+   },
+   "771": {
+    "base": 0.227,
+    "base_sd": 0.0139,
+    "large": 0.2424,
+    "large_sd": 0.0063,
+    "seeds_in_favor": 3,
+    "seeds": 3
+   }
+  },
+  "copernicusfm_val_771": {
+   "mean": 0.2119,
+   "sd": 0.0209,
+   "seeds": 3
+  },
+  "test_large_seeds": [
+   0.2351,
+   0.2184,
+   0.2249
+  ]
  }
 }

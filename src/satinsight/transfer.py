@@ -174,8 +174,7 @@ def brazil_sectors(state: str, bbox, root: Path = DATA_ROOT) -> gpd.GeoDataFrame
 def brazil_municipalities(state: str, bbox, root: Path = DATA_ROOT) -> gpd.GeoDataFrame:
     """Municipal polygons of one state inside a box, dissolved from its census tracts."""
     tracts = brazil_sectors(state, bbox, root)
-    merged = tracts.dissolve(by="municipality")[["name", "geometry"]].reset_index()
-    return merged
+    return tracts.dissolve(by="municipality")[["name", "geometry"]].reset_index()
 
 
 def municipalities_in_box(polygons: gpd.GeoDataFrame, bbox, floor: float = BOX_SHARE_FLOOR):

@@ -198,6 +198,18 @@ curve reuse the pool unchanged: granularity relabels every bag with its state's 
 national aggregate, and content re-encodes the optical composite block-averaged to the
 radar's 20 m effective resolution, or uses each sensor alone.
 
+\paragraph{Backbone ablation} The head is agnostic to the representation, so every
+token of every city was re-encoded with two further frozen backbones and the complete
+protocol, curve, oracle, validation-selected seeds and test scoring, was rerun on their
+vectors unchanged: DOFA large (1024 dimensions per sensor, 2048 fused) and
+Copernicus-FM base~\cite{wang2025cfm}, which additionally takes the location, date and
+footprint of each window. Whether to replace the canonical backbone was decided by a
+rule fixed in advance: DOFA base is replaced only if the weakly supervised predictor
+improves significantly on validation at the full pool, paired by municipality with a
+Wilcoxon signed-rank test, an exact sign test and a permutation test that flips the sign
+of whole cities, the unit of independence in the partition. The oracle and every point of
+the curve are tested the same way and reported beside the predictor with absolute values.
+
 \subsection{Partition, selection and statistics}
 
 The 138 cities are dealt 110/14/14 into training, validation and test, stratified by
@@ -381,14 +393,68 @@ validation cities were used for model selection, test cities are held out.}
 \toprule
 Bags & Validation within-$\rho$ (s.d.) & Test within-$\rho$\\
 \midrule
-50 & 0.150 (0.021) & 0.156\\
-100 & 0.141 (0.021) & 0.158\\
-200 & 0.151 (0.022) & 0.161\\
-400 & 0.182 (0.020) & 0.192\\
-771 & 0.227 (0.010) & 0.185 (retrained); 0.196 (saved weights)\\
+50 & 0.150 (0.006) & 0.156\\
+100 & 0.141 (0.006) & 0.158\\
+200 & 0.151 (0.006) & 0.161\\
+400 & 0.182 (0.017) & 0.192\\
+771 & 0.227 (0.014) & 0.185 (retrained); 0.196 (saved weights)\\
 \bottomrule
 \end{tabular}
 \label{tab:curve}
+\end{table}
+
+\textbf{Backbone} (Table~\ref{tab:backbone}). Re-encoding the same tokens with DOFA
+large raises the fully supervised oracle from $\rho = 0.248$ to $0.316$ on validation
+and from $0.232$ to $0.295$ on test (paired by municipality; Wilcoxon $p = 0.008$ and
+$0.004$): the larger representation supports a better map. The weakly supervised
+predictor does not follow it at the full pool. Per token it reaches $0.243$ against
+$0.235$ on validation ($p = 0.34$) and $0.242$ against $0.198$ on test ($p = 0.27$);
+per AGEB, $0.315$ against $0.304$ on validation ($p = 0.53$) and $0.272$ against
+$0.269$ on test ($p = 0.90$); none of the three tests rejects equality on either split,
+and the share of the oracle recovered on test falls from 84\% to 77\%. Along the curve
+the larger backbone is higher at every pool size in all three seeds, most at 100 and 200
+aggregates ($0.141 \to 0.199$ and $0.151 \to 0.231$ on validation), where the base
+representation has not yet begun to rise. Copernicus-FM base reaches $0.212$ (s.d.
+$0.021$ over seeds) at the full pool on validation, below both. By the rule fixed in
+advance DOFA base remains the canonical backbone, and the ablation is reported as a whole
+because it qualifies the headline: at the full national supply the aggregates recover a
+smaller share of a richer representation, so the label supply limits the map more than
+the representation does, while at a few hundred aggregates a stronger backbone is the
+most direct way to improve it.
+
+\begin{table}[htbp]
+\centering
+\caption{Backbone ablation, DOFA base against DOFA large on the same tokens. Upper block:
+within-municipality Spearman $\rho$ of the seed-mean score against tract grades, mean
+over the paired municipalities, per token and per AGEB, with two-sided $p$-values of the
+paired Wilcoxon signed-rank test, the exact sign test and the city sign-flip permutation
+test (the oracle's per-bag files carry no city, so its permutation test is not run).
+Lower block: the supervision curve on validation, mean (s.d.) over the three seeds and
+the number of seeds in which DOFA large is higher. Validation cities were used for model
+selection; test cities are held out.}
+\footnotesize
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llrcccccc}
+\toprule
+Quantity & Split, unit & $n$ & DOFA base & DOFA large & Wins & Wilcoxon $p$ & Sign $p$ & Permutation $p$\\
+\midrule
+Predictor & validation, token & 34 & 0.235 & 0.243 & 20 & 0.34 & 0.39 & 0.59\\
+Predictor & validation, AGEB & 34 & 0.304 & 0.315 & 19 & 0.53 & 0.49 & 0.61\\
+Predictor & test, token & 29 & 0.198 & 0.242 & 16 & 0.27 & 0.71 & 0.42\\
+Predictor & test, AGEB & 28 & 0.269 & 0.272 & 13 & 0.90 & 1.00 & 0.96\\
+Oracle & validation, token & 33 & 0.248 & 0.316 & 25 & 0.008 & 0.005 & --\\
+Oracle & test, token & 29 & 0.232 & 0.295 & 25 & 0.004 & 0.0001 & --\\
+\midrule
+Curve, bags & & & Validation within-$\rho$ (s.d.) & & Seeds in favor & & &\\
+\midrule
+50 & validation, token & 3 & 0.150 (0.006) & 0.183 (0.040) & 3/3 & & &\\
+100 & validation, token & 3 & 0.141 (0.006) & 0.199 (0.051) & 3/3 & & &\\
+200 & validation, token & 3 & 0.151 (0.006) & 0.231 (0.023) & 3/3 & & &\\
+400 & validation, token & 3 & 0.182 (0.017) & 0.222 (0.024) & 3/3 & & &\\
+771 & validation, token & 3 & 0.227 (0.014) & 0.242 (0.006) & 3/3 & & &\\
+\bottomrule
+\end{tabular}}
+\label{tab:backbone}
 \end{table}
 
 \subsection{Why attention pooling fails, and what replaces it}
@@ -917,6 +983,8 @@ classification using deep learning from label proportions. \emph{Proc. ICDM Work
 J.-P. Deep multi-class learning from label proportions. \emph{arXiv:1905.12909} (2019).
 \bibitem{xiong2024} Xiong, Z. \emph{et al.} Neural plasticity-inspired multimodal
 foundation model for Earth observation. \emph{arXiv:2403.15356} (2024).
+\bibitem{wang2025cfm} Wang, Y. \emph{et al.} Towards a unified Copernicus foundation
+model for Earth vision. \emph{arXiv:2503.11849} (2025).
 \bibitem{worldcover} Zanaga, D. \emph{et al.} ESA WorldCover 10 m 2020 v100. Zenodo
 \url{https://doi.org/10.5281/zenodo.5571936} (2021).
 \bibitem{ghsl2023} Pesaresi, M. \& Politis, P. GHS-BUILT-S and GHS-BUILT-H R2023A, and
