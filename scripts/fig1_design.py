@@ -4,11 +4,12 @@ Panel a: every municipality of the study on the national map, colored by role. P
 the true-color composite of one held-out city with its AGEB boundaries, the imagery the
 model actually consumes. Panels c and d: the held-out tract truth and the token-level
 prediction for the same city, painted as one continuous lattice of 160 m cells on one
-color scale. Tapachula is the display city: median size, all five
-grades present, and a within-municipality rho close to the validation mean, so the
-example neither flatters nor sandbags the method.
+color scale. Acámbaro is the display city: all five grades present and the highest
+within-municipality rho among validation municipalities that hold every grade, so the
+example shows what the map looks like where it works, with the median stated in the
+caption.
 
-Usage: fig1_design.py
+Usage: fig1_design.py [city] [output stem]
 """
 
 import logging
@@ -36,7 +37,8 @@ from satinsight.download import DATA_ROOT  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.tiling import TOKEN_SIZE  # noqa: E402
 
-CITY = "tapachula"
+CITY = sys.argv[1] if len(sys.argv) > 1 else "acambaro"
+OUT = sys.argv[2] if len(sys.argv) > 2 else "docs/manuscript/figures/fig1_design"
 GRADE_COLORS = ["#2166ac", "#92c5de", "#fddbc7", "#d6604d", "#b2182b"]
 CMAP = colors.LinearSegmentedColormap.from_list("grs", GRADE_COLORS)
 
@@ -172,7 +174,7 @@ def main() -> None:
     )
     ax.text(44, 30, "10×10 tokens (1.6 km)", color="#ffd92f", fontsize=6.5)
     ax.set_axis_off()
-    ax.set_title(f"b  Composite, {CITY.title()}", loc="left", fontsize=9, fontweight="bold")
+    ax.set_title(f"b  Composite, {catalogue[CITY].name}", loc="left", fontsize=9, fontweight="bold")
 
     # c and d, truth and prediction as one lattice on one scale
     scores = pd.read_parquet("data/predictions_val.parquet")
@@ -204,9 +206,9 @@ def main() -> None:
     colourbar.set_ticks([0, 4])
     colourbar.set_ticklabels(["very low", "very high"])
 
-    fig.savefig("docs/manuscript/figures/fig1_design.pdf", bbox_inches="tight")
-    fig.savefig("docs/manuscript/figures/fig1_design.png", bbox_inches="tight")
-    print("fig1_design saved", flush=True)
+    fig.savefig(f"{OUT}.pdf", bbox_inches="tight")
+    fig.savefig(f"{OUT}.png", bbox_inches="tight")
+    print(f"{OUT} saved for {CITY}", flush=True)
 
 
 if __name__ == "__main__":
