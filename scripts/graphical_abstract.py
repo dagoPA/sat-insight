@@ -50,7 +50,8 @@ from satinsight.tiling import TOKEN_SIZE  # noqa: E402
 sys.path.insert(0, "scripts")
 from fig1_design import CMAP, municipal_points, rgb_of, token_raster  # noqa: E402
 
-CITY = sys.argv[1] if len(sys.argv) > 1 else "acambaro"
+CITY = sys.argv[1] if len(sys.argv) > 1 else "tapachula"
+"""Tapachula by default: Figure 1 already shows Acámbaro, and a second city shows more."""
 TEMPLATE = Path("scripts/graphical_abstract.html")
 OUT = Path("docs/manuscript/figures/graphical_abstract")
 CHROME = (
@@ -211,6 +212,7 @@ def main() -> None:
         "[[LLP_AUROC]]": f"{book['curve']['771']['auroc_high']:.2f}",
         "[[LLP_TEST]]": f"{book['test']['headline_token_within']:.2f}",
         "[[ORACLE_TEST]]": f"{book['test']['ceiling_r1']:.2f}",
+        "[[CITY]]": agebs.cities_by_size(stratify=True)[CITY].name,
     }
     for key, value in numbers.items():
         assert page.count(key) == 1, key
