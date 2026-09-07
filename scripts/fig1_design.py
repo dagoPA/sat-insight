@@ -1,8 +1,8 @@
 """Figure 1 of the manuscript: study design, where, what the model sees, what it produces.
 
 Panel a: every municipality of the study on the national map, colored by role. Panel b:
-the true-color composite of one held-out city with its AGEB boundaries, the imagery the
-model actually consumes. Panels c to e: the held-out tract truth drawn as its AGEB
+the true-color composite of one validation city with its AGEB boundaries, the imagery the
+model actually consumes. Panels c to e: the tract truth, never used in training, drawn as its AGEB
 polygons, the token-level prediction drawn as its 160 m lattice, and the same
 prediction averaged to the tract, the unit every evaluation scores it at, all on one
 color scale. Acámbaro is the display city: all five grades present and the highest
@@ -129,8 +129,8 @@ def main() -> None:
     style = {
         "train": ("#9ecae1", 4, "training cities"),
         "expansion": ("#fdd0a2", 3, "expansion municipalities"),
-        "val": ("#2166ac", 14, "validation cities (held out)"),
-        "test": ("#b2182b", 14, "test cities (held out)"),
+        "val": ("#2166ac", 14, "validation cities"),
+        "test": ("#b2182b", 14, "test cities"),
     }
     for role, (colour, size, label) in style.items():
         chosen = points[points.role == role]
