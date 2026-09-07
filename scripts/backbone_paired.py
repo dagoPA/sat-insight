@@ -86,8 +86,8 @@ def main() -> None:
             )
             print(
                 f"{split} · {unit}: base {rows[-1]['base_within']:+.3f} · {SUFFIX} "
-                f"{rows[-1]['other_within']:+.3f} · Δ {delta.mean():+.3f} [{low:+.3f}, {high:+.3f}] "
-                f"· {rows[-1]['wins']}/{len(pair)} municipalities",
+                f"{rows[-1]['other_within']:+.3f} · Δ {delta.mean():+.3f} "
+                f"[{low:+.3f}, {high:+.3f}] · {rows[-1]['wins']}/{len(pair)} municipalities",
                 flush=True,
             )
     pd.DataFrame(rows).to_csv(f"data/backbone_paired_{SUFFIX}.csv", index=False)
