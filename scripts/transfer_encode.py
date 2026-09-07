@@ -6,7 +6,7 @@ oracle upper bound and the folds re-read them many times. So they are extracted 
 and written like the Mexican ones: a token table with grid position and lon/lat of the
 centre, and a half-precision matrix beside it.
 
-Usage: transfer_encode.py [key ...]   (default: the six boxes)
+Usage: transfer_encode.py [key ...]   (default: every box with both composites on disk)
 """
 
 import logging
@@ -24,11 +24,20 @@ from satinsight.download import DATA_ROOT  # noqa: E402
 sys.path.insert(0, "scripts")
 from transfer_zeroshot import encode_city  # noqa: E402
 
-KEYS = ("bogota", "medellin", "cali", "riodejaneiro", "saopaulo", "belohorizonte")
+HAND_KEYS = ("bogota", "medellin", "cali", "riodejaneiro", "saopaulo", "belohorizonte")
+
+
+def composited_keys() -> list[str]:
+    """Hand boxes plus every catalogued seat whose two composites are already on disk."""
+    from transfer_composites import catalogued_boxes
+
+    keys = [*HAND_KEYS, *catalogued_boxes()]
+    root = DATA_ROOT / "composites"
+    return [k for k in keys if (root / f"{k}_s2.tif").exists() and (root / f"{k}_s1.tif").exists()]
 
 
 def main() -> int:
-    keys = sys.argv[1:] or list(KEYS)
+    keys = sys.argv[1:] or composited_keys()
     encoder = encoders.DofaEncoder()
     out = DATA_ROOT / "transfer"
     failed = []

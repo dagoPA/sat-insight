@@ -13,7 +13,7 @@ truth is Bogota's stratum by block, nearest block within 120 m, inverted so high
 more deprived. Brazil: label is the municipal mean monthly income of the household head;
 truth is the median income of the household head in the census tract the token falls in.
 
-Usage: transfer_bags.py [key ...]   (default: the six boxes)
+Usage: transfer_bags.py [key ...]   (default: every encoded box without bags yet)
 """
 
 import logging
@@ -47,7 +47,7 @@ from satinsight.transfer import (  # noqa: E402
 sys.path.insert(0, "scripts")
 from transfer_composites import transfer_aoi  # noqa: E402
 
-COUNTRY = {
+HAND_COUNTRY = {
     "bogota": "colombia",
     "medellin": "colombia",
     "cali": "colombia",
@@ -55,7 +55,29 @@ COUNTRY = {
     "saopaulo": "brazil",
     "belohorizonte": "brazil",
 }
-STATE = {"riodejaneiro": "RJ", "saopaulo": "SP", "belohorizonte": "MG"}
+HAND_STATE = {"riodejaneiro": "RJ", "saopaulo": "SP", "belohorizonte": "MG"}
+BOGOTA = "11001"
+
+
+def catalogue() -> pd.DataFrame:
+    """The catalogued seats plus the hand boxes, with country and state for every key."""
+    hand = pd.DataFrame(
+        {
+            "key": list(HAND_COUNTRY),
+            "country": list(HAND_COUNTRY.values()),
+            "state": [HAND_STATE.get(k) for k in HAND_COUNTRY],
+        }
+    )
+    path = DATA_ROOT / "transfer" / "boxes.csv"
+    if not path.exists():
+        return hand
+    boxed = pd.read_csv(path, dtype={"municipality": str, "state": str})
+    return pd.concat([hand, boxed[["key", "country", "state"]]], ignore_index=True)
+
+
+CATALOGUE = catalogue().set_index("key")
+COUNTRY = CATALOGUE.country.to_dict()
+STATE = {k: v for k, v in CATALOGUE.state.to_dict().items() if isinstance(v, str)}
 BUILT_CODE = 50
 BUILT_FLOOR = 0.10
 JOIN_M = 120
@@ -89,7 +111,7 @@ def assign_municipality(points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame) ->
 def colombia_truth(key: str, points: gpd.GeoDataFrame) -> pd.Series:
     """Deprivation from the stratum, Bogota only; elsewhere nothing to validate against."""
     truth = pd.Series(np.nan, index=points.index, dtype="float64")
-    if key != "bogota":
+    if key not in ("bogota", f"bogotadc{BOGOTA}"):
         return truth
     crs = METRIC_CRS["colombia"]
     blocks = bogota_strata().to_crs(crs)[[STRATUM_COLUMN, "geometry"]]
@@ -154,9 +176,13 @@ def build(key: str) -> pd.DataFrame:
 
 
 def main() -> int:
-    keys = sys.argv[1:] or list(COUNTRY)
+    keys = sys.argv[1:] or [
+        k for k in COUNTRY if (DATA_ROOT / "transfer" / f"vectors_{k}.npz").exists()
+    ]
     failed = []
     for key in keys:
+        if (DATA_ROOT / "transfer" / f"bags_{key}.parquet").exists() and not sys.argv[1:]:
+            continue
         try:
             table = build(key)
             table.to_parquet(DATA_ROOT / "transfer" / f"bags_{key}.parquet", index=False)

@@ -58,10 +58,23 @@ MIN_TRUTH = 20
 CELL_PX = 320
 """Side of the spatial cells the Colombian oracle folds over: 3.2 km on the 10 m grid."""
 BOGOTA = "11001"
-COUNTRIES = {
-    "colombia": ("bogota", "medellin", "cali"),
-    "brazil": ("riodejaneiro", "saopaulo", "belohorizonte"),
-}
+SIZES = (50, 100, 200, 400, None)
+"""Bag counts of the transfer curve; None is the whole pool of the country."""
+
+
+def country_keys() -> dict[str, list[str]]:
+    """Every box with bags on disk, grouped by country through the catalogue."""
+    sys.path.insert(0, "scripts")
+    from transfer_bags import COUNTRY
+
+    out: dict[str, list[str]] = {"colombia": [], "brazil": []}
+    for key, country in COUNTRY.items():
+        if (DATA_ROOT / "transfer" / f"bags_{key}.parquet").exists():
+            out[country].append(key)
+    return out
+
+
+COUNTRIES = country_keys()
 LABEL = {"colombia": "poor_share", "brazil": "mean_income"}
 OUT = "data/transfer_training.csv"
 log = logging.getLogger("transfer")
@@ -89,6 +102,14 @@ def country_tokens(country: str) -> tuple[pd.DataFrame, np.ndarray]:
         vectors.append(matrix[table.row.to_numpy()])
     tokens = pd.concat(parts, ignore_index=True)
     matrix = np.vstack(vectors)
+    # a municipality covered by a hand metro box and by its own seat box would enter twice
+    # on two grids; the box holding more of its tokens keeps it
+    counts = tokens.groupby(["municipality", "key"]).size().reset_index(name="n")
+    winner = counts.sort_values("n", ascending=False).drop_duplicates("municipality")
+    keep = tokens.set_index(["municipality", "key"]).index.isin(
+        winner.set_index(["municipality", "key"]).index
+    )
+    tokens, matrix = tokens[keep].reset_index(drop=True), matrix[keep]
     label = LABEL[country]
     if country == "brazil":
         per_bag = tokens.groupby("municipality")[label].first()
@@ -285,11 +306,26 @@ def evaluate(bags: Bags, scores: dict[str, np.ndarray]) -> dict:
 
 
 def cross_validated(
-    bags: Bags, seed: int, supervised: bool, truth_scale, init: str = "scratch"
+    bags: Bags,
+    seed: int,
+    supervised: bool,
+    truth_scale,
+    init: str = "scratch",
+    size: int | None = None,
 ) -> dict[str, np.ndarray]:
+    """Scores every bag under grouped folds; `size` caps the training bags per fold.
+
+    The cap draws a nested random subset of the training bags of each fold, the same
+    prefix for every size of one seed, which is what turns the folds into a curve over
+    the supply of aggregates like the Mexican one.
+    """
     scores = {}
+    order = list(bags.names)
+    np.random.default_rng(seed).shuffle(order)
     for held in folds_of(bags.names, seed):
-        train = [n for n in bags.names if n not in held]
+        train = [n for n in order if n not in held]
+        if size is not None:
+            train = train[:size]
         model = fit(bags, train, seed, supervised, truth_scale, init=init)
         scores.update(score(model, bags, held))
     return scores
@@ -328,6 +364,15 @@ def main() -> None:
             "aggregates": lambda seed, bags=bags, scale=truth_scale: cross_validated(
                 bags, seed, False, scale
             ),
+            **{
+                f"aggregates@{size}": (
+                    lambda seed, bags=bags, scale=truth_scale, size=size: cross_validated(
+                        bags, seed, False, scale, size=size
+                    )
+                )
+                for size in SIZES
+                if size is not None and size < len(bags.names)
+            },
             "mexico-init": lambda seed, bags=bags, scale=truth_scale: cross_validated(
                 bags, seed, False, scale, init="mexico"
             ),
