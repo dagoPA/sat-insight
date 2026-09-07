@@ -9,7 +9,7 @@ The comparison that matters is against the attention map of the weakly supervise
 which reached 0.463 of area under the curve. The gap between that and this ceiling is what
 the weak supervision is costing.
 
-Usage: oracle.py [epochs] [radius] [seed] [pool] [eval_split] [extras] [std]
+Usage: oracle.py [epochs] [radius] [seed] [pool] [eval_split] [extras] [std] [sensor]
 
 Extras is a comma-separated list of per-token feature files fused after the sensor
 vectors ("wc", "aux"), and measures whether those inputs lift the upper bound. "std"
@@ -56,7 +56,12 @@ POOL = sys.argv[4] if len(sys.argv) > 4 else "base"
 EVAL_SPLIT = sys.argv[5] if len(sys.argv) > 5 else "val"
 EXTRAS = tuple(e for e in (sys.argv[6] if len(sys.argv) > 6 else "").split(",") if e)
 STANDARDIZE = len(sys.argv) > 7 and sys.argv[7] == "std"
-TAG = "".join(f"_{e}" for e in EXTRAS) + ("_std" if STANDARDIZE else "")
+SENSOR = sys.argv[8] if len(sys.argv) > 8 else "s2"
+TAG = (
+    "".join(f"_{e}" for e in EXTRAS)
+    + ("_std" if STANDARDIZE else "")
+    + (f"_{SENSOR}" if SENSOR != "s2" else "")
+)
 BATCH = 4096
 
 
@@ -161,8 +166,8 @@ def main() -> None:
     else:
         catalogue = cities_by_size(stratify=True)
 
-    train_bags = load_split(train_cities, "s2", fuse=True, extras=EXTRAS)
-    val_bags = load_split(val_cities, "s2", fuse=True, extras=EXTRAS)
+    train_bags = load_split(train_cities, SENSOR, fuse=True, extras=EXTRAS)
+    val_bags = load_split(val_cities, SENSOR, fuse=True, extras=EXTRAS)
     train_truth = labelled(train_bags, grades_of(train_cities, catalogue))
     val_truth = labelled(val_bags, grades_of(val_cities, catalogue))
     counts = np.bincount(np.concatenate(train_truth).clip(min=0), minlength=5).astype("float64")

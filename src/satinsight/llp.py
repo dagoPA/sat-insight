@@ -139,7 +139,11 @@ def evaluate_map(model, bags, links, grades, torch, device):
 
     Averaging the correlation computed inside each bag measures what the project claims:
     telling apart the deprived parts of one municipality from its comfortable parts. That
-    is the honest figure for the contribution, and it is the lower of the two.
+    is the honest figure for the contribution, and it is the lower of the two. It comes in
+    two units: per token, where the truth of an AGEB repeats over its tokens, and per
+    AGEB, where the tokens are averaged first, which is the unit the labels live in and
+    the one a statistics office would score; the second runs higher because averaging
+    removes token noise and no truth exists below the AGEB.
 
     The correlation of every bag comes back under `per_bag` beside its mean. Two
     configurations are compared on the same municipalities, and a mean over a few dozen
@@ -150,7 +154,7 @@ def evaluate_map(model, bags, links, grades, torch, device):
     from sklearn.metrics import roc_auc_score
 
     model.eval()
-    bag_true, bag_pred, scores, truths, within = [], [], [], [], []
+    bag_true, bag_pred, scores, truths, within, within_ageb = [], [], [], [], [], []
     with torch.inference_mode():
         for bag, (src, dst) in zip(bags, links, strict=True):
             x = torch.from_numpy(bag.instances).float().to(device)
@@ -167,6 +171,16 @@ def evaluate_map(model, bags, links, grades, torch, device):
             # a bag whose AGEB all share one grade has no internal order to recover
             if len(set(g[keep])) > 1 and len(s) >= 20:
                 within.append((bag.municipality, float(spearmanr(s, g[keep]).statistic)))
+                # the same order at the unit of the truth: one mean score per AGEB
+                tract = {}
+                for key, value, grade in zip(bag.cvegeo[keep], s, g[keep], strict=True):
+                    tract.setdefault(key, [grade, []])[1].append(value)
+                tract_grade = [v[0] for v in tract.values()]
+                tract_score = [float(np.mean(v[1])) for v in tract.values()]
+                if len(tract) >= 5 and len(set(tract_grade)) > 1:
+                    within_ageb.append(
+                        (bag.municipality, float(spearmanr(tract_score, tract_grade).statistic))
+                    )
     bag_true, bag_pred = np.vstack(bag_true), np.vstack(bag_pred)
     scores, truths = np.array(scores), np.array(truths)
     return {
@@ -174,7 +188,11 @@ def evaluate_map(model, bags, links, grades, torch, device):
         "auroc_high": float(roc_auc_score((truths >= 3).astype(int), scores)),
         "spearman_pooled": float(spearmanr(scores, truths).statistic),
         "spearman_within": float(np.mean([r for _, r in within])) if within else float("nan"),
+        "spearman_within_ageb": (
+            float(np.mean([r for _, r in within_ageb])) if within_ageb else float("nan")
+        ),
         "bags_scored": len(within),
+        "bags_scored_ageb": len(within_ageb),
         "instances": len(truths),
         "per_bag": within,
     }

@@ -9,7 +9,10 @@ held-out cities under the final configuration. This trains that configuration (t
 Three seeds, saved separately: the analyses that follow decide how to combine them, and an
 ensemble mean is itself one of the planned analyses.
 
-Usage: predictions_val.py [epochs]
+Usage: predictions_val.py [epochs] [sensor]
+
+With a suffixed sensor such as s2_dofal the weights and scores take the same suffix, so a
+backbone ablation persists beside the canonical run instead of over it.
 """
 
 import logging
@@ -32,6 +35,8 @@ sys.path.insert(0, "scripts")
 from supervision_curve import grades_of, links_of, train_once  # noqa: E402
 
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
+SENSOR = sys.argv[2] if len(sys.argv) > 2 else "s2"
+SUFFIX = "" if SENSOR == "s2" else f"_{SENSOR[3:]}"
 SEEDS = (0, 1, 2)
 RADIUS = 1
 
@@ -46,8 +51,8 @@ def main() -> None:
     train_cities = sorted(cities_of(partition, "train")) + sorted(cities_extra())
     val_cities = sorted(cities_of(partition, "val"))
 
-    pool = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    pool = load_split(train_cities, SENSOR, fuse=True)
+    val_bags = load_split(val_cities, SENSOR, fuse=True)
     grades = grades_of(val_cities, catalogue)
 
     device = (
@@ -66,7 +71,7 @@ def main() -> None:
         scored = train_once(pool, val_bags, val_links, grades, seed, torch, device)
         log.info("seed %d trained · within %+.3f", seed, scored["spearman_within"])
         model = train_once.last_model
-        torch.save(model.state_dict(), f"data/weights/llp_final_s{seed}.pt")
+        torch.save(model.state_dict(), f"data/weights/llp_final{SUFFIX}_s{seed}.pt")
         model.eval()
         with torch.inference_mode():
             for bag, (src, dst) in zip(val_bags, val_links, strict=True):
@@ -85,7 +90,7 @@ def main() -> None:
                             "score": float(score[i]),
                         }
                     )
-        pd.DataFrame(rows).to_parquet("data/predictions_val.parquet", index=False)
+        pd.DataFrame(rows).to_parquet(f"data/predictions_val{SUFFIX}.parquet", index=False)
         log.info("seed %d · %d rows persisted", seed, len(rows))
 
     print(f"DONE · {len(rows)} token scores over {len(SEEDS)} seeds", flush=True)
