@@ -8,17 +8,20 @@ Bogota's box wraps the stratified blocks. Rio's wraps its AGSN polygons: they sp
 across the whole municipality, so the box covers favelas and formal city alike, which is
 exactly what a binary detection metric needs.
 
-Usage: transfer_composites.py [key ...]   (default: both)
+Usage: transfer_composites.py [key ...]   (default: the hand boxes plus every catalogued seat)
 """
 
 import logging
 import sys
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
 )
+
+import pandas as pd  # noqa: E402
 
 from satinsight.aoi import AOI  # noqa: E402
 from satinsight.pipeline import ensure_composite  # noqa: E402
@@ -37,9 +40,24 @@ HAND_BOXES = {
 }
 
 
+BOXES_PATH = Path("data/transfer/boxes.csv")
+
+
+def catalogued_boxes() -> dict[str, tuple[str, str, tuple[float, float, float, float]]]:
+    """Boxes written by transfer_catalogue.py, one per municipal seat, keyed like the hand boxes."""
+    if not BOXES_PATH.exists():
+        return {}
+    table = pd.read_csv(BOXES_PATH, dtype={"municipality": str})
+    return {
+        row.key: (row.name, row.country, tuple(float(v) for v in row.bbox.split()))
+        for row in table.itertuples()
+    }
+
+
 def transfer_aoi(key: str) -> AOI:
-    if key in HAND_BOXES:
-        name, country, bbox = HAND_BOXES[key]
+    boxes = HAND_BOXES if key in HAND_BOXES else catalogued_boxes()
+    if key in boxes:
+        name, country, bbox = boxes[key]
         return AOI(key=key, name=name, state=country, bbox=bbox)
     if key == "bogota":
         return AOI.from_polygons(
@@ -57,7 +75,7 @@ def transfer_aoi(key: str) -> AOI:
 
 
 def main() -> int:
-    keys = sys.argv[1:] or ["bogota", "riodejaneiro"]
+    keys = sys.argv[1:] or ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()]
     failed = []
     for key in keys:
         area = transfer_aoi(key)
