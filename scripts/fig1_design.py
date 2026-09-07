@@ -2,9 +2,10 @@
 
 Panel a: every municipality of the study on the national map, colored by role. Panel b:
 the true-color composite of one held-out city with its AGEB boundaries, the imagery the
-model actually consumes. Panels c and d: the held-out tract truth drawn as its AGEB polygons and the
-token-level prediction drawn as its 160 m lattice, each in its own unit, on one color
-scale. Acámbaro is the display city: all five grades present and the highest
+model actually consumes. Panels c to e: the held-out tract truth drawn as its AGEB
+polygons, the token-level prediction drawn as its 160 m lattice, and the same
+prediction averaged to the tract, the unit every evaluation scores it at, all on one
+color scale. Acámbaro is the display city: all five grades present and the highest
 within-municipality rho among validation municipalities that hold every grade, so the
 example shows what the map looks like where it works, with the median stated in the
 caption.
@@ -116,8 +117,8 @@ def token_raster(tokens: pd.DataFrame, values: np.ndarray, shape: tuple[int, int
 
 
 def main() -> None:
-    fig = plt.figure(figsize=(7.2, 7.4), constrained_layout=True)
-    grid_spec = fig.add_gridspec(2, 3, height_ratios=[1.25, 1])
+    fig = plt.figure(figsize=(7.2, 6.3), constrained_layout=True)
+    grid_spec = fig.add_gridspec(2, 4, height_ratios=[1.35, 1])
 
     # a, the national map
     ax = fig.add_subplot(grid_spec[0, :])
@@ -172,7 +173,7 @@ def main() -> None:
             (40, 40), 10 * TOKEN_SIZE, 10 * TOKEN_SIZE, fill=False, edgecolor="#ffd92f", lw=1.0
         )
     )
-    ax.text(44, 30, "10×10 tokens (1.6 km)", color="#ffd92f", fontsize=6.5)
+    ax.text(44, 30, "10×10 tokens (1.6 km)", color="#ffd92f", fontsize=5.5)
     ax.set_axis_off()
     ax.set_title(f"b  Composite, {catalogue[CITY].name}", loc="left", fontsize=9, fontweight="bold")
 
@@ -188,20 +189,29 @@ def main() -> None:
     shape = rgb.shape[:2]
     # c, the truth in its own unit: the AGEB polygons, filled with their grade
     ax = fig.add_subplot(grid_spec[1, 1])
+    polygons = [
+        (part, int(ordinal))
+        for geometry, ordinal in zip(bounds.geometry, bounds.ordinal.astype(int), strict=True)
+        for part in getattr(geometry, "geoms", [geometry])
+    ]
     ax.imshow(rgb * 0.35)
     from matplotlib.patches import Polygon
 
-    for geometry, ordinal in zip(bounds.geometry, bounds.ordinal.astype(int), strict=True):
-        for part in getattr(geometry, "geoms", [geometry]):
+    def fill_polygons(ax, values):
+        for (part, _), value in zip(polygons, values, strict=True):
+            if value is None or (isinstance(value, float) and np.isnan(value)):
+                continue
             xs, ys = part.exterior.xy
             pixels = [inverse * (x, y) for x, y in zip(xs, ys, strict=True)]
             ax.add_patch(
-                Polygon(pixels, closed=True, facecolor=CMAP(norm(ordinal)), edgecolor="none")
+                Polygon(pixels, closed=True, facecolor=CMAP(norm(value)), edgecolor="none")
             )
-    ax.set_xlim(0, shape[1])
-    ax.set_ylim(shape[0], 0)
-    ax.set_axis_off()
-    ax.set_title("c  Tract truth (held out)", loc="left", fontsize=9, fontweight="bold")
+        ax.set_xlim(0, shape[1])
+        ax.set_ylim(shape[0], 0)
+        ax.set_axis_off()
+
+    fill_polygons(ax, [ordinal for _, ordinal in polygons])
+    ax.set_title("c  Tract truth", loc="left", fontsize=9, fontweight="bold")
 
     # d, the prediction in its own unit: the 160 m token lattice
     ax = fig.add_subplot(grid_spec[1, 2])
@@ -213,7 +223,19 @@ def main() -> None:
         interpolation="nearest",
     )
     ax.set_axis_off()
-    ax.set_title("d  Prediction, weak supervision", loc="left", fontsize=9, fontweight="bold")
+    ax.set_title("d  Prediction, tokens", loc="left", fontsize=9, fontweight="bold")
+
+    # e, the prediction averaged to the tract, the unit every evaluation scores it at
+    ax = fig.add_subplot(grid_spec[1, 3])
+    ax.imshow(rgb * 0.35)
+    tract_mean = tokens.groupby("cvegeo").score.mean()
+    keys = [
+        key
+        for geometry, key in zip(bounds.geometry, bounds.cvegeo, strict=True)
+        for _ in getattr(geometry, "geoms", [geometry])
+    ]
+    fill_polygons(ax, [tract_mean.get(key, np.nan) for key in keys])
+    ax.set_title("e  Prediction, tracts", loc="left", fontsize=9, fontweight="bold")
     colourbar = fig.colorbar(image, ax=ax, fraction=0.04, pad=0.02)
     colourbar.set_label("deprivation grade", fontsize=7)
     colourbar.set_ticks([0, 4])
