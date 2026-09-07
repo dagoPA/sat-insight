@@ -183,9 +183,27 @@ resamples), and curve error bars are s.d. over seeds. The code is Python 3.12 wi
 PyTorch, rasterio, geopandas and scikit-learn, pinned by the repository's
 \texttt{uv.lock}; all experiments ran on one Apple-silicon laptop (MPS backend). The
 seven municipalities excluded from the expansion for insufficient composite depth or
-persistent acquisition errors (Supplementary Table~3) are the only data exclusions. The
+persistent acquisition errors (Table~\ref{tab:exclusions}) are the only data exclusions. The
 full pipeline, frozen vectors, labels, splits and protocol are released, and every
 figure regenerates from one canonical results file.
+
+\begin{table}[htbp]
+\centering
+\caption{Municipalities excluded from the expansion for insufficient optical depth or
+persistent acquisition errors; the guard requires eight observations per pixel and
+excludes shallow ground instead of compositing it.}
+\begin{tabular}{ll}
+\toprule
+Municipality & Reason\\
+\midrule
+Amozoc; Comalcalco; Hidalgo del Parral; & composite below the eight-observation\\
+Lagos de Moreno; Nuevo Casas Grandes & depth floor (optical arm)\\
+La Independencia & inconsistent tract geometry\\
+El Marqu\'es & repeated acquisition timeouts\\
+\bottomrule
+\end{tabular}
+\label{tab:exclusions}
+\end{table}
 
 \subsection{External checks}
 
@@ -292,7 +310,7 @@ reports the fourteen held-out test cities with validation-selected models; valid
 values are shown beside them as the selection benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a):
 fifty aggregates yield $\rho \approx 0.15$ within municipalities; the full national
 supply yields $0.196$ on test against a fully supervised upper bound of $0.233$ there
-(per-point values in Supplementary Table~1), an 84\% recovery
+(per-point values in Table~\ref{tab:curve}), an 84\% recovery
 (validation: $0.227$ of $0.251$, 90\%). Pairing model and oracle by municipality, the
 city-clustered bootstrap puts the test fraction at $0.85$ with a wide interval
 [$0.30$, $1.86$]; fourteen cities bound the precision, and it is the point estimate,
@@ -311,6 +329,24 @@ high-deprivation tracts in our feature-based phase-one baseline (per-city AUROC 
 against 0.747 optical). Sensor content dominates ground sampling distance, with resolution carrying a
 real secondary cost on test; a sensor's prediction accuracy is a poor guide to its map
 quality.
+
+\begin{table}[htbp]
+\centering
+\caption{The supervision-efficiency curve (Fig.~\ref{fig:curve}a). Mean over three seeds;
+validation cities were used for model selection, test cities are held out.}
+\begin{tabular}{rcc}
+\toprule
+Bags & Validation within-$\rho$ (s.d.) & Test within-$\rho$\\
+\midrule
+50 & 0.150 (0.021) & 0.156\\
+100 & 0.141 (0.021) & 0.158\\
+200 & 0.151 (0.022) & 0.161\\
+400 & 0.182 (0.020) & 0.192\\
+771 & 0.227 (0.010) & 0.185 (retrained); 0.196 (saved weights)\\
+\bottomrule
+\end{tabular}
+\label{tab:curve}
+\end{table}
 
 \subsection{Why attention pooling fails, and what replaces it}
 
@@ -383,7 +419,7 @@ test cities contain too few same-grade cross-border pairs to repeat this control
 
 The sharper version of the question is what a practitioner would get for free. Four global
 products were scored on the identical universe under the identical protocol
-(Fig.~\ref{fig:incumbents}a, Supplementary Table~4). Against GHSL residential population the map wins clearly,
+(Fig.~\ref{fig:incumbents}a, Table~\ref{tab:products}). Against GHSL residential population the map wins clearly,
 $\Delta\rho = +0.29$ [$-0.00$, $+0.50$] on validation and $+0.19$ [$+0.05$, $+0.29$] on
 test, the only one of the four that separates on test. Against GHSL built-up surface
 ($+0.15$ [$-0.10$, $+0.30$]; $+0.06$ [$-0.10$, $+0.16$]) and GHSL building height ($+0.13$
@@ -396,6 +432,32 @@ does. That comparison is handicapped in the light product's disfavor by resoluti
 63\% of test tracts are smaller than one of its cells and take the value at an interior
 point, and it is reported at face value regardless: within the precision fourteen
 cities allow, we cannot show the map beats nighttime lights.
+
+\begin{table}[htbp]
+\centering
+\caption{Free global products under the map's own protocol. Within-$\rho$ is the mean
+over municipalities of the within-municipality Spearman correlation against the held-out
+tract grade, on the identical universe; $\Delta$ is the paired difference with a
+city-clustered bootstrap interval; AUROC is pooled detection of high and very-high grade
+tracts across the split. Orientation was fixed before measurement: deprivation is the
+negative of every product. The nighttime-light row rests on interior-point sampling for 63\%
+of tracts, which are smaller than one of its 30 arcsec cells.}
+\begin{tabular}{lccccc}
+\toprule
+Product & Split & Map & Product & $\Delta$ [95\% CI] & AUROC map / product\\
+\midrule
+GHSL built-up surface & val & 0.354 & 0.202 & $+0.152$ [$-0.103$, $+0.303$] & 0.828 / 0.866\\
+ & test & 0.232 & 0.174 & $+0.059$ [$-0.098$, $+0.160$] & 0.829 / 0.908\\
+GHSL building height & val & 0.354 & 0.226 & $+0.128$ [$-0.096$, $+0.291$] & 0.828 / 0.859\\
+ & test & 0.232 & 0.119 & $+0.113$ [$-0.062$, $+0.233$] & 0.829 / 0.886\\
+GHSL population & val & 0.354 & 0.065 & $+0.289$ [$-0.001$, $+0.497$] & 0.828 / 0.872\\
+ & test & 0.232 & 0.045 & $+0.188$ [$+0.051$, $+0.289$] & 0.829 / 0.855\\
+Nighttime lights & val & 0.364 & 0.327 & $+0.037$ [$-0.109$, $+0.149$] & 0.828 / 0.840\\
+ & test & 0.210 & 0.249 & $-0.039$ [$-0.245$, $+0.104$] & 0.829 / 0.831\\
+\bottomrule
+\end{tabular}
+\label{tab:products}
+\end{table}
 
 The pooled comparison points the other way, and in doing so repeats the dissociation of
 the previous section on external ground. For detecting high and very-high grade tracts
@@ -414,11 +476,40 @@ $+0.030$], and both together $+0.030$ [$+0.012$, $+0.046$]. Under municipal
 supervision none of it reaches the map. Early fusion gives $0.225$ with the GHSL and
 light columns, $0.212$ with WorldCover and $0.221$ with both, against the canonical
 $0.227$; late fusion, which hands the columns their own scoring weights, gives $0.210$
-and $0.226$ (Supplementary Table~7). Information that a tract-supervised head
+and $0.226$ (Table~\ref{tab:inputs}). Information that a tract-supervised head
 extracts from four columns is invisible to a gradient carried by a few hundred bag
 labels, and a dedicated pathway makes it worse rather than better, consistent with the
 rurality shortcut: built surface and population explain the municipal label well, the
 head leans on them, and the ordering inside the municipality degrades.
+
+\begin{table}[htbp]
+\centering
+\caption{Global products offered to the model as input features, validation cities,
+within-municipality Spearman, three seeds. GHSL built-up surface, building height,
+population and nighttime lights as four token columns; WorldCover as its eleven class
+fractions plus NDVI mean and dispersion. The oracle rows are standardized, with their
+own no-extras reference; the paired difference is per municipality, seed-averaged, with a
+city-clustered bootstrap. The map rows fuse the columns either into the projection
+(early) or straight into the scoring layer (late).}
+\begin{tabular}{llccc}
+\toprule
+Head & Extra inputs & Seeds & Mean & Paired difference [95\%]\\
+\midrule
+Oracle & none (reference) & 0.288 / 0.239 / 0.257 & 0.261 & \\
+Oracle & WorldCover & 0.288 / 0.261 / 0.272 & 0.274 & $+0.014$ [$-0.004$, $+0.030$]\\
+Oracle & GHSL + lights & 0.293 / 0.281 / 0.298 & 0.291 & $+0.030$ [$+0.011$, $+0.050$]\\
+Oracle & both & 0.291 / 0.278 / 0.300 & 0.289 & $+0.030$ [$+0.012$, $+0.046$]\\
+\midrule
+Map & none (canonical) & 0.242 / 0.224 / 0.215 & 0.227 & \\
+Map, early & WorldCover & 0.207 / 0.221 / 0.209 & 0.212 & \\
+Map, early & GHSL + lights & 0.226 / 0.236 / 0.214 & 0.225 & \\
+Map, early & both & 0.220 / 0.227 / 0.217 & 0.221 & \\
+Map, late & GHSL + lights & 0.214 / 0.217 / 0.198 & 0.210 & \\
+Map, late & both & 0.241 / 0.221 / 0.216 & 0.226 & \\
+\bottomrule
+\end{tabular}
+\label{tab:inputs}
+\end{table}
 
 \subsection{Transfer to Colombia and Brazil}
 
@@ -433,8 +524,8 @@ gradient from the aggregates, and that gradient transfers across countries; info
 detection does not follow from it.
 
 Repeating the design on each country's own aggregates asks whether the Mexican result is
-a property of the method or of Mexico (Fig.~\ref{fig:validation}d, Supplementary
-Table~8). Trained from scratch on Colombia's municipal poverty rate over 35 bags, the
+a property of the method or of Mexico (Fig.~\ref{fig:validation}d,
+Table~\ref{tab:transfer}). Trained from scratch on Colombia's municipal poverty rate over 35 bags, the
 head orders Bogot\'a's block strata at $\rho = 0.21$ (seeds $0.22$, $0.18$, $0.24$;
 AUROC 0.63 for the most deprived quartile), against $0.31$ for the Mexican model applied
 unchanged to the same built tokens and $0.25$ for the Mexican heads fine-tuned on the
@@ -450,6 +541,35 @@ is a mean income rather than a graded deprivation share, a weaker match to the h
 method replicates on labels of a different construct from a different office; what the
 two countries lack at this stage is the supply of aggregates, which is the axis the
 curve measures.
+
+\begin{table}[htbp]
+\centering
+\caption{Transfer under each country's own municipal aggregates (Fig.~\ref{fig:validation}d).
+Within-municipality Spearman against the fine truth, grouped five-fold by municipality,
+per seed; Bogot\'a's oracle folds over 3.2 km spatial cells. Colombia: 35 bags, the
+Bogot\'a block strata as truth over 12{,}738 built tokens. Brazil: 48 bags, tract median
+income of the household head as truth over 110{,}728 tokens in 47 municipalities, with
+the municipality-bootstrap interval of the mean. AUROC is for the most deprived quartile
+of the truth, pooled. The earlier zero-shot protocol, without the built-token filter,
+gave $\rho = 0.318$ and AUROC 0.716 (strata 1--2) in Bogot\'a over 14{,}132 tokens and
+AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
+\begin{tabular}{llcccc}
+\toprule
+Country & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
+\midrule
+Colombia & Mexican, unadapted & 0.311 & 0.311 & 0.311 & 0.705\\
+Colombia & local aggregates & 0.223 / 0.178 / 0.238 & 0.213 & 0.213 & 0.630\\
+Colombia & Mexican, fine-tuned & 0.294 / 0.138 / 0.305 & 0.246 & 0.246 & 0.660\\
+Colombia & oracle & 0.741 / 0.758 / 0.749 & 0.749 & 0.749 & 0.906\\
+\midrule
+Brazil & Mexican, unadapted & 0.099 & 0.099 [0.048, 0.148] & 0.283 & 0.648\\
+Brazil & local aggregates & 0.115 / 0.119 / 0.130 & 0.121 [0.074, 0.171] & 0.332 & 0.636\\
+Brazil & Mexican, fine-tuned & 0.074 / 0.077 / 0.084 & 0.078 [0.026, 0.129] & 0.337 & 0.633\\
+Brazil & oracle & 0.239 / 0.269 / 0.234 & 0.247 [0.197, 0.297] & 0.472 & 0.704\\
+\bottomrule
+\end{tabular}
+\label{tab:transfer}
+\end{table}
 
 \subsection{Uncertainty and limits}
 
@@ -474,13 +594,31 @@ overall and below nominal in 10 of the 14 test cities, worst at La Paz (0.768). 
 that cities are not exchangeable with one another, by taking each calibration city's own
 quantile and then the 90th percentile across cities, restores coverage to 0.953 with only
 Madera below nominal, at the cost of a half-width of 1.68 grades
-(Fig.~\ref{fig:incumbents}c). On a five-level scale
+(Fig.~\ref{fig:incumbents}c, Table~\ref{tab:conformal}). On a five-level scale
 that interval spans most of the range. The honest statement is that the map orders
 neighborhoods and cannot commit to a grade, and that any interval which ignores
 between-city variation will be too narrow.
 
-The failures are concentrated and can be named. Ranking the fourteen test cities by the
-within-municipality correlation their map achieves, three sit at or below zero: Guerrero,
+\begin{table}[htbp]
+\centering
+\caption{Conformal grade intervals at 90\% nominal coverage, calibrated on the validation
+cities and evaluated on the test cities. The marginal rule assumes all tracts
+exchangeable; the clustered rule takes each calibration city's quantile and then the 90th
+percentile across cities.}
+\begin{tabular}{lccccc}
+\toprule
+Rule & Half-width (grades) & Coverage & Worst city & Worst city coverage & Cities below\\
+\midrule
+Marginal & 1.29 & 0.869 & La Paz & 0.768 & 10 of 14\\
+Clustered by city & 1.68 & 0.953 & Madera & 0.870 & 1 of 14\\
+\bottomrule
+\end{tabular}
+\label{tab:conformal}
+\end{table}
+
+The failures are concentrated and can be named (Table~\ref{tab:audit}). Ranking the
+fourteen test cities by the within-municipality correlation their map achieves, three
+sit at or below zero: Guerrero,
 Chihuahua ($-0.51$ over 21 tracts), Ciudad del Carmen, Campeche ($-0.27$ over 54), and
 Escárcega, Campeche ($-0.00$ over 24). All three are small, and the top of the ranking is
 not: Iguala de la Independencia ($+0.64$ over 133 tracts), La Paz ($+0.53$ over 276) and
@@ -491,6 +629,35 @@ too few ranks for the correlation to stabilize, and the map's ordering inside it
 not be used. Seed spread does not flag these cities either; Guerrero's median spread
 (0.101) sits at the middle of the fourteen.
 
+\begin{table}[htbp]
+\centering
+\caption{The fourteen test cities ranked by the within-municipality correlation their map
+achieves, worst first. Tract-mean scores. Spread is the median across tracts of the
+standard deviation over three seeds, which does not separate the failures from the
+successes.}
+\begin{tabular}{lrrrr}
+\toprule
+City & Municipalities & Tracts & Within-$\rho$ & Median seed spread\\
+\midrule
+Guerrero & 1 & 21 & $-0.510$ & 0.101\\
+Ciudad del Carmen & 1 & 54 & $-0.267$ & 0.069\\
+Esc\'arcega & 1 & 24 & $-0.001$ & 0.093\\
+Madera & 1 & 46 & $0.052$ & 0.133\\
+Quer\'etaro & 3 & 514 & $0.091$ & 0.109\\
+Zapopan & 2 & 335 & $0.105$ & 0.104\\
+Garc\'ia & 3 & 324 & $0.257$ & 0.088\\
+Nogales & 1 & 171 & $0.261$ & 0.093\\
+Victoria & 1 & 165 & $0.373$ & 0.102\\
+Hidalgo & 1 & 71 & $0.425$ & 0.098\\
+Irapuato & 1 & 214 & $0.465$ & 0.121\\
+Ixtapaluca & 4 & 463 & $0.471$ & 0.097\\
+La Paz & 1 & 276 & $0.534$ & 0.095\\
+Iguala de la Independencia & 1 & 133 & $0.639$ & 0.125\\
+\bottomrule
+\end{tabular}
+\label{tab:audit}
+\end{table}
+
 Beyond the named failures, three limits bound every claim. The upper bound itself is low: even with full tract labels and neighborhood context,
 160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test:
 sufficient to order neighborhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
@@ -498,10 +665,28 @@ size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--4
 tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
 tracts; the test split reproduces the pattern noisily, peaking at $0.38$ and collapsing
 in its single large-tract municipality. This is the modifiable areal unit problem,
-quantified here by tract size (Supplementary Table~2). Ecological caution applies throughout: the model recovers where deprived tracts are, and
+quantified here by tract size (Table~\ref{tab:maup}). Ecological caution applies throughout: the model recovers where deprived tracts are, and
 tract grades are themselves aggregates over households; neither the labels nor the maps
 identify deprived households, and the targeting simulation counts the population of
 deprived tracts; deprived individuals themselves are unobserved.
+
+\begin{table}[htbp]
+\centering
+\caption{Agreement by tract size. Within-municipality Spearman over
+municipalities with at least ten tracts in the bin.}
+\begin{tabular}{rrrrc}
+\toprule
+Tokens per tract & Tracts & Median population & Municipalities & Within-$\rho$\\
+\midrule
+1--3 & 567 & 211 & 15 & 0.257\\
+4--9 & 849 & 1{,}948 & 16 & 0.338\\
+10--19 & 999 & 2{,}644 & 20 & 0.352\\
+20--49 & 464 & 3{,}231 & 14 & 0.432\\
+$\geq$50 & 79 & 3{,}561 & 2 & 0.127\\
+\bottomrule
+\end{tabular}
+\label{tab:maup}
+\end{table}
 
 \section{Discussion}
 
@@ -708,9 +893,18 @@ typically yields several municipal bags, which is how 351 units produce 771 bags
 model consumes: the 2020 Sentinel-2 median composite of Tapachula (a validation city)
 with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, What it
 produces: the token-level deprivation score from municipal aggregates alone. Tract
-ground truth for the same city is shown in Supplementary Fig.~1; Tapachula sits at the
+ground truth for the same city is shown in Fig.~\ref{fig:truth}; Tapachula sits at the
 validation median ($\rho = 0.47$), chosen as a median-performing, representative example.}
 \label{fig:design}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.62\linewidth]{fig1_truth.pdf}
+\caption{Tract-level ground truth for Tapachula, on the color scale of
+Fig.~\ref{fig:design}c. Every token inherits the held-out GRS grade of the AGEB it
+falls in.}
+\label{fig:truth}
 \end{figure}
 
 \begin{figure}[h]
