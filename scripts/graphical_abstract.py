@@ -9,7 +9,7 @@ inlined as data URIs, and the page is rasterized with headless Chrome when one i
 installed; the standalone HTML is always written, so the page can be opened or exported by
 hand where Chrome is absent.
 
-Follows the Elsevier proportions (2600 by 1040 px, about 2.5:1).
+Follows the Elsevier proportions (2600 by 960 px, about 2.7:1).
 
 Usage: graphical_abstract.py [city]
 """
@@ -58,7 +58,7 @@ CHROME = (
     "google-chrome",
     "chromium",
 )
-WIDTH, HEIGHT = 2600, 1040
+WIDTH, HEIGHT = 2600, 960
 
 
 def municipal_grades() -> pd.DataFrame:
@@ -89,15 +89,17 @@ def encode(figure, *, width: int, quality: int = 68, background=(250, 248, 243))
 
 def national_map(norm) -> str:
     figure, ax = plt.subplots(figsize=(6, 4.2), dpi=150)
+    ax.set_position([0, 0, 1, 1])
     states = gpd.read_file("data/naturalearth/ne_10m_admin_1_states_provinces.shp")
-    states[states.admin == "Mexico"].boundary.plot(ax=ax, color="#c9c4bb", linewidth=0.4)
+    mexico = states[states.admin == "Mexico"]
+    mexico.plot(ax=ax, facecolor="#efeae1", edgecolor="#cfc8bc", linewidth=0.4)
     points = municipal_grades()
     ax.scatter(points.lon, points.lat, c=points.grade, cmap=CMAP, norm=norm, s=16, linewidths=0)
     ax.set_xlim(-118, -86)
     ax.set_ylim(14, 33)
     ax.set_axis_off()
     figure.patch.set_alpha(0)
-    return encode(figure, width=780, quality=82)
+    return encode(figure, width=900, quality=84)
 
 
 def city_panels(norm) -> dict[str, str]:
