@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from satinsight import aoi as modulo_aoi
+from satinsight import aoi as aoi_module
 from satinsight.agebs import CITIES, agebs_of_city, grade_summary
 from satinsight.baseline import compare, fold_summary, transfer_diagnostics
 from satinsight.catalog import (
@@ -39,7 +39,7 @@ log = logging.getLogger("satinsight")
 
 def cmd_aoi(_: argparse.Namespace) -> int:
     """Lists the available pilot boxes."""
-    for key, area in sorted(modulo_aoi.PILOT.items()):
+    for key, area in sorted(aoi_module.PILOT.items()):
         height, width = area.approximate_shape()
         print(f"{key:<12} {area.name:<22} {area.state:<18} ~{width}x{height} px @10 m")
     return 0
@@ -47,7 +47,7 @@ def cmd_aoi(_: argparse.Namespace) -> int:
 
 def cmd_probe(args: argparse.Namespace) -> int:
     """Reports how many scenes are available over an AOI."""
-    area = modulo_aoi.obtener(args.aoi)
+    area = aoi_module.get(args.aoi)
     catalogue = open_catalogue()
     print(f"{area.name} · {args.period}")
 
@@ -65,54 +65,54 @@ def cmd_probe(args: argparse.Namespace) -> int:
 
 def cmd_panels(args: argparse.Namespace) -> int:
     """Downloads a sample and renders the four inspection panels."""
-    area = modulo_aoi.obtener(args.aoi)
+    area = aoi_module.get(args.aoi)
     destination = Path(args.output)
     catalogue = open_catalogue()
     stats: dict[str, object] = {
-        "aoi_clave": area.key,
-        "aoi_nombre": area.name,
+        "aoi_key": area.key,
+        "aoi_name": area.name,
         "aoi_bbox": list(area.bbox),
         "period": args.period,
-        "resolucion_px_m": 10,
+        "pixel_size_m": 10,
     }
 
-    log.info("consultando Sentinel-2")
+    log.info("querying Sentinel-2")
     scenes_s2 = search(COLLECTION_S2, area.bbox, args.period, catalogue)
     stats["s2"] = cloud_summary(scenes_s2)
-    ordenadas = by_cloud_cover(scenes_s2)
-    despejada, nublada = ordenadas[0], ordenadas[-1]
+    ordered = by_cloud_cover(scenes_s2)
+    clearest, cloudiest = ordered[0], ordered[-1]
 
-    log.info("fecha despejada: %s", despejada.datetime.date())
-    bandas = [read_window(despejada.assets[b].href, area.bbox) for b in ("B04", "B03", "B02")]
-    forma = bandas[0].shape
-    save_rgb(*(stretch(b) for b in bandas), destination / "s2_despejada.png")
-    stats["s2_despejada"] = {
-        "fecha": str(despejada.datetime.date()),
-        "nubes": round(despejada.properties["eo:cloud_cover"], 1),
+    log.info("clearest date: %s", clearest.datetime.date())
+    bands = [read_window(clearest.assets[b].href, area.bbox) for b in ("B04", "B03", "B02")]
+    shape = bands[0].shape
+    save_rgb(*(stretch(b) for b in bands), destination / "s2_clearest.png")
+    stats["s2_clearest"] = {
+        "date": str(clearest.datetime.date()),
+        "cloud_cover": round(clearest.properties["eo:cloud_cover"], 1),
     }
 
-    log.info("fecha nublada: %s", nublada.datetime.date())
-    bandas = [read_window(nublada.assets[b].href, area.bbox, forma) for b in ("B04", "B03", "B02")]
-    save_rgb(*(stretch(b) for b in bandas), destination / "s2_nublada.png")
-    stats["s2_nublada"] = {
-        "fecha": str(nublada.datetime.date()),
-        "nubes": round(nublada.properties["eo:cloud_cover"], 1),
+    log.info("cloudiest date: %s", cloudiest.datetime.date())
+    bands = [read_window(cloudiest.assets[b].href, area.bbox, shape) for b in ("B04", "B03", "B02")]
+    save_rgb(*(stretch(b) for b in bands), destination / "s2_cloudiest.png")
+    stats["s2_cloudiest"] = {
+        "date": str(cloudiest.datetime.date()),
+        "cloud_cover": round(cloudiest.properties["eo:cloud_cover"], 1),
     }
 
-    log.info("componiendo Sentinel-2")
-    composite, usadas = composite_s2(scenes_s2, area.bbox, forma, max_scenes=args.max_s2)
+    log.info("compositing Sentinel-2")
+    composite, used = composite_s2(scenes_s2, area.bbox, shape, max_scenes=args.max_s2)
     save_rgb(
         *(stretch(composite[b]) for b in ("B04", "B03", "B02")),
-        destination / "s2_compuesto.png",
+        destination / "s2_composite.png",
     )
-    stats["s2_compuesto"] = {"scenes_used": usadas}
+    stats["s2_composite"] = {"scenes_used": used}
 
-    log.info("consultando y componiendo Sentinel-1")
+    log.info("querying and compositing Sentinel-1")
     scenes_s1 = search(COLLECTION_S1, area.bbox, args.period, catalogue)
-    sar, meta = composite_s1(scenes_s1, area.bbox, forma, max_scenes=args.max_s1)
+    sar, meta = composite_s1(scenes_s1, area.bbox, shape, max_scenes=args.max_s1)
     vv_db, vh_db = to_db(sar["vv"]), to_db(sar["vh"])
     save_rgb(
-        stretch(vv_db), stretch(vh_db), stretch(vv_db - vh_db), destination / "s1_compuesto.png"
+        stretch(vv_db), stretch(vh_db), stretch(vv_db - vh_db), destination / "s1_composite.png"
     )
     stats["s1"] = {
         "scenes_available": meta["scenes_available"],
@@ -121,7 +121,7 @@ def cmd_panels(args: argparse.Namespace) -> int:
         "vv_db_p5_p95": list(percentiles(vv_db)),
         "vh_db_p5_p95": list(percentiles(vh_db)),
     }
-    stats["aoi_px"] = [forma[1], forma[0]]
+    stats["aoi_px"] = [shape[1], shape[0]]
 
     (destination / "stats.json").write_text(json.dumps(stats, indent=2, ensure_ascii=False))
     print(json.dumps(stats, indent=2, ensure_ascii=False))
@@ -134,7 +134,7 @@ def cmd_agebs(args: argparse.Namespace) -> int:
     for key in args.cities or sorted(CITIES):
         agebs = agebs_of_city(key)
         total += len(agebs)
-        people = int(agebs["poblacion"].sum())
+        people = int(agebs["population"].sum())
         print(f"\n{CITIES[key].name} · {len(agebs)} AGEB · {people:,} people")
         print(grade_summary(agebs).to_string())
     print(f"\ntotal: {total} AGEB")
@@ -157,7 +157,7 @@ def cmd_features(args: argparse.Namespace) -> int:
         scale=args.scale,
         catalogue=catalogue,
     )
-    destination = Path(args.output or DATA_ROOT / f"rasgos_{args.sensor}_{args.scale}.parquet")
+    destination = Path(args.output or DATA_ROOT / f"features_{args.sensor}_{args.scale}.parquet")
     destination.parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(destination, index=False)
     print(f"{len(table)} AGEB × {table.shape[1]} columns → {destination}")
@@ -166,18 +166,18 @@ def cmd_features(args: argparse.Namespace) -> int:
 
 def cmd_baseline(args: argparse.Namespace) -> int:
     """Runs the phase one comparison over an already extracted feature table."""
-    origin = Path(args.features or DATA_ROOT / f"rasgos_{args.sensor}.parquet")
+    origin = Path(args.features or DATA_ROOT / f"features_{args.sensor}.parquet")
     if not origin.exists():
         print(f"{origin} is missing. Run first: satinsight features {args.sensor}", file=sys.stderr)
         return 1
 
     table = pd.read_parquet(origin)
-    detail = compare(table, estandarizar=args.estandarizar)
+    detail = compare(table, standardise=args.standardise)
     print(f"\n{len(table)} AGEB · leave-one-city-out partition\n")
     print(fold_summary(detail).to_string(index=False))
     print("\nper fold:\n")
-    columnas = ["split", "modelo", "ciudad_prueba", "n_prueba", "kappa", "spearman"]
-    print(detail[columnas].round(3).to_string(index=False))
+    columns = ["set", "model", "test_city", "n_test", "kappa", "spearman"]
+    print(detail[columns].round(3).to_string(index=False))
 
     if args.output:
         detail.to_csv(args.output, index=False)
@@ -186,28 +186,31 @@ def cmd_baseline(args: argparse.Namespace) -> int:
 
 
 def cmd_diagnostics(args: argparse.Namespace) -> int:
-    """Reporta, por split de features, si describen la ciudad o el rezago."""
-    origin = Path(args.features or DATA_ROOT / f"rasgos_{args.sensor}.parquet")
+    """Reports, per feature set, whether the features describe the city or the deprivation."""
+    origin = Path(args.features or DATA_ROOT / f"features_{args.sensor}.parquet")
     if not origin.exists():
         print(f"{origin} is missing. Run first: satinsight features {args.sensor}", file=sys.stderr)
         return 1
 
     table = pd.read_parquet(origin)
-    print(f"\n{len(table)} AGEB · {table['ciudad'].nunique()} cities\n")
+    print(f"\n{len(table)} AGEB · {table['city'].nunique()} cities\n")
     print("Ratio of the variance the city explains to the one the grade explains.")
     print("Above one, the feature describes where it was measured more than what.\n")
 
-    for split in ("cobertura", "densidad", "textura"):
-        detail = transfer_diagnostics(table, split).dropna(subset=["ratio"])
+    for feature_set in ("cover", "intensity", "texture"):
+        detail = transfer_diagnostics(table, feature_set).dropna(subset=["ratio"])
         if detail.empty:
             continue
         low, mid, high = detail["ratio"].quantile([0.25, 0.5, 0.75])
         worst = ", ".join(detail.head(3)["feature"])
-        print(f"  {split:<10} n={len(detail):<3} quartiles {low:>6.1f} /{mid:>6.1f} /{high:>6.1f}")
+        print(
+            f"  {feature_set:<10} n={len(detail):<3} "
+            f"quartiles {low:>6.1f} /{mid:>6.1f} /{high:>6.1f}"
+        )
         print(f"  {'':<10} worst: {worst}")
 
     print(
-        "\nSe lee junto con la reliability por mitades, nunca solo: un rasgo que es ruido "
+        "\nRead beside the split-half reliability, never alone: a feature that is noise "
         "comes out with a low ratio\nbecause noise correlates with nothing."
     )
     return 0
@@ -216,12 +219,12 @@ def cmd_diagnostics(args: argparse.Namespace) -> int:
 def cmd_figures(args: argparse.Namespace) -> int:
     """Regenerates the phase one figures from the composite cache."""
     destination = Path(args.output)
-    modality_panel(args.city, destination / "f1_brazos.png")
+    modality_panel(args.city, destination / "f1_modalities.png")
     ageb_panel(args.city, destination / "f2_agebs.png")
     for sensor in SENSORS:
-        contrast_panel(args.city, sensor, destination / f"f3_contraste_{sensor}.png")
-    national_map(destination / "f4_nacional.png")
-    agebs_by_city_map(destination / "f5_agebs_ciudades.png")
+        contrast_panel(args.city, sensor, destination / f"f3_contrast_{sensor}.png")
+    national_map(destination / "f4_national.png")
+    agebs_by_city_map(destination / "f5_agebs_by_city.png")
     print(f"figures of {args.city} → {destination}")
     return 0
 
@@ -229,8 +232,8 @@ def cmd_figures(args: argparse.Namespace) -> int:
 def cmd_progress(args: argparse.Namespace) -> int:
     """Reports how many cities of the set already have both composites.
 
-    National compositing takes days and outlives the session that launched it, so it takes
-    falta poder consultarla desde cualquier otra.
+    National compositing takes days and outlives the session that launched it, so its
+    progress has to be readable from any other session.
     """
     from satinsight.agebs import cities_by_size
     from satinsight.cache import composite_path
@@ -239,8 +242,8 @@ def cmd_progress(args: argparse.Namespace) -> int:
     root = DATA_ROOT / "composites"
     complete, partial, missing = [], [], []
     for key in catalogue:
-        hechos = [s for s in SENSORS if composite_path(key, s, root).exists()]
-        destination = complete if len(hechos) == len(SENSORS) else partial if hechos else missing
+        done = [s for s in SENSORS if composite_path(key, s, root).exists()]
+        destination = complete if len(done) == len(SENSORS) else partial if done else missing
         destination.append(key)
 
     size = sum(p.stat().st_size for p in root.glob("*.tif")) / 1e9 if root.exists() else 0
@@ -254,7 +257,7 @@ def cmd_progress(args: argparse.Namespace) -> int:
 
 
 def cmd_bags(args: argparse.Namespace) -> int:
-    """Tesela cities y arma sus bags MIL, sin codificar los parches."""
+    """Tiles cities and assembles their MIL bags, without encoding the patches."""
     from satinsight.agebs import cities_by_size
     from satinsight.dataset import build_city
 
@@ -270,13 +273,13 @@ def cmd_bags(args: argparse.Namespace) -> int:
                 key, args.sensor, encoder=None, size=args.size, catalogue=catalogue
             )
         except Exception as e:
-            print(f"FALLO {key}: {type(e).__name__}: {e}")
+            print(f"FAIL {key}: {type(e).__name__}: {e}")
             continue
         bags = pd.read_parquet(outputs["bags"])
         instances = pd.read_parquet(outputs["instances"])
         print(f"{key}: {len(bags)} bags, {len(instances)} instances")
         done += 1
-    print(f"\n{done} de {len(keys)} cities")
+    print(f"\n{done} of {len(keys)} cities")
     return 0
 
 
@@ -286,17 +289,17 @@ def cmd_partition(args: argparse.Namespace) -> int:
 
     partition = build_split(force=args.force, proportions=tuple(args.proportions))
     summary = partition.groupby("split").agg(
-        cities=("ciudad", "size"),
+        cities=("city", "size"),
         agebs=("n_agebs", "sum"),
-        rezago_medio=("stratum_value", "mean"),
+        mean_deprivation=("stratum_value", "mean"),
     )
-    summary["porcentaje"] = 100 * summary.cities / summary.cities.sum()
+    summary["percent"] = 100 * summary.cities / summary.cities.sum()
     print(summary.round(2).to_string())
     return 0
 
 
 def cmd_vectors(args: argparse.Namespace) -> int:
-    """Codifica los parches con el modelo fundacional congelado."""
+    """Encodes the patches with the frozen foundation model."""
     from satinsight.agebs import cities_by_size
     from satinsight.dataset import build_city
     from satinsight.encoders import DofaEncoder
@@ -314,18 +317,18 @@ def cmd_vectors(args: argparse.Namespace) -> int:
             )
             print(f"{key}: {outputs['vectors'].name}")
         except Exception as e:
-            print(f"FALLO {key}: {type(e).__name__}: {e}")
+            print(f"FAIL {key}: {type(e).__name__}: {e}")
     return 0
 
 
 def cmd_reliability(args: argparse.Namespace) -> int:
-    """Mide sobre todas las cities si cada rasgo se reproduce al partir la AGEB en dos."""
+    """Measures over every city whether each feature reproduces when the AGEB is split in two."""
     from satinsight.pipeline import reliability_of_cities
 
     summary = reliability_of_cities(args.sensor, tuple(args.cities) or None)
-    destination = Path(args.output or DATA_ROOT / f"fiabilidad_{args.sensor}.csv")
+    destination = Path(args.output or DATA_ROOT / f"reliability_{args.sensor}.csv")
     summary.to_csv(destination, index=False)
-    print(f"{len(summary)} features sobre {int(summary.cities.max())} cities → {destination}")
+    print(f"{len(summary)} features over {int(summary.cities.max())} cities → {destination}")
     print(summary.head(5).round(3).to_string(index=False))
     print("  ...")
     print(summary.tail(5).round(3).to_string(index=False))
@@ -335,7 +338,7 @@ def cmd_reliability(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="satinsight", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose logging")
-    sub = parser.add_subparsers(dest="comando", required=True)
+    sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("aoi", help="lists the pilot boxes").set_defaults(func=cmd_aoi)
 
@@ -375,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
     base.add_argument("--features", help="parquet of already extracted features")
     base.add_argument("--output", help="csv to leave the per-fold detail in")
     base.add_argument(
-        "--estandarizar",
+        "--standardise",
         action="store_true",
         help="centres each feature within its city; runs as an ablation",
     )

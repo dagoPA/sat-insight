@@ -3,69 +3,69 @@ import pytest
 from satinsight.catalog import by_cloud_cover, cloud_summary, dominant_orbit, group_by_orbit
 
 
-class EscenaFalsa:
-    """Sustituto mínimo de pystac.Item para probar la lógica pura del módulo."""
+class FakeScene:
+    """Minimal stand-in for pystac.Item, to test the pure logic of the module."""
 
-    def __init__(self, identificador: str, **propiedades):
-        self.id = identificador
-        self.properties = propiedades
-
-
-def optica(identificador, nubes):
-    return EscenaFalsa(identificador, **{"eo:cloud_cover": nubes})
+    def __init__(self, identifier: str, **properties):
+        self.id = identifier
+        self.properties = properties
 
 
-def sar(identificador, estado, relativa):
-    return EscenaFalsa(
-        identificador,
-        **{"sat:orbit_state": estado, "sat:relative_orbit": relativa},
+def optical(identifier, cloud_cover):
+    return FakeScene(identifier, **{"eo:cloud_cover": cloud_cover})
+
+
+def sar(identifier, state, relative):
+    return FakeScene(
+        identifier,
+        **{"sat:orbit_state": state, "sat:relative_orbit": relative},
     )
 
 
-def test_resumen_nubes_calcula_proporciones():
-    escenas = [optica(f"e{i}", n) for i, n in enumerate([0, 10, 55, 60, 85, 90, 95, 99])]
-    resumen = cloud_summary(escenas)
-    assert resumen["scenes"] == 8
-    assert resumen["minimum"] == 0
-    assert resumen["maximum"] == 99
-    assert resumen["pct_over_50"] == 75
-    assert resumen["pct_over_80"] == 50
+def test_cloud_summary_computes_the_shares():
+    scenes = [optical(f"e{i}", n) for i, n in enumerate([0, 10, 55, 60, 85, 90, 95, 99])]
+    summary = cloud_summary(scenes)
+    assert summary["scenes"] == 8
+    assert summary["minimum"] == 0
+    assert summary["maximum"] == 99
+    assert summary["pct_over_50"] == 75
+    assert summary["pct_over_80"] == 50
 
 
-def test_resumen_nubes_sin_escenas_falla():
+def test_cloud_summary_without_scenes_fails():
     with pytest.raises(ValueError, match="no scenes to summarise"):
         cloud_summary([])
 
 
-def test_por_nubosidad_ordena_ascendente():
-    escenas = [optica("a", 80), optica("b", 5), optica("c", 40)]
-    assert [e.id for e in by_cloud_cover(escenas)] == ["b", "c", "a"]
+def test_by_cloud_cover_sorts_ascending():
+    scenes = [optical("a", 80), optical("b", 5), optical("c", 40)]
+    assert [e.id for e in by_cloud_cover(scenes)] == ["b", "c", "a"]
 
 
-def test_agrupar_por_orbita_separa_geometrias():
-    escenas = [
+def test_group_by_orbit_separates_geometries():
+    scenes = [
         sar("a", "ascending", 99),
         sar("b", "descending", 99),
         sar("c", "ascending", 99),
         sar("d", "ascending", 143),
     ]
-    grupos = group_by_orbit(escenas)
-    assert len(grupos) == 3
-    assert len(grupos[("ascending", 99)]) == 2
+    groups = group_by_orbit(scenes)
+    assert len(groups) == 3
+    assert len(groups[("ascending", 99)]) == 2
 
 
-def test_orbita_dominante_elige_la_mas_poblada():
-    escenas = [
+def test_dominant_orbit_picks_the_most_populated():
+    scenes = [
         sar("a", "ascending", 99),
         sar("b", "descending", 41),
         sar("c", "descending", 41),
         sar("d", "descending", 41),
     ]
-    clave, seleccion = dominant_orbit(escenas)
-    assert clave == ("descending", 41)
-    assert len(seleccion) == 3
+    key, selection = dominant_orbit(scenes)
+    assert key == ("descending", 41)
+    assert len(selection) == 3
 
 
-def test_orbita_dominante_sin_escenas_falla():
+def test_dominant_orbit_without_scenes_fails():
     with pytest.raises(ValueError, match="no SAR scenes to group"):
         dominant_orbit([])

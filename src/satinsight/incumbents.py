@@ -164,7 +164,7 @@ def ensure_ghsl(
     the coast legitimately asks for tiles that were never published.
     """
     spec = GHSL_PRODUCTS[product]
-    folder = root / "externos" / "ghsl" / product
+    folder = root / "external" / "ghsl" / product
     folder.mkdir(parents=True, exist_ok=True)
     paths = []
     for row, col in tiles:
@@ -202,7 +202,7 @@ def ensure_nightlights(root: Path = DATA_ROOT, *, force: bool = False) -> list[P
     Figshare is served from behind a WAF that challenges browser user agents, so this one
     download announces itself as a script.
     """
-    folder = root / "externos" / "nightlights"
+    folder = root / "external" / "nightlights"
     path = download(
         NIGHTLIGHTS_URL,
         folder / NIGHTLIGHTS_NAME,

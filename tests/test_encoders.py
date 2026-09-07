@@ -7,43 +7,43 @@ from satinsight.encoders import WAVELENGTHS_UM, extract, load, normalize, save
 from satinsight.tiling import grid
 
 
-class EncoderFalso:
-    """Devuelve la media de cada canal, para poder comprobar qué recibió."""
+class FakeEncoder:
+    """Returns the mean of each channel, so what it received can be checked."""
 
     dim = 2
     tokens = 196
 
     def __init__(self):
-        self.longitudes = None
-        self.lotes = 0
+        self.wavelengths = None
+        self.batches = 0
 
     def embed(self, batch, wavelengths):
-        self.longitudes = wavelengths
-        self.lotes += 1
+        self.wavelengths = wavelengths
+        self.batches += 1
         return batch.mean(axis=(2, 3)).astype("float32")
 
     def embed_tokens(self, batch, wavelengths):
-        """Un vector por token, con el índice del token en la primera componente."""
-        self.longitudes = wavelengths
-        self.lotes += 1
+        """One vector per token, with the token index in the first component."""
+        self.wavelengths = wavelengths
+        self.batches += 1
         n = batch.shape[0]
-        salida = np.zeros((n, self.tokens, self.dim), dtype="float32")
-        salida[..., 0] = np.arange(self.tokens)[None, :]
-        salida[..., 1] = batch.mean(axis=(2, 3))[:, :1]
-        return salida
+        output = np.zeros((n, self.tokens, self.dim), dtype="float32")
+        output[..., 0] = np.arange(self.tokens)[None, :]
+        output[..., 1] = batch.mean(axis=(2, 3))[:, :1]
+        return output
 
 
-def bandas(alto=224, ancho=448):
+def bands(height=224, width=448):
     return {
-        "vv": np.full((alto, ancho), 0.1, dtype="float32"),
-        "vh": np.full((alto, ancho), 0.05, dtype="float32"),
+        "vv": np.full((height, width), 0.1, dtype="float32"),
+        "vh": np.full((height, width), 0.05, dtype="float32"),
     }
 
 
 def test_normalize_lands_inside_the_unit_range():
     patch = np.stack([np.full((8, 8), 0.1), np.full((8, 8), 0.05)]).astype("float32")
-    salida = normalize(patch, ["vv", "vh"])
-    assert salida.min() >= 0.0 and salida.max() <= 1.0
+    output = normalize(patch, ["vv", "vh"])
+    assert output.min() >= 0.0 and output.max() <= 1.0
 
 
 def test_normalize_fills_holes_with_the_middle_of_the_range():
@@ -57,57 +57,57 @@ def test_normalize_checks_the_channel_names_match():
 
 
 def test_extract_returns_one_vector_per_token():
-    b = bandas()
-    ventanas = grid((224, 448), size=224)
-    encoder = EncoderFalso()
-    matriz, tokens = extract(b, ventanas, encoder, order=["vv", "vh"], batch=1)
-    assert len(ventanas) == 2
-    assert matriz.shape == (len(tokens), 2)
+    b = bands()
+    windows = grid((224, 448), size=224)
+    encoder = FakeEncoder()
+    matrix, tokens = extract(b, windows, encoder, order=["vv", "vh"], batch=1)
+    assert len(windows) == 2
+    assert matrix.shape == (len(tokens), 2)
     assert len(tokens) == 2 * 196
     assert all(t.size == 16 for t in tokens)
 
 
 def test_each_vector_keeps_the_token_it_came_from():
-    """La fila i tiene que corresponder al token i, no a otro de la misma ventana."""
-    b = bandas()
-    ventanas = grid((224, 448), size=224)
-    matriz, tokens = extract(b, ventanas, EncoderFalso(), order=["vv", "vh"])
-    esperado = [i % 196 for i in range(len(tokens))]
-    assert matriz[:, 0].astype(int).tolist() == esperado
+    """Row i has to correspond to token i, not to another of the same window."""
+    b = bands()
+    windows = grid((224, 448), size=224)
+    matrix, tokens = extract(b, windows, FakeEncoder(), order=["vv", "vh"])
+    expected = [i % 196 for i in range(len(tokens))]
+    assert matrix[:, 0].astype(int).tolist() == expected
 
 
 def test_extract_hands_over_the_wavelength_of_each_channel_in_order():
-    encoder = EncoderFalso()
-    extract(bandas(224, 224), grid((224, 224), 224), encoder, order=["vh", "vv"])
-    assert encoder.longitudes == [WAVELENGTHS_UM["vh"], WAVELENGTHS_UM["vv"]]
+    encoder = FakeEncoder()
+    extract(bands(224, 224), grid((224, 224), 224), encoder, order=["vh", "vv"])
+    assert encoder.wavelengths == [WAVELENGTHS_UM["vh"], WAVELENGTHS_UM["vv"]]
 
 
 def test_extract_refuses_a_channel_with_no_wavelength():
-    b = bandas()
-    b["inventado"] = np.zeros((224, 448), "float32")
-    with pytest.raises(KeyError, match="inventado"):
-        extract(b, grid((224, 448), 224), EncoderFalso(), order=["inventado"])
+    b = bands()
+    b["invented"] = np.zeros((224, 448), "float32")
+    with pytest.raises(KeyError, match="invented"):
+        extract(b, grid((224, 448), 224), FakeEncoder(), order=["invented"])
 
 
 def test_extract_on_no_windows_returns_an_empty_matrix():
-    matriz, tokens = extract(bandas(), [], EncoderFalso(), order=["vv", "vh"])
-    assert matriz.shape == (0, 2) and tokens == []
+    matrix, tokens = extract(bands(), [], FakeEncoder(), order=["vv", "vh"])
+    assert matrix.shape == (0, 2) and tokens == []
 
 
 def test_save_and_load_round_trip(tmp_path):
-    vectores = np.random.default_rng(0).random((7, 5)).astype("float32")
-    ruta = save(vectores, tmp_path / "x.npz", tile=np.arange(7))
-    leidos, etiquetas = load(ruta)
-    assert leidos.shape == vectores.shape
-    assert np.allclose(leidos, vectores, atol=1e-3)
-    assert (etiquetas["tile"] == np.arange(7)).all()
+    vectors = np.random.default_rng(0).random((7, 5)).astype("float32")
+    path = save(vectors, tmp_path / "x.npz", tile=np.arange(7))
+    read_back, labels = load(path)
+    assert read_back.shape == vectors.shape
+    assert np.allclose(read_back, vectors, atol=1e-3)
+    assert (labels["tile"] == np.arange(7)).all()
 
 
 def test_string_labels_survive_the_round_trip(tmp_path):
-    """Las claves de AGEB llegan como texto y no deben obligar a leer con pickle."""
+    """AGEB keys arrive as text and must not force reading with pickle."""
     import pandas as pd
 
-    claves = pd.Series(["0710100010001", "0710100010002"]).to_numpy()
-    ruta = save(np.zeros((2, 3), "float32"), tmp_path / "y.npz", cvegeo=claves)
-    _, etiquetas = load(ruta)
-    assert list(etiquetas["cvegeo"]) == ["0710100010001", "0710100010002"]
+    keys = pd.Series(["0710100010001", "0710100010002"]).to_numpy()
+    path = save(np.zeros((2, 3), "float32"), tmp_path / "y.npz", cvegeo=keys)
+    _, labels = load(path)
+    assert list(labels["cvegeo"]) == ["0710100010001", "0710100010002"]

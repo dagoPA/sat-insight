@@ -1,4 +1,4 @@
-"""Pruebas del cacheo de compuestos. Escriben en tmp_path, nunca en la red."""
+"""Tests of the composite cache. They write to tmp_path, never to the network."""
 
 import numpy as np
 import pytest
@@ -10,80 +10,80 @@ BBOX = (-93.135, 16.740, -93.095, 16.768)
 
 
 @pytest.fixture
-def malla():
+def city_grid():
     return grid_from_bbox(BBOX, "EPSG:32615", resolution_m=100)
 
 
-def bandas_de(malla, nombres=("vv", "vh")):
+def bands_of(city_grid, names=("vv", "vh")):
     rng = np.random.default_rng(0)
-    return {n: rng.random(malla.shape).astype("float32") for n in nombres}
+    return {n: rng.random(city_grid.shape).astype("float32") for n in names}
 
 
-def test_ida_y_vuelta_conserva_los_valores(tmp_path, malla):
-    original = bandas_de(malla)
-    destino = save(original, malla, tmp_path / "x.tif")
-    recuperadas, _, _ = load(destino)
+def test_round_trip_keeps_the_values(tmp_path, city_grid):
+    original = bands_of(city_grid)
+    destination = save(original, city_grid, tmp_path / "x.tif")
+    recovered, _, _ = load(destination)
 
-    assert set(recuperadas) == set(original)
-    for nombre, arreglo in original.items():
-        np.testing.assert_allclose(recuperadas[nombre], arreglo, rtol=1e-6)
-
-
-def test_ida_y_vuelta_conserva_la_georreferencia(tmp_path, malla):
-    save(bandas_de(malla), malla, tmp_path / "x.tif")
-    _, recuperada, _ = load(tmp_path / "x.tif")
-
-    assert recuperada.shape == malla.shape
-    assert recuperada.crs == malla.crs
-    assert recuperada.transform == pytest.approx(malla.transform, abs=1e-6)
+    assert set(recovered) == set(original)
+    for name, array in original.items():
+        np.testing.assert_allclose(recovered[name], array, rtol=1e-6)
 
 
-def test_el_orden_de_las_bandas_se_conserva(tmp_path, malla):
-    original = bandas_de(malla, ("B04", "B03", "B02", "B08"))
-    save(original, malla, tmp_path / "x.tif")
-    recuperadas, _, _ = load(tmp_path / "x.tif")
-    assert list(recuperadas) == list(original)
+def test_round_trip_keeps_the_georeference(tmp_path, city_grid):
+    save(bands_of(city_grid), city_grid, tmp_path / "x.tif")
+    _, recovered, _ = load(tmp_path / "x.tif")
+
+    assert recovered.shape == city_grid.shape
+    assert recovered.crs == city_grid.crs
+    assert recovered.transform == pytest.approx(city_grid.transform, abs=1e-6)
 
 
-def test_las_etiquetas_sobreviven(tmp_path, malla):
-    save(bandas_de(malla), malla, tmp_path / "x.tif", scenes_used=17, orbit="ascendente · 99")
-    _, _, etiquetas = load(tmp_path / "x.tif")
-    assert etiquetas["scenes_used"] == 17
-    assert etiquetas["orbit"] == "ascendente · 99"
+def test_band_order_is_kept(tmp_path, city_grid):
+    original = bands_of(city_grid, ("B04", "B03", "B02", "B08"))
+    save(original, city_grid, tmp_path / "x.tif")
+    recovered, _, _ = load(tmp_path / "x.tif")
+    assert list(recovered) == list(original)
 
 
-def test_los_nan_sobreviven(tmp_path, malla):
-    bandas = bandas_de(malla, ("vv",))
-    bandas["vv"][0, 0] = np.nan
-    save(bandas, malla, tmp_path / "x.tif")
-    recuperadas, _, _ = load(tmp_path / "x.tif")
-    assert np.isnan(recuperadas["vv"][0, 0])
+def test_tags_survive(tmp_path, city_grid):
+    save(bands_of(city_grid), city_grid, tmp_path / "x.tif", scenes_used=17, orbit="ascending · 99")
+    _, _, tags = load(tmp_path / "x.tif")
+    assert tags["scenes_used"] == 17
+    assert tags["orbit"] == "ascending · 99"
 
 
-def test_guardar_sin_bandas_falla(tmp_path, malla):
+def test_nans_survive(tmp_path, city_grid):
+    bands = bands_of(city_grid, ("vv",))
+    bands["vv"][0, 0] = np.nan
+    save(bands, city_grid, tmp_path / "x.tif")
+    recovered, _, _ = load(tmp_path / "x.tif")
+    assert np.isnan(recovered["vv"][0, 0])
+
+
+def test_saving_without_bands_fails(tmp_path, city_grid):
     with pytest.raises(ValueError, match="no bands to save"):
-        save({}, malla, tmp_path / "x.tif")
+        save({}, city_grid, tmp_path / "x.tif")
 
 
-def test_bandas_de_formas_distintas_fallan(tmp_path, malla):
-    bandas = bandas_de(malla, ("vv",))
-    bandas["vh"] = np.zeros((3, 3), dtype="float32")
+def test_bands_of_different_shapes_fail(tmp_path, city_grid):
+    bands = bands_of(city_grid, ("vv",))
+    bands["vh"] = np.zeros((3, 3), dtype="float32")
     with pytest.raises(ValueError, match="do not share a shape"):
-        save(bandas, malla, tmp_path / "x.tif")
+        save(bands, city_grid, tmp_path / "x.tif")
 
 
-def test_forma_que_no_coincide_con_la_malla_falla(tmp_path, malla):
-    bandas = {"vv": np.zeros((5, 5), dtype="float32")}
+def test_a_shape_that_does_not_match_the_grid_fails(tmp_path, city_grid):
+    bands = {"vv": np.zeros((5, 5), dtype="float32")}
     with pytest.raises(ValueError, match="does not match the grid"):
-        save(bandas, malla, tmp_path / "x.tif")
+        save(bands, city_grid, tmp_path / "x.tif")
 
 
-def test_la_ruta_distingue_ciudad_y_sensor(tmp_path):
+def test_the_path_tells_city_and_sensor_apart(tmp_path):
     a = composite_path("tuxtla", "s1", tmp_path)
     b = composite_path("tuxtla", "s2", tmp_path)
     assert a != b
     assert a.suffix == ".tif"
 
 
-def test_existe_reporta_ausencia(tmp_path):
+def test_exists_reports_absence(tmp_path):
     assert not exists("merida", "s1", tmp_path)

@@ -20,11 +20,17 @@ from satinsight.download import DATA_ROOT, ensure_coneval, ensure_inegi, urban_a
 
 log = logging.getLogger(__name__)
 
-GRADES = ("Muy bajo", "Bajo", "Medio", "Alto", "Muy alto")
-"""The five classes of the Grado de Rezago Social, in their natural order.
+GRADES = ("Very low", "Low", "Medium", "High", "Very high")
+"""The five classes of the Grado de Rezago Social, in their natural order."""
 
-The labels keep the Spanish CONEVAL publishes them in: they are the values of a published
-dataset, not text of ours, and translating them would break the join with the workbook."""
+CONEVAL_GRADES = {
+    "Muy bajo": "Very low",
+    "Bajo": "Low",
+    "Medio": "Medium",
+    "Alto": "High",
+    "Muy alto": "Very high",
+}
+"""How CONEVAL spells the five grades in the workbook, mapped once at load time."""
 
 ORDINAL = {grade: i for i, grade in enumerate(GRADES)}
 
@@ -50,18 +56,18 @@ INDICATORS = (
 """The seventeen deprivation indicators, in the order the workbook brings them."""
 
 CONEVAL_COLUMNS = (
-    "cve_ent",
-    "entidad",
-    "cve_mun",
-    "municipio",
-    "cve_loc",
-    "localidad",
+    "state_key",
+    "state_name",
+    "municipality_key",
+    "municipality_name",
+    "locality_key",
+    "locality_name",
     "folio",
     "cvegeo",
-    "poblacion",
-    "viviendas",
+    "population",
+    "dwellings",
     *INDICATORS,
-    "grado",
+    "grade",
 )
 
 HEADER_ROWS = 6
@@ -127,16 +133,17 @@ def load_grs(root: Path = DATA_ROOT, *, use_cache: bool = True) -> pd.DataFrame:
         workbook, skiprows=HEADER_ROWS, header=None, names=list(CONEVAL_COLUMNS), dtype=str
     )
 
-    numeric = ["poblacion", "viviendas", *INDICATORS]
+    numeric = ["population", "dwellings", *INDICATORS]
     table[numeric] = table[numeric].apply(pd.to_numeric, errors="coerce")
-    table["grado"] = table["grado"].str.strip()
+    table["grade"] = table["grade"].str.strip()
 
-    unknown = set(table["grado"].dropna().unique()) - set(GRADES)
+    unknown = set(table["grade"].dropna().unique()) - set(CONEVAL_GRADES)
     if unknown:
         raise ValueError(f"unexpected grades in the CONEVAL workbook: {sorted(unknown)}")
-    table["ordinal"] = table["grado"].map(ORDINAL).astype("Int8")
+    table["grade"] = table["grade"].map(CONEVAL_GRADES)
+    table["ordinal"] = table["grade"].map(ORDINAL).astype("Int8")
 
-    table = table.dropna(subset=["cvegeo", "grado"])
+    table = table.dropna(subset=["cvegeo", "grade"])
     cache.parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(cache, index=False)
     log.info("%d urban AGEB with a grade", len(table))
@@ -231,7 +238,7 @@ def agebs_of_city(
     labels = load_grs(root)
 
     joined = geometry.merge(
-        labels.drop(columns=["cve_ent", "cve_mun", "cve_loc", "folio"]),
+        labels.drop(columns=["state_key", "municipality_key", "locality_key", "folio"]),
         on="cvegeo",
         how="inner",
     )
@@ -240,25 +247,25 @@ def agebs_of_city(
         city.name,
         len(geometry),
         len(joined),
-        joined["cve_mun"].nunique() if len(joined) else 0,
+        joined["municipality_key"].nunique() if len(joined) else 0,
     )
 
     if min_population:
         before = len(joined)
-        joined = joined[joined["poblacion"] >= min_population]
+        joined = joined[joined["population"] >= min_population]
         log.info(
             "dropped %d AGEB with fewer than %d inhabitants", before - len(joined), min_population
         )
 
-    joined["ciudad"] = city.key
+    joined["city"] = city.key
     return joined.reset_index(drop=True)
 
 
 def grade_summary(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     """Counts AGEB and population per grade, in the ordinal order of the classes."""
     counts = (
-        agebs.groupby("grado", observed=True)
-        .agg(agebs=("cvegeo", "size"), poblacion=("poblacion", "sum"))
+        agebs.groupby("grade", observed=True)
+        .agg(agebs=("cvegeo", "size"), population=("population", "sum"))
         .reindex(GRADES)
         .fillna(0)
         .astype(int)
@@ -336,7 +343,7 @@ def cities_extra(
     for key in base:
         bag_file = bags_dir / f"{key}.parquet"
         if bag_file.exists():
-            known |= set(pd.read_parquet(bag_file, columns=["municipio"]).municipio)
+            known |= set(pd.read_parquet(bag_file, columns=["municipality"]).municipality)
     wide = cities_by_size(min_agebs=min_agebs, root=root, stratify=True, **kwargs)
     extra: dict[str, City] = {}
     for key, city in wide.items():
@@ -382,15 +389,15 @@ def cities_by_size(
     """
     table = load_grs(root)
     counts = (
-        table.assign(high=table["grado"].isin(GRADES[3:]))
-        .groupby(["cve_ent", "cve_mun", "municipio"], observed=True)
-        .agg(agebs=("cvegeo", "size"), altos=("high", "sum"))
+        table.assign(high=table["grade"].isin(GRADES[3:]))
+        .groupby(["state_key", "municipality_key", "municipality_name"], observed=True)
+        .agg(agebs=("cvegeo", "size"), high_count=("high", "sum"))
         .reset_index()
     )
     large = counts["agebs"] >= min_agebs
     if stratify:
         deprived = (counts["agebs"] >= min_deprived) & (
-            counts["altos"] / counts["agebs"] >= deprived_share
+            counts["high_count"] / counts["agebs"] >= deprived_share
         )
         counts = counts[large | deprived]
     else:
@@ -398,15 +405,15 @@ def cities_by_size(
     counts = counts.sort_values("agebs", ascending=False)
 
     inherited = {c.municipality: key for key, c in CITIES.items()}
-    proposed = [_municipality_key(n) for n in counts["municipio"]]
+    proposed = [_municipality_key(n) for n in counts["municipality_name"]]
     repeated = {c for c in proposed if proposed.count(c) > 1}
 
     cities: dict[str, City] = {}
     for (_, row), proposal in zip(counts.iterrows(), proposed, strict=True):
-        key = inherited.get(row.cve_mun)
+        key = inherited.get(row.municipality_key)
         if key is None:
-            key = f"{proposal}{row.cve_mun}" if proposal in repeated else proposal
-        cities[key] = City(key, row.municipio, row.cve_ent, row.cve_mun)
+            key = f"{proposal}{row.municipality_key}" if proposal in repeated else proposal
+        cities[key] = City(key, row.municipality_name, row.state_key, row.municipality_key)
 
     log.info("%d cities with at least %d AGEB", len(cities), min_agebs)
     return cities

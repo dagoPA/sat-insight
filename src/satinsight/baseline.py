@@ -7,15 +7,15 @@ untouched.
 
 Hence four feature sets, in steps that answer different questions:
 
-- `cobertura`: WorldCover fractions. How much is built according to a product foreign to
+- `cover`: WorldCover fractions. How much is built according to a product foreign to
   these composites. It is the step that really tests the rurality shortcut.
-- `densidad`: first order statistics of the composites. How much and how bright.
-- `textura`: Haralick properties. How it is arranged, without the absolute level.
-- `completo`: the three together.
+- `intensity`: first order statistics of the composites. How much and how bright.
+- `texture`: Haralick properties. How it is arranged, without the absolute level.
+- `all`: the three together.
 
-If `completo` does not beat `cobertura`, the model is reading built density and nothing
-else. If it does not beat `densidad`, texture adds nothing over brightness. Both are worth
-knowing before mounting the MIL on top.
+If `all` does not beat `cover`, the model is reading built density and nothing else. If
+it does not beat `intensity`, texture adds nothing over brightness. Both are worth knowing
+before mounting the MIL on top.
 
 The partition is by city. Training and evaluating over neighbouring AGEB of the same urban
 mass would inflate the result through spatial autocorrelation.
@@ -45,35 +45,38 @@ COVER_SUFFIXES = tuple(CLASSES.values())
 """WorldCover cover fractions, the only source foreign to the composites."""
 
 SETS = {
-    "cobertura": COVER_SUFFIXES,
-    "densidad": DENSITY_SUFFIXES,
-    "textura": TEXTURE_SUFFIXES,
-    "completo": COVER_SUFFIXES + DENSITY_SUFFIXES + TEXTURE_SUFFIXES,
+    "cover": COVER_SUFFIXES,
+    "intensity": DENSITY_SUFFIXES,
+    "texture": TEXTURE_SUFFIXES,
+    "all": COVER_SUFFIXES + DENSITY_SUFFIXES + TEXTURE_SUFFIXES,
 }
 """The four sets, which answer different questions and in that order.
 
-`cobertura` asks whether deprivation is explained by how much is built according to a
-product foreign to these composites. `densidad` asks whether the brightness of the image
-itself adds anything over that. `textura` asks whether the spatial arrangement adds
-anything over brightness. Beating `cobertura` is what rules out the rurality shortcut.
-
-The keys keep their Spanish because they name columns already written to disk and quoted
-in the results tables; renaming them would orphan every measurement taken so far.
+`cover` asks whether deprivation is explained by how much is built according to a product
+foreign to these composites. `intensity` asks whether the brightness of the image itself
+adds anything over that. `texture` asks whether the spatial arrangement adds anything over
+brightness. Beating `cover` is what rules out the rurality shortcut.
 """
+
+MODELS = ("random", "majority", "classifier", "regressor")
+"""The two blind references and the two learners compared on every feature set."""
+
+NO_SET = "none"
+"""Set label the blind models report, since they ignore the features."""
 
 SEED = 0
 
 
-def columns_of_set(table: pd.DataFrame, split: str) -> list[str]:
-    """Selecciona las columns de rasgos que pertenecen a un split.
+def columns_of_set(table: pd.DataFrame, feature_set: str) -> list[str]:
+    """Selects the feature columns that belong to one set.
 
     Each column name is the channel and the statistic suffix joined by an underscore, so
     looking at the suffix is enough to classify it.
     """
-    if split not in SETS:
-        raise KeyError(f"unknown set: {split!r}. Valid: {', '.join(SETS)}")
-    sufijos = SETS[split]
-    return sorted(c for c in table.columns if any(c.endswith(f"_{s}") for s in sufijos))
+    if feature_set not in SETS:
+        raise KeyError(f"unknown set: {feature_set!r}. Valid: {', '.join(SETS)}")
+    suffixes = SETS[feature_set]
+    return sorted(c for c in table.columns if any(c.endswith(f"_{s}") for s in suffixes))
 
 
 def explained_variance(table: pd.DataFrame, column: str, factor: str) -> float:
@@ -85,33 +88,34 @@ def explained_variance(table: pd.DataFrame, column: str, factor: str) -> float:
     in the city held out.
     """
     valid = table[column].notna() & table[factor].notna()
-    values, grupos = table.loc[valid, column], table.loc[valid, factor]
+    values, groups = table.loc[valid, column], table.loc[valid, factor]
     if len(values) < 2 or values.nunique() < 2:
         return np.nan
     mean = values.mean()
-    entre = sum(len(g) * (g.mean() - mean) ** 2 for _, g in values.groupby(grupos))
+    between = sum(len(g) * (g.mean() - mean) ** 2 for _, g in values.groupby(groups))
     total = ((values - mean) ** 2).sum()
-    return float(entre / total) if total > 0 else np.nan
+    return float(between / total) if total > 0 else np.nan
 
 
 def transfer_diagnostics(
     table: pd.DataFrame,
-    split: str,
+    feature_set: str,
     *,
-    group_column: str = "ciudad",
-    target_column: str = "grado",
+    group_column: str = "city",
+    target_column: str = "grade",
 ) -> pd.DataFrame:
     """For each feature, how much variance the city explains against the grade.
 
     The ratio between the two is what matters. Above one, the feature describes where the
     measurement was taken better than what was measured.
 
-    Se lee junto con `split_half_reliability` y nunca sola. Un rasgo que es puro ruido sale
-    with a low ratio, noise correlates with the city no more than with anything else, so a
-    good ratio only means something in a feature that already proved it reproduces.
+    It is read beside `split_half_reliability` and never alone. A feature that is pure noise
+    comes out with a low ratio, noise correlates with the city no more than with anything
+    else, so a good ratio only means something in a feature that already proved it
+    reproduces.
     """
     rows = []
-    for column in columns_of_set(table, split):
+    for column in columns_of_set(table, feature_set):
         per_city = explained_variance(table, column, group_column)
         per_grade = explained_variance(table, column, target_column)
         rows.append(
@@ -126,7 +130,7 @@ def transfer_diagnostics(
 
 
 def standardise_by_group(
-    table: pd.DataFrame, columns: list[str], group_column: str = "ciudad"
+    table: pd.DataFrame, columns: list[str], group_column: str = "city"
 ) -> pd.DataFrame:
     """Takes each feature to zero mean and unit deviation within each city.
 
@@ -138,11 +142,11 @@ def standardise_by_group(
     cities that was in fact a signal of deprivation. A whole city poorer than another ends
     up centred just like the rich one. That is why it is evaluated as a declared ablation.
 
-    A feature constant within a city ends up centred at zero. The distinction matters: several
-    clases de cobertura valen cero en todas las AGEB, nieve,
-    musgo, manglar tierra adentro, y convertirlas en columns enteramente nulas rompe el
-    model's binning. The nulls that really are absent data, such as the texture of an AGEB
-    too small, are kept so the model treats them as missing.
+    A feature constant within a city ends up centred at zero. The distinction matters:
+    several cover classes are zero in every AGEB, snow, moss, inland mangrove, and turning
+    them into entirely null columns breaks the model's binning. The nulls that really are
+    absent data, such as the texture of an AGEB too small, are kept so the model treats
+    them as missing.
     """
     output = table.copy()
     values = output[columns]
@@ -160,84 +164,84 @@ def _metrics(truth: np.ndarray, prediction: np.ndarray) -> dict[str, float]:
     correlation = spearmanr(truth, prediction).statistic if len(set(prediction)) > 1 else np.nan
     return {
         "kappa": float(cohen_kappa_score(truth, prediction, weights="quadratic")),
-        "exactitud": float(np.mean(truth == prediction)),
+        "accuracy": float(np.mean(truth == prediction)),
         "f1_macro": float(f1_score(truth, prediction, average="macro", zero_division=0)),
         "spearman": float(correlation),
         "mae_ordinal": float(np.mean(np.abs(truth - prediction))),
     }
 
 
-def _predict(name: str, x_entrena, y_entrena, x_prueba) -> np.ndarray:
-    """Ajusta uno de los modelos comparados y devuelve predicciones ordinales enteras."""
-    if name == "rng":
-        modelo = DummyClassifier(strategy="stratified", random_state=SEED)
-    elif name == "moda":
-        modelo = DummyClassifier(strategy="most_frequent")
-    elif name == "clasificador":
-        modelo = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
-    elif name == "regresor":
-        modelo = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
+def _predict(name: str, x_train, y_train, x_test) -> np.ndarray:
+    """Fits one of the compared models and returns integer ordinal predictions."""
+    if name == "random":
+        model = DummyClassifier(strategy="stratified", random_state=SEED)
+    elif name == "majority":
+        model = DummyClassifier(strategy="most_frequent")
+    elif name == "classifier":
+        model = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
+    elif name == "regressor":
+        model = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
     else:
-        raise KeyError(f"modelo desconocido: {name!r}")
+        raise KeyError(f"unknown model: {name!r}. Valid: {', '.join(MODELS)}")
 
-    modelo.fit(x_entrena, y_entrena)
-    raw = modelo.predict(x_prueba)
-    if name == "regresor":
+    model.fit(x_train, y_train)
+    raw = model.predict(x_test)
+    if name == "regressor":
         raw = np.clip(np.round(raw), 0, len(GRADES) - 1)
     return raw.astype(int)
 
 
 def evaluate(
     table: pd.DataFrame,
-    split: str,
-    modelo: str,
+    feature_set: str,
+    model: str,
     *,
-    group_column: str = "ciudad",
+    group_column: str = "city",
     target_column: str = "ordinal",
-    estandarizar: bool = False,
+    standardise: bool = False,
 ) -> pd.DataFrame:
     """Cross-validation leaving one city out on each fold.
 
-    Returns one row per fold, so it can be seen whether the result holds across the
-    cities o lo carga una sola.
+    Returns one row per fold, so it can be seen whether the result holds across the cities
+    or a single one carries it.
 
-    Con `estandarizar` cada rasgo se centra dentro de su ciudad antes de entrenar. Es una
+    With `standardise` each feature is centred within its city before training. It is an
     ablation and not the normal mode: it removes the radiometric drift between cities, and
     with it any level difference between them that was in fact a signal of deprivation.
     """
-    columns = columns_of_set(table, split)
+    columns = columns_of_set(table, feature_set)
     if not columns:
-        raise ValueError(f"la table no tiene columns del split {split!r}")
+        raise ValueError(f"the table has no columns of the set {feature_set!r}")
 
-    utilizable = table.dropna(subset=[target_column]).copy()
-    if estandarizar:
-        utilizable = standardise_by_group(utilizable, columns, group_column)
+    usable = table.dropna(subset=[target_column]).copy()
+    if standardise:
+        usable = standardise_by_group(usable, columns, group_column)
     rows_out = []
 
-    for ciudad in sorted(utilizable[group_column].unique()):
-        prueba = utilizable[utilizable[group_column] == ciudad]
-        train = utilizable[utilizable[group_column] != ciudad]
-        if train.empty or prueba.empty:
+    for city in sorted(usable[group_column].unique()):
+        test = usable[usable[group_column] == city]
+        train = usable[usable[group_column] != city]
+        if train.empty or test.empty:
             continue
 
-        y_entrena = train[target_column].astype(int).to_numpy()
-        y_prueba = prueba[target_column].astype(int).to_numpy()
+        y_train = train[target_column].astype(int).to_numpy()
+        y_test = test[target_column].astype(int).to_numpy()
         prediction = _predict(
-            modelo,
+            model,
             train[columns].to_numpy("float64"),
-            y_entrena,
-            prueba[columns].to_numpy("float64"),
+            y_train,
+            test[columns].to_numpy("float64"),
         )
 
         rows_out.append(
             {
-                "split": split,
-                "modelo": modelo,
-                "ciudad_prueba": ciudad,
-                "n_entrena": len(train),
-                "n_prueba": len(prueba),
-                "n_rasgos": len(columns),
-                **_metrics(y_prueba, prediction),
+                "set": feature_set,
+                "model": model,
+                "test_city": city,
+                "n_train": len(train),
+                "n_test": len(test),
+                "n_features": len(columns),
+                **_metrics(y_test, prediction),
             }
         )
 
@@ -246,51 +250,51 @@ def evaluate(
 
 def compare(
     table: pd.DataFrame,
-    conjuntos: tuple[str, ...] = tuple(SETS),
-    modelos: tuple[str, ...] = ("rng", "moda", "clasificador", "regresor"),
+    sets: tuple[str, ...] = tuple(SETS),
+    models: tuple[str, ...] = MODELS,
     *,
-    estandarizar: bool = False,
+    standardise: bool = False,
 ) -> pd.DataFrame:
-    """Corre la rejilla completa de conjuntos de rasgos por modelos."""
-    partes = []
-    for split in conjuntos:
-        for modelo in modelos:
-            if modelo in ("rng", "moda"):
-                if split != conjuntos[0]:
-                    continue  # ignoran los rasgos; correrlos una vez alcanza
-                ciego = evaluate(table, split, modelo, estandarizar=estandarizar)
-                ciego["split"] = "ninguno"
-                partes.append(ciego)
+    """Runs the full grid of feature sets by models."""
+    parts = []
+    for feature_set in sets:
+        for model in models:
+            if model in ("random", "majority"):
+                if feature_set != sets[0]:
+                    continue  # they ignore the features; running them once is enough
+                blind = evaluate(table, feature_set, model, standardise=standardise)
+                blind["set"] = NO_SET
+                parts.append(blind)
             else:
-                partes.append(evaluate(table, split, modelo, estandarizar=estandarizar))
-    return pd.concat(partes, ignore_index=True)
+                parts.append(evaluate(table, feature_set, model, standardise=standardise))
+    return pd.concat(parts, ignore_index=True)
 
 
 def fold_summary(detail: pd.DataFrame) -> pd.DataFrame:
     """Averages the folds and sorts by kappa, which is the deciding metric."""
-    columns = ["kappa", "exactitud", "f1_macro", "spearman", "mae_ordinal"]
-    agregado = (
-        detail.groupby(["split", "modelo"], observed=True)[columns]
+    columns = ["kappa", "accuracy", "f1_macro", "spearman", "mae_ordinal"]
+    aggregate = (
+        detail.groupby(["set", "model"], observed=True)[columns]
         .mean()
         .round(3)
         .sort_values("kappa", ascending=False)
     )
-    return agregado.reset_index()
+    return aggregate.reset_index()
 
 
 RELIABILITY_THRESHOLD = 0.60
 """Minimum correlation between the two halves of a polygon for a feature to be kept.
 
-Un rasgo que no se reproduce consigo mismo al partir la AGEB en dos measured ruido de muestreo.
-The test uses half the pixels on each side, so it underestimates the reliability of the
-whole polygon: the threshold is a conservative bound.
+A feature that does not reproduce itself when the AGEB is split in two is measuring
+sampling noise. The test uses half the pixels on each side, so it underestimates the
+reliability of the whole polygon: the threshold is a conservative bound.
 """
 
 SIZE_THRESHOLD = 0.30
 """Maximum correlation admitted between a feature and the size of the polygon behind it.
 
 The GLCM undersampling bias grows with the number of pixels, and the size of an AGEB
-correlaciona con la densidad urbana, que a su vez correlaciona con el rezago. Un rasgo muy
+correlates with urban density, which in turn correlates with deprivation. A feature tightly
 tied to area points at the target by construction.
 """
 
@@ -304,22 +308,22 @@ def select_features(
 ) -> pd.DataFrame:
     """Decides which texture features enter the model, on two independent criteria.
 
-    Los dos se aplican juntos porque cada uno solo es interpretable con el otro. Un rasgo
-    that is pure noise passes the size criterion with room to spare, because noise
+    The two are applied together because each is only interpretable with the other. A
+    feature that is pure noise passes the size criterion with room to spare, because noise
     correlates with nothing; and a very reproducible feature may be measuring the area of
     the polygon. Demanding both leaves those that reproduce and do not point at size.
 
     The thresholds are set before looking at performance, which is what avoids picking the
-    conviene al resultado.
+    ones that suit the result.
 
-    `reliability` viene de `textura.split_half_reliability` agregada sobre las cities, con
-    columns `rasgo` y `r_median`.
+    `reliability` comes from `texture.split_half_reliability` aggregated over the cities,
+    with columns `feature` and `r_median`.
     """
     reproduce = dict(zip(reliability["feature"], reliability["r_median"], strict=True))
     rows = []
-    for column in columns_of_set(table, "textura"):
-        canal = column.rsplit("_", 2)[0]
-        px_column = f"{canal}_n_px"
+    for column in columns_of_set(table, "texture"):
+        channel = column.rsplit("_", 2)[0]
+        px_column = f"{channel}_n_px"
         r_size = np.nan
         if px_column in table:
             valid = table[column].notna() & table[px_column].notna()
@@ -331,99 +335,99 @@ def select_features(
                     )[0, 1]
                 )
 
-        r_mitades = reproduce.get(column, np.nan)
-        pasa_fiabilidad = (
-            bool(r_mitades >= reliability_threshold) if r_mitades == r_mitades else False
+        r_halves = reproduce.get(column, np.nan)
+        passes_reliability = (
+            bool(r_halves >= reliability_threshold) if r_halves == r_halves else False
         )
-        pasa_tamano = bool(abs(r_size) <= size_threshold) if r_size == r_size else False
+        passes_size = bool(abs(r_size) <= size_threshold) if r_size == r_size else False
         reason = "kept"
-        if not pasa_fiabilidad:
+        if not passes_reliability:
             reason = "does not reproduce"
-        elif not pasa_tamano:
+        elif not passes_size:
             reason = "tied to size"
         rows.append(
             {
                 "feature": column,
-                "r_mitades": r_mitades,
+                "r_halves": r_halves,
                 "r_n_px": r_size,
-                "kept": pasa_fiabilidad and pasa_tamano,
+                "kept": passes_reliability and passes_size,
                 "reason": reason,
             }
         )
     return pd.DataFrame(rows)
 
 
-def sign_test(diferencias: np.ndarray) -> dict[str, float]:
-    """Prueba exacta de signos sobre las diferencias por fold.
+def sign_test(differences: np.ndarray) -> dict[str, float]:
+    """Exact sign test over the per-fold differences.
 
-    Con cinco cities hay cinco observaciones pareadas, y las AGEB dentro de una ciudad
-    are spatially correlated with each other. Treating every AGEB as independent
-    would inflate significance; the independent unit is the city.
+    With five cities there are five paired observations, and the AGEB within a city are
+    spatially correlated with each other. Treating every AGEB as independent would inflate
+    significance; the independent unit is the city.
 
-    Cinco pliegues dan 32 asignaciones de signo posibles. Con los cinco a favor, el valor p a
-    two-tailed is 2/32 = 0.0625, which is the minimum attainable at this sample size: the
-    test can **never** go below 0.05 with five cities. That is a property of the design and
-    worth reporting beside the result, because it invites reading the effect size and its
-    intervalo antes que el valor p, y a sumar cities si se quiere evidencia concluyente.
+    Five folds give 32 possible sign assignments. With all five in favour, the two-tailed p
+    value is 2/32 = 0.0625, which is the minimum attainable at this sample size: the test
+    can **never** go below 0.05 with five cities. That is a property of the design and worth
+    reporting beside the result, because it invites reading the effect size and its interval
+    before the p value, and adding cities if conclusive evidence is wanted.
     """
-    diferencias = np.asarray(diferencias, dtype="float64")
-    diferencias = diferencias[diferencias != 0]
-    n = len(diferencias)
+    differences = np.asarray(differences, dtype="float64")
+    differences = differences[differences != 0]
+    n = len(differences)
     if n == 0:
-        return {"n": 0, "a_favor": 0, "p": np.nan}
+        return {"n": 0, "in_favour": 0, "p": np.nan}
 
     from math import comb
 
-    favor = int((diferencias > 0).sum())
-    extremo = max(favor, n - favor)
-    cola = sum(comb(n, k) for k in range(extremo, n + 1))
-    return {"n": n, "a_favor": favor, "p": min(1.0, 2 * cola / 2**n)}
+    favour = int((differences > 0).sum())
+    extreme = max(favour, n - favour)
+    tail = sum(comb(n, k) for k in range(extreme, n + 1))
+    return {"n": n, "in_favour": favour, "p": min(1.0, 2 * tail / 2**n)}
 
 
 def city_interval(
     per_city: pd.DataFrame,
     column: str,
     *,
-    repeticiones: int = 10000,
-    semilla: int = SEED,
+    resamples: int = 10000,
+    seed: int = SEED,
 ) -> dict[str, float]:
-    """Intervalo de confianza de una diferencia, remuestreando cities enteras.
+    """Confidence interval of a difference, resampling whole cities.
 
-    El bootstrap por conglomerados respeta que la unidad independiente es la ciudad. Con
-    five clusters the interval comes out wide, which is the honest answer to the sample
-    size and not a defect of the method.
+    The clustered bootstrap respects that the independent unit is the city. With five
+    clusters the interval comes out wide, which is the honest answer to the sample size and
+    not a defect of the method.
     """
     values = per_city[column].to_numpy(dtype="float64")
-    rng = np.random.default_rng(semilla)
-    samples = values[rng.integers(0, len(values), size=(repeticiones, len(values)))]
-    medias = samples.mean(axis=1)
+    rng = np.random.default_rng(seed)
+    samples = values[rng.integers(0, len(values), size=(resamples, len(values)))]
+    means = samples.mean(axis=1)
     return {
         "mean": float(values.mean()),
-        "ic_bajo": float(np.percentile(medias, 2.5)),
-        "ic_alto": float(np.percentile(medias, 97.5)),
-        "fraccion_positiva": float((medias > 0).mean()),
+        "ci_low": float(np.percentile(means, 2.5)),
+        "ci_high": float(np.percentile(means, 97.5)),
+        "positive_fraction": float((means > 0).mean()),
     }
 
 
-def _scores(name: str, x_entrena, y_entrena, x_prueba):
-    """Ajusta un modelo y devuelve sus predicciones hard junto con scores continuas.
+def _scores(name: str, x_train, y_train, x_test):
+    """Fits a model and returns its hard predictions beside continuous scores.
 
     Kappa needs the predicted class and the area under the curve needs a score that orders.
-    A classifier gives one probability per class; a regressor gives a single number,
-    que ordena igual de bien y es lo que hace falta para los umbrales acumulados.
+    A classifier gives one probability per class; a regressor gives a single number, which
+    orders just as well and is what the cumulative thresholds need.
     """
-    if name == "clasificador":
-        modelo = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
-        modelo.fit(x_entrena, y_entrena)
-        probabilities = modelo.predict_proba(x_prueba)
-        return modelo.predict(x_prueba).astype(int), probabilities
-    if name == "regresor":
-        modelo = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
-        modelo.fit(x_entrena, y_entrena)
-        raw = modelo.predict(x_prueba)
+    if name == "classifier":
+        model = HistGradientBoostingClassifier(random_state=SEED, max_iter=300)
+        model.fit(x_train, y_train)
+        probabilities = model.predict_proba(x_test)
+        return model.predict(x_test).astype(int), probabilities
+    if name == "regressor":
+        model = HistGradientBoostingRegressor(random_state=SEED, max_iter=300)
+        model.fit(x_train, y_train)
+        raw = model.predict(x_test)
         hard = np.clip(np.round(raw), 0, len(GRADES) - 1).astype(int)
         return hard, raw
-    hard = _predict(name, x_entrena, y_entrena, x_prueba)
+    hard = _predict(name, x_train, y_train, x_test)
     return hard, hard.astype(float)
 
 
@@ -435,11 +439,11 @@ def auroc_one_vs_rest(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]
     that single ordering.
 
     The middle classes are punished by construction: their negatives include at once what
-    lies below and what lies above, and separating them demands carving out a
-    banda en el centro de una scale ordenada.
+    lies below and what lies above, and separating them demands carving out a band in the
+    centre of an ordered scale.
     """
     output = {}
-    for k, grado in enumerate(GRADES):
+    for k, grade in enumerate(GRADES):
         target = (truth == k).astype(int)
         if target.sum() == 0 or target.sum() == len(target):
             continue
@@ -448,17 +452,17 @@ def auroc_one_vs_rest(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]
         # the average of the five comes out at 0.5 by cancellation, looking like chance
         # where the model separates well
         mark = scores[:, k] if scores.ndim == 2 else -np.abs(scores - k)
-        output[f"auroc_{grado.lower().replace(' ', '_')}"] = float(roc_auc_score(target, mark))
+        output[f"auroc_{grade.lower().replace(' ', '_')}"] = float(roc_auc_score(target, mark))
     if output:
         output["auroc_macro"] = float(np.mean(list(output.values())))
     return output
 
 
 def auroc_cumulative(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]:
-    """Área bajo la curva de cada threshold «grado mayor o igual que k».
+    """Area under the curve of each threshold "grade at least k".
 
-        Preserva el order de la scale, cosa que una contra el resto no hace, y es la misma
-    decomposition an ordinal loss uses.
+    It preserves the order of the scale, which one against the rest does not, and it is the
+    same decomposition an ordinal loss uses.
     """
     order = scores @ np.arange(scores.shape[1]) if scores.ndim == 2 else scores
     output = {}
@@ -468,45 +472,45 @@ def auroc_cumulative(truth: np.ndarray, scores: np.ndarray) -> dict[str, float]:
             continue
         output[f"auroc_ge_{k}"] = float(roc_auc_score(target, order))
     if output:
-        output["auroc_acumulada_media"] = float(np.mean(list(output.values())))
+        output["auroc_cumulative_mean"] = float(np.mean(list(output.values())))
     return output
 
 
 def evaluate_partition(
     table: pd.DataFrame,
-    split: str,
-    modelo: str,
+    feature_set: str,
+    model: str,
     partition: pd.DataFrame,
     *,
     measure_on: str = "test",
-    group_column: str = "ciudad",
+    group_column: str = "city",
     target_column: str = "ordinal",
     resamples: int = 400,
 ) -> dict[str, float]:
     """Trains on the training cities and measures on the validation or test ones.
 
     Replaces leaving one city out per fold, which served with five cities and with a hundred
-    and thirty-eight would give as many folds each trained on 99.3% of
-    the data, where the spread between folds is almost all noise.
+    and thirty-eight would give as many folds each trained on 99.3% of the data, where the
+    spread between folds is almost all noise.
 
-    La incertidumbre sale de un remuestreo por cities dentro del split medido, porque
-    neighbouring AGEB are correlated and treating them as independent narrows the
-    intervals sin reason.
+    The uncertainty comes from resampling cities within the measured split, because
+    neighbouring AGEB are correlated and treating them as independent narrows the intervals
+    for no reason.
     """
     from satinsight.splits import cities_of
 
     if measure_on not in ("val", "test"):
-        raise KeyError(f"se measured sobre 'val' o 'test', no sobre {measure_on!r}")
-    columns = columns_of_set(table, split)
+        raise KeyError(f"measure_on must be 'val' or 'test', not {measure_on!r}")
+    columns = columns_of_set(table, feature_set)
     train = table[table[group_column].isin(cities_of(partition, "train"))]
     measured = table[table[group_column].isin(cities_of(partition, measure_on))]
     if train.empty or measured.empty:
         raise ValueError(
             f"the partition leaves {len(train)} training rows and {len(measured)} of "
-            f"{measure_on}; ¿coinciden las claves de ciudad?"
+            f"{measure_on}; do the city keys match?"
         )
 
-    prediction, scores = _scores(modelo, train[columns], train[target_column], measured[columns])
+    prediction, scores = _scores(model, train[columns], train[target_column], measured[columns])
     truth = measured[target_column].to_numpy()
     metrics = {
         **_metrics(truth, prediction),
@@ -532,39 +536,39 @@ def evaluate_partition(
         # every area under the curve gets an interval, including the per-threshold ones:
         # they are the most quoted and presenting them bare invites reading differences of
         # hundredths as if they meant something
-        for name, valor in {
+        for name, value in {
             **auroc_one_vs_rest(v, scores_of),
             **auroc_cumulative(v, scores_of),
         }.items():
-            replicates[name].append(valor)
+            replicates[name].append(value)
 
     intervals = {}
     for name, values in replicates.items():
         if values:
-            intervals[f"{name}_ic_bajo"] = float(np.percentile(values, 2.5))
-            intervals[f"{name}_ic_alto"] = float(np.percentile(values, 97.5))
+            intervals[f"{name}_ci_low"] = float(np.percentile(values, 2.5))
+            intervals[f"{name}_ci_high"] = float(np.percentile(values, 97.5))
     return {
         **metrics,
         **intervals,
-        "n_entrena": len(train),
-        "n_mide": len(measured),
-        "ciudades_mide": len(unique_cities),
+        "n_train": len(train),
+        "n_measured": len(measured),
+        "cities_measured": len(unique_cities),
     }
 
 
 def fuse(optical: pd.DataFrame, radar: pd.DataFrame, *, key: str = "cvegeo") -> pd.DataFrame:
-    """Une las tablas de las dos modalidades en una sola, por AGEB.
+    """Joins the tables of the two modalities into one, by AGEB.
 
-        The context columns, land cover, population, city, grade, come from the
-        misma fuente en ambas y se toman una vez. Las de imagen llevan el sensor en el name,
-    so they coexist without clashing.
+    The context columns, land cover, population, city, grade, come from the same source in
+    both and are taken once. The image columns carry the sensor in their name, so they
+    coexist without clashing.
 
-        Only the AGEB present in both are kept. Comparing the fusion against each modality
-        separately over different samples would mix the difference of sensor with that of which
-        rows each one evaluates.
+    Only the AGEB present in both are kept. Comparing the fusion against each modality
+    separately over different samples would mix the difference of sensor with that of which
+    rows each one evaluates.
     """
     radar_only = [c for c in radar.columns if c.startswith("s1")]
     missing = set(optical[key]) ^ set(radar[key])
     if missing:
-        log.info("%d AGEB quedan fuera por faltar en una de las dos modalidades", len(missing))
+        log.info("%d AGEB left out for missing in one of the two modalities", len(missing))
     return optical.merge(radar[[key, *radar_only]], on=key, how="inner")

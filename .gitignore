@@ -1,30 +1,33 @@
-# entorno
+# environment
 .venv/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 
-# datos descargados — se regeneran con los scripts
+# downloaded and derived data; the scripts regenerate it
 data/
-# el canon no se regenera: es el registro de resultados que el manuscrito cita y que los
-# drivers de figuras contrastan, así que viaja con el repositorio
-!data/canon_manuscrito.json
 cache/
 *.tif
 *.tiff
 *.nc
 *.zip
 
-# features extraídos por el backbone congelado
+# features extracted by the frozen backbone
 features/
 *.npy
 *.npz
 *.pt
 
-# sistema
-.DS_Store
+# run logs and the benchmark package; the package is distributed through Zenodo
+logs/
+dist/
 
-# compilados de LaTeX; el manuscrito se compila desde main.tex
+# working notes and phase-one figures, kept out of the public tree
+docs/figs/
+docs/propuesta.html
+docs/pendientes_naturecomms.md
+
+# LaTeX build outputs; the manuscript compiles from main.tex
 docs/manuscript/*.aux
 docs/manuscript/*.log
 docs/manuscript/*.out
@@ -35,5 +38,9 @@ docs/manuscript/*.fls
 docs/manuscript/*.fdb_latexmk
 docs/manuscript/*.synctex.gz
 
-# paquete del benchmark; se distribuye por Zenodo, nunca por el repo
-dist/
+# assistant instructions, local only
+CLAUDE.md
+.claude/
+
+# system
+.DS_Store

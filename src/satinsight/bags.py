@@ -42,7 +42,7 @@ def locate(tiles: list[Tile], grid: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFra
     between detached settlements.
     """
     if not tiles:
-        return pd.DataFrame(columns=["tile", "row", "col", "y0", "x0", "cvegeo", "municipio"])
+        return pd.DataFrame(columns=["tile", "row", "col", "y0", "x0", "cvegeo", "municipality"])
 
     points = gpd.GeoDataFrame(
         {"tile": np.arange(len(tiles))},
@@ -72,7 +72,7 @@ def locate(tiles: list[Tile], grid: Grid, agebs: gpd.GeoDataFrame) -> pd.DataFra
             "cvegeo": joined.cvegeo.to_numpy(),
         }
     )
-    table["municipio"] = table.cvegeo.str[:MUNICIPALITY_KEY_LENGTH]
+    table["municipality"] = table.cvegeo.str[:MUNICIPALITY_KEY_LENGTH]
     return table.reset_index(drop=True)
 
 
@@ -92,7 +92,7 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     five-class scale, and it costs: four fifths of the bags land in one grade and only four
     of 412 reach the top, so describing the typical municipality already predicts it well.
 
-    `ordinal_continuo` is the same mean without rounding, which keeps the gradation the
+    `ordinal_continuous` is the same mean without rounding, which keeps the gradation the
     rounding destroys.
 
     `p1` to `p4` are the share of the municipality's population living in AGEB of grade k
@@ -104,20 +104,20 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
     Weighting by population rather than by area stops a large empty AGEB from outvoting a
     dense one.
     """
-    missing = {"cvegeo", "ordinal", "poblacion"} - set(agebs.columns)
+    missing = {"cvegeo", "ordinal", "population"} - set(agebs.columns)
     if missing:
         raise KeyError(f"the AGEB table is missing {sorted(missing)}")
 
     table = pd.DataFrame(
         {
-            "municipio": agebs.cvegeo.str[:MUNICIPALITY_KEY_LENGTH],
+            "municipality": agebs.cvegeo.str[:MUNICIPALITY_KEY_LENGTH],
             "ordinal": pd.to_numeric(agebs.ordinal, errors="coerce"),
-            "poblacion": pd.to_numeric(agebs.poblacion, errors="coerce").fillna(0.0),
+            "population": pd.to_numeric(agebs.population, errors="coerce").fillna(0.0),
         }
     ).dropna(subset=["ordinal"])
 
     def summarise(group: pd.DataFrame) -> pd.Series:
-        weight = group.poblacion.to_numpy(dtype="float64")
+        weight = group.population.to_numpy(dtype="float64")
         if weight.sum() <= 0:
             weight = np.ones(len(group))
         grades = group.ordinal.to_numpy(dtype="float64")
@@ -128,15 +128,15 @@ def municipal_labels(agebs: gpd.GeoDataFrame) -> pd.DataFrame:
         return pd.Series(
             {
                 "ordinal": int(np.clip(round(middle), 0, len(GRADES) - 1)),
-                "ordinal_continuo": middle,
+                "ordinal_continuous": middle,
                 **shares,
-                "poblacion": float(weight.sum()),
+                "population": float(weight.sum()),
                 "agebs": len(group),
             }
         )
 
-    output = table.groupby("municipio", observed=True).apply(summarise, include_groups=False)
-    output["grado"] = output.ordinal.map({v: k for k, v in ORDINAL.items()})
+    output = table.groupby("municipality", observed=True).apply(summarise, include_groups=False)
+    output["grade"] = output.ordinal.map({v: k for k, v in ORDINAL.items()})
     return output.reset_index()
 
 
@@ -159,17 +159,17 @@ def build(
         raise ValueError(f"{city}: no patch landed inside an AGEB")
 
     bag_table = municipal_labels(agebs)
-    counts = instances.groupby("municipio", observed=True).size().rename("instances")
-    bag_table = bag_table.merge(counts, on="municipio", how="inner")
+    counts = instances.groupby("municipality", observed=True).size().rename("instances")
+    bag_table = bag_table.merge(counts, on="municipality", how="inner")
 
     small = bag_table[bag_table.instances < min_instances]
     if not small.empty:
         log.info("%s: %d bags below %d instances dropped", city, len(small), min_instances)
         bag_table = bag_table[bag_table.instances >= min_instances]
-        instances = instances[instances.municipio.isin(bag_table.municipio)]
+        instances = instances[instances.municipality.isin(bag_table.municipality)]
 
-    instances.insert(0, "ciudad", city)
-    bag_table.insert(0, "ciudad", city)
+    instances.insert(0, "city", city)
+    bag_table.insert(0, "city", city)
     log.info(
         "%s: %d bags, %d instances, %.0f per bag on median",
         city,

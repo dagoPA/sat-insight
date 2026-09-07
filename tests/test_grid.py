@@ -1,4 +1,4 @@
-"""Pruebas de la retícula de análisis. Sin red: los items del catálogo son dobles."""
+"""Tests of the analysis grid. No network: the catalogue items are stand-ins."""
 
 from dataclasses import dataclass, field
 
@@ -8,114 +8,114 @@ from satinsight.grid import grid_from_bbox, grid_from_scenes, select_crs
 
 
 @dataclass
-class ItemFalso:
-    """Doble de un item del STAC, del que solo interesan sus propiedades."""
+class FakeItem:
+    """Stand-in for a STAC item, of which only the properties matter."""
 
     properties: dict = field(default_factory=dict)
 
 
-def item(epsg=32615, clave="proj:epsg"):
-    return ItemFalso(properties={clave: epsg})
+def item(epsg=32615, key="proj:epsg"):
+    return FakeItem(properties={key: epsg})
 
 
 BBOX_TUXTLA = (-93.135, 16.740, -93.095, 16.768)
 
 
-def test_la_malla_cubre_el_recuadro_completo():
-    malla = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
-    izq, abajo, der, arriba = malla.bounds
-    assert malla.width * 10 >= der - izq
-    assert malla.height * 10 >= arriba - abajo
+def test_the_grid_covers_the_whole_box():
+    city_grid = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
+    left, bottom, right, top = city_grid.bounds
+    assert city_grid.width * 10 >= right - left
+    assert city_grid.height * 10 >= top - bottom
 
 
-def test_el_tamano_de_pixel_es_el_pedido():
-    malla = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
-    assert malla.transform.a == pytest.approx(10, abs=0.5)
-    assert malla.transform.e == pytest.approx(-10, abs=0.5)
+def test_the_pixel_size_is_the_one_requested():
+    city_grid = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
+    assert city_grid.transform.a == pytest.approx(10, abs=0.5)
+    assert city_grid.transform.e == pytest.approx(-10, abs=0.5)
 
 
-def test_bajar_la_resolucion_reduce_los_pixeles():
-    fina = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
-    burda = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=20)
-    assert burda.width < fina.width
-    assert burda.megapixels < fina.megapixels
+def test_lowering_the_resolution_reduces_the_pixels():
+    fine = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=10)
+    coarse = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615", resolution_m=20)
+    assert coarse.width < fine.width
+    assert coarse.megapixels < fine.megapixels
 
 
-def test_la_esquina_superior_izquierda_coincide_con_los_limites():
-    malla = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615")
-    assert malla.transform.c == pytest.approx(malla.bounds[0])
-    assert malla.transform.f == pytest.approx(malla.bounds[3])
+def test_the_top_left_corner_matches_the_bounds():
+    city_grid = grid_from_bbox(BBOX_TUXTLA, "EPSG:32615")
+    assert city_grid.transform.c == pytest.approx(city_grid.bounds[0])
+    assert city_grid.transform.f == pytest.approx(city_grid.bounds[3])
 
 
-def test_crs_unico_se_acepta():
-    malla, escenas = grid_from_scenes(BBOX_TUXTLA, [item(), item(), item()])
-    assert malla.crs == "EPSG:32615"
-    assert len(escenas) == 3
+def test_a_single_crs_is_accepted():
+    city_grid, scenes = grid_from_scenes(BBOX_TUXTLA, [item(), item(), item()])
+    assert city_grid.crs == "EPSG:32615"
+    assert len(scenes) == 3
 
 
-def test_crs_ya_prefijado_no_se_duplica():
-    malla, _ = grid_from_scenes(BBOX_TUXTLA, [item(epsg="EPSG:32615")])
-    assert malla.crs == "EPSG:32615"
+def test_an_already_prefixed_crs_is_not_duplicated():
+    city_grid, _ = grid_from_scenes(BBOX_TUXTLA, [item(epsg="EPSG:32615")])
+    assert city_grid.crs == "EPSG:32615"
 
 
-def test_se_lee_tambien_la_clave_moderna():
-    malla, _ = grid_from_scenes(BBOX_TUXTLA, [item(epsg="EPSG:32616", clave="proj:code")])
-    assert malla.crs == "EPSG:32616"
+def test_the_modern_key_is_read_too():
+    city_grid, _ = grid_from_scenes(BBOX_TUXTLA, [item(epsg="EPSG:32616", key="proj:code")])
+    assert city_grid.crs == "EPSG:32616"
 
 
-def test_con_husos_mezclados_gana_la_mayoria():
-    escenas = [item(32615), item(32615), item(32616)]
-    crs, seleccionadas = select_crs(escenas)
+def test_with_mixed_zones_the_majority_wins():
+    scenes = [item(32615), item(32615), item(32616)]
+    crs, selected = select_crs(scenes)
     assert crs == "EPSG:32615"
-    assert len(seleccionadas) == 2
+    assert len(selected) == 2
 
 
-def test_las_escenas_del_huso_descartado_no_se_devuelven():
-    escenas = [item(32616), item(32615), item(32615), item(32615)]
-    malla, seleccionadas = grid_from_scenes(BBOX_TUXTLA, escenas)
-    assert malla.crs == "EPSG:32615"
-    assert len(seleccionadas) == 3
-    assert all(s.properties["proj:epsg"] == 32615 for s in seleccionadas)
+def test_the_scenes_of_the_discarded_zone_are_not_returned():
+    scenes = [item(32616), item(32615), item(32615), item(32615)]
+    city_grid, selected = grid_from_scenes(BBOX_TUXTLA, scenes)
+    assert city_grid.crs == "EPSG:32615"
+    assert len(selected) == 3
+    assert all(s.properties["proj:epsg"] == 32615 for s in selected)
 
 
-def test_las_escenas_sin_proyeccion_se_ignoran_si_hay_otras():
-    escenas = [ItemFalso(properties={}), item(32615)]
-    crs, seleccionadas = select_crs(escenas)
+def test_scenes_without_a_projection_are_ignored_when_others_exist():
+    scenes = [FakeItem(properties={}), item(32615)]
+    crs, selected = select_crs(scenes)
     assert crs == "EPSG:32615"
-    assert len(seleccionadas) == 1
+    assert len(selected) == 1
 
 
-def test_sin_proyeccion_declarada_falla():
+def test_no_declared_projection_fails():
     with pytest.raises(ValueError, match="reference system"):
-        grid_from_scenes(BBOX_TUXTLA, [ItemFalso(properties={})])
+        grid_from_scenes(BBOX_TUXTLA, [FakeItem(properties={})])
 
 
-def test_el_huso_se_elige_por_cobertura_y_no_por_numero():
-    """El caso de Guasave: el huso más numeroso ve la mitad del recuadro.
+def test_the_zone_is_chosen_by_coverage_and_not_by_count():
+    """Guasave's case: the most numerous zone sees half the box.
 
-    Ochenta y siete escenas del huso 13 alcanzan la mitad de la ciudad y sesenta y una
-    del huso 12 la cubren entera. Elegir por número dejaba la ciudad sin compuesto.
+    Eighty-seven scenes of zone 13 reach half the city and sixty-one of zone 12 cover it
+    whole. Choosing by count left the city without a composite.
     """
-    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
-    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
-    cobertura = {"EPSG:32613": 0.53, "EPSG:32612": 1.0}
+    many = [item("EPSG:32613", key="proj:code") for _ in range(87)]
+    few = [item("EPSG:32612", key="proj:code") for _ in range(61)]
+    coverage = {"EPSG:32613": 0.53, "EPSG:32612": 1.0}
 
-    def puntuar(grupo):
-        return cobertura[grupo[0].properties["proj:code"]]
+    def score(group):
+        return coverage[group[0].properties["proj:code"]]
 
-    elegido, seleccionadas = select_crs(muchas + pocas, puntuar)
-    assert elegido == "EPSG:32612"
-    assert len(seleccionadas) == 61
-
-
-def test_sin_puntuacion_sigue_mandando_el_numero():
-    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
-    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
-    assert select_crs(muchas + pocas)[0] == "EPSG:32613"
+    chosen, selected = select_crs(many + few, score)
+    assert chosen == "EPSG:32612"
+    assert len(selected) == 61
 
 
-def test_a_igual_cobertura_desempata_el_numero():
-    muchas = [item("EPSG:32613", clave="proj:code") for _ in range(87)]
-    pocas = [item("EPSG:32612", clave="proj:code") for _ in range(61)]
-    elegido, _ = select_crs(muchas + pocas, lambda grupo: 1.0)
-    assert elegido == "EPSG:32613"
+def test_without_a_score_the_count_still_rules():
+    many = [item("EPSG:32613", key="proj:code") for _ in range(87)]
+    few = [item("EPSG:32612", key="proj:code") for _ in range(61)]
+    assert select_crs(many + few)[0] == "EPSG:32613"
+
+
+def test_at_equal_coverage_the_count_breaks_the_tie():
+    many = [item("EPSG:32613", key="proj:code") for _ in range(87)]
+    few = [item("EPSG:32612", key="proj:code") for _ in range(61)]
+    chosen, _ = select_crs(many + few, lambda group: 1.0)
+    assert chosen == "EPSG:32613"

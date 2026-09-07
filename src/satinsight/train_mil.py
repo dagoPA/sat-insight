@@ -157,7 +157,7 @@ def train(
         raise KeyError(f"unknown objective {objective!r}, expected one of {OBJECTIVES}")
     torch.manual_seed(seed)
     device = _device(torch)
-    # el objetivo acumulado tiene una salida por umbral y no una por clase: son K-1
+    # the cumulative objective has one output per threshold rather than per class: K-1
     outputs = n_classes if objective == "classes" else n_classes - 1
     model = build(train_bags[0].instances.shape[1], outputs).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=WEIGHT_DECAY)
@@ -165,8 +165,8 @@ def train(
         weights = torch.tensor(_bag_weights(train_bags, n_classes), dtype=torch.float32).to(device)
         criterion = nn.CrossEntropyLoss(weight=weights)
     else:
-        # sin reponderar: el objetivo blando ya lleva la escasez del extremo dentro, y
-        # pesar además por clase la contaría dos veces
+        # no reweighting: the soft target already carries the scarcity of the extreme, and
+        # weighting by class on top would count it twice
         criterion = nn.BCEWithLogitsLoss()
     rng = np.random.default_rng(seed)
 
@@ -196,9 +196,9 @@ def train(
                         model.instance_head(projections[indices]), pseudo
                     )
             if entropy_weight:
-                # se resta la entropía, de modo que minimizar la pérdida la maximiza y la
-                # atención se reparte. Se normaliza por la entropía de la uniforme para que
-                # el mismo peso signifique lo mismo en bolsas de 32 y de 13,298 instancias
+                # the entropy is subtracted, so minimising the loss maximises it and the
+                # attention spreads out. It is normalised by the entropy of the uniform so the
+                # same weight means the same in bags of 32 and of 13,298 instances
                 entropy = -(attention * torch.log(attention.clamp_min(1e-12))).sum()
                 loss = loss - entropy_weight * entropy / np.log(len(bag))
             loss.backward()

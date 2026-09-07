@@ -12,7 +12,7 @@ Colombia: Bogota's socioeconomic stratification, an ordinal 1-6 published per bl
 district and mandated by national law. Ordinal ground: Spearman between the instance score
 and the stratum, inverted so higher means more deprived, evaluated within the city.
 
-Both files are downloaded once by `herramientas/` and read from `data/transfer/`; the
+Both files are downloaded once by `scripts/` and read from `data/transfer/`; the
 paths and the column names are pinned here, next to the code that interprets them, so a
 silent schema change in a re-download fails loudly.
 """

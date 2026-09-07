@@ -10,8 +10,8 @@ never disagree without someone noticing.
 
 The palette is fixed here because three figures share it and a split that is blue in one
 panel and orange in the next would be read as a different quantity. Blue is always the
-fourteen validation cities, used for selection; red is always the fourteen test cities,
-opened once.
+fourteen validation cities, used for selection; red is always the fourteen held-out test
+cities.
 """
 
 from __future__ import annotations
@@ -19,13 +19,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-CANON_PATH = Path("data/canon_manuscrito.json")
+CANON_PATH = Path("docs/manuscript/canonical_results.json")
 
 VALIDATION = "#3274a1"
 """The fourteen cities that selected every configuration."""
 
 TEST = "#c44e52"
-"""The fourteen cities opened once, after development ended."""
+"""The fourteen held-out test cities, scored with validation-selected models."""
 
 ORACLE = "#2f8f4e"
 """The fully supervised upper bound, in every panel that draws one."""

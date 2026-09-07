@@ -58,5 +58,5 @@ def test_no_bag_municipality_of_any_base_city_enters_the_expansion():
     for key in base:
         f = bags_dir / f"{key}.parquet"
         if f.exists():
-            overlap = set(pd.read_parquet(f, columns=["municipio"]).municipio) & extra_muns
+            overlap = set(pd.read_parquet(f, columns=["municipality"]).municipality) & extra_muns
             assert not overlap, f"{key}: {sorted(overlap)} train and evaluate the same ground"

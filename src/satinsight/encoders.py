@@ -60,15 +60,15 @@ def normalize(patch: np.ndarray, names: list[str]) -> np.ndarray:
     if len(names) != patch.shape[0]:
         raise ValueError(f"{len(names)} channel names for {patch.shape[0]} channels")
     output = np.empty_like(patch, dtype="float32")
-    for i, nombre in enumerate(names):
-        clave = {"B04": "s2red", "B08": "s2nir"}.get(nombre, nombre)
-        rango = FIXED_RANGES.get(clave)
-        if rango is None:
-            canal = patch[i][np.isfinite(patch[i])]
-            rango = (float(canal.min()), float(canal.max())) if canal.size else (0.0, 1.0)
-        bajo, alto = rango
-        escalado = (patch[i] - bajo) / max(alto - bajo, 1e-9)
-        output[i] = np.nan_to_num(np.clip(escalado, 0.0, 1.0), nan=0.5)
+    for i, name in enumerate(names):
+        key = {"B04": "s2red", "B08": "s2nir"}.get(name, name)
+        span = FIXED_RANGES.get(key)
+        if span is None:
+            channel = patch[i][np.isfinite(patch[i])]
+            span = (float(channel.min()), float(channel.max())) if channel.size else (0.0, 1.0)
+        low, high = span
+        scaled = (patch[i] - low) / max(high - low, 1e-9)
+        output[i] = np.nan_to_num(np.clip(scaled, 0.0, 1.0), nan=0.5)
     return output
 
 
@@ -103,15 +103,15 @@ class DofaEncoder:
         import torch
 
         self._torch = torch
-        self.device = device or self._mejor_dispositivo()
-        self.model = self._cargar(checkpoint)
+        self.device = device or self._best_device()
+        self.model = self._load(checkpoint)
         self.model.eval().to(self.device)
-        for parametro in self.model.parameters():
-            parametro.requires_grad_(False)
+        for parameter in self.model.parameters():
+            parameter.requires_grad_(False)
         self.dim = int(getattr(self.model, "embed_dim", 768))
         log.info("%s loaded on %s, %d dimensions", checkpoint, self.device, self.dim)
 
-    def _mejor_dispositivo(self) -> str:
+    def _best_device(self) -> str:
         """Picks the fastest accelerator present, Apple silicon included."""
         torch = self._torch
         if torch.cuda.is_available():
@@ -120,16 +120,16 @@ class DofaEncoder:
             return "mps"
         return "cpu"
 
-    def _cargar(self, checkpoint: str):
+    def _load(self, checkpoint: str):
         """Fetches the pretrained weights through torchgeo, which hosts the checkpoints."""
-        import torchgeo.models as modelos
+        import torchgeo.models as models
 
-        constructor = getattr(modelos, checkpoint.replace("-", "_"), None)
+        constructor = getattr(models, checkpoint.replace("-", "_"), None)
         if constructor is None:
-            disponibles = sorted(n for n in dir(modelos) if n.startswith("dofa_"))
-            raise KeyError(f"unknown checkpoint {checkpoint!r}. Available: {disponibles}")
-        pesos = modelos.DOFABase16_Weights.DOFA_MAE if "base" in checkpoint else None
-        return constructor(weights=pesos)
+            available = sorted(n for n in dir(models) if n.startswith("dofa_"))
+            raise KeyError(f"unknown checkpoint {checkpoint!r}. Available: {available}")
+        weights = models.DOFABase16_Weights.DOFA_MAE if "base" in checkpoint else None
+        return constructor(weights=weights)
 
     def _tensor(self, batch: np.ndarray):
         return self._torch.from_numpy(np.ascontiguousarray(batch)).float().to(self.device)
@@ -160,14 +160,14 @@ class DofaEncoder:
         with torch.inference_mode():
             tokens, _ = self.model.patch_embed(tensor, wavelengths_list)
             tokens = tokens + self.model.pos_embed[:, 1:, :]
-            resumen = (self.model.cls_token + self.model.pos_embed[:, :1, :]).expand(
+            summary = (self.model.cls_token + self.model.pos_embed[:, :1, :]).expand(
                 tokens.shape[0], -1, -1
             )
-            estado = torch.cat((resumen, tokens), dim=1)
-            for bloque in self.model.blocks:
-                estado = bloque(estado)
-            estado = self.model.fc_norm(estado)
-        return estado[:, 1:].float().cpu().numpy()
+            state = torch.cat((summary, tokens), dim=1)
+            for block in self.model.blocks:
+                state = block(state)
+            state = self.model.fc_norm(state)
+        return state[:, 1:].float().cpu().numpy()
 
 
 def extract(
@@ -188,9 +188,9 @@ def extract(
     from satinsight.tiling import instances, stack
 
     order = order or sorted(bands)
-    faltantes = [n for n in order if n not in WAVELENGTHS_UM]
-    if faltantes:
-        raise KeyError(f"no wavelength registered for {faltantes}")
+    missing = [n for n in order if n not in WAVELENGTHS_UM]
+    if missing:
+        raise KeyError(f"no wavelength registered for {missing}")
     wavelengths_list = [WAVELENGTHS_UM[n] for n in order]
 
     tokens, indices = instances(windows, bands, token_size, min_valid_fraction)
@@ -198,9 +198,9 @@ def extract(
         return np.empty((0, encoder.dim), dtype="float32"), []
 
     vectors = []
-    for inicio in range(0, len(windows), batch):
+    for start in range(0, len(windows), batch):
         batch_in = np.stack(
-            [normalize(stack(bands, w, order), order) for w in windows[inicio : inicio + batch]]
+            [normalize(stack(bands, w, order), order) for w in windows[start : start + batch]]
         )
         output = encoder.embed_tokens(batch_in, wavelengths_list)
         vectors.append(output.reshape(-1, output.shape[-1]))
@@ -209,7 +209,7 @@ def extract(
     return matrix, tokens
 
 
-def save(embeddings: np.ndarray, destino: Path, **labels) -> Path:
+def save(embeddings: np.ndarray, destination: Path, **labels) -> Path:
     """Writes the vectors as half precision, which halves the disk for no measurable loss.
 
     Label columns of strings arrive from pandas as arrays of objects, and numpy can only
@@ -217,19 +217,19 @@ def save(embeddings: np.ndarray, destino: Path, **labels) -> Path:
     contains, so they are narrowed to fixed-width text and the archive stays loadable
     with pickling switched off.
     """
-    destino.parent.mkdir(parents=True, exist_ok=True)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     cleaned = {}
-    for clave, valor in labels.items():
-        array = np.asarray(valor)
-        cleaned[clave] = array.astype("U") if array.dtype == object else array
-    np.savez_compressed(destino, embeddings=embeddings.astype("float16"), **cleaned)
-    log.info("%s (%.1f MB)", destino.name, destino.stat().st_size / 1e6)
-    return destino
+    for key, value in labels.items():
+        array = np.asarray(value)
+        cleaned[key] = array.astype("U") if array.dtype == object else array
+    np.savez_compressed(destination, embeddings=embeddings.astype("float16"), **cleaned)
+    log.info("%s (%.1f MB)", destination.name, destination.stat().st_size / 1e6)
+    return destination
 
 
-def load(origen: Path) -> tuple[np.ndarray, dict]:
+def load(source: Path) -> tuple[np.ndarray, dict]:
     """Reads back what `save` wrote, restoring the vectors to single precision."""
-    with np.load(origen, allow_pickle=False) as datos:
-        embeddings = datos["embeddings"].astype("float32")
-        labels = {k: datos[k] for k in datos.files if k != "embeddings"}
+    with np.load(source, allow_pickle=False) as data:
+        embeddings = data["embeddings"].astype("float32")
+        labels = {k: data[k] for k in data.files if k != "embeddings"}
     return embeddings, labels

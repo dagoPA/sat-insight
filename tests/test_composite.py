@@ -1,4 +1,4 @@
-"""Pruebas del compositing. La lectura remota se sustituye por un doble."""
+"""Tests of the compositing. The remote read is replaced by a stand-in."""
 
 from dataclasses import dataclass, field
 
@@ -9,217 +9,217 @@ from satinsight import composite
 from satinsight.composite import _check_failures, composite_s1
 
 BBOX = (-93.135, 16.740, -93.095, 16.768)
-FORMA = (8, 8)
+SHAPE = (8, 8)
 
 
 @dataclass
-class ActivoFalso:
+class FakeAsset:
     href: str
 
 
 @dataclass
-class ItemFalso:
-    """Doble de una escena SAR, con lo mínimo que mira `dominant_orbit`."""
+class FakeItem:
+    """Stand-in for a SAR scene, with the minimum `dominant_orbit` looks at."""
 
     id: str
     assets: dict = field(default_factory=dict)
     properties: dict = field(default_factory=dict)
 
 
-def escena_sar(nombre: str, orbit: int = 99) -> ItemFalso:
-    return ItemFalso(
-        id=nombre,
-        assets={"vv": ActivoFalso(f"{nombre}/vv"), "vh": ActivoFalso(f"{nombre}/vh")},
+def sar_scene(name: str, orbit: int = 99) -> FakeItem:
+    return FakeItem(
+        id=name,
+        assets={"vv": FakeAsset(f"{name}/vv"), "vh": FakeAsset(f"{name}/vh")},
         properties={"sat:orbit_state": "ascending", "sat:relative_orbit": orbit},
     )
 
 
-def test_pocos_fallos_no_abortan():
+def test_a_few_failures_do_not_abort():
     _check_failures("Sentinel-2", failed=2, attempted=20, fraction=0.3)
 
 
-def test_demasiados_fallos_abortan():
+def test_too_many_failures_abort():
     with pytest.raises(RuntimeError, match="failed to read"):
         _check_failures("Sentinel-2", failed=15, attempted=20, fraction=0.3)
 
 
-def test_none_desactiva_la_comprobacion():
+def test_none_disables_the_check():
     _check_failures("Sentinel-2", failed=20, attempted=20, fraction=None)
 
 
-def test_cero_es_el_extremo_estricto_y_no_el_desactivado():
+def test_zero_is_the_strict_extreme_and_not_disabled():
     _check_failures("Sentinel-2", failed=0, attempted=20, fraction=0.0)
     with pytest.raises(RuntimeError, match="failed to read"):
         _check_failures("Sentinel-2", failed=1, attempted=20, fraction=0.0)
 
 
-def test_sin_escenas_intentadas_no_divide_entre_cero():
+def test_no_attempted_scenes_does_not_divide_by_zero():
     _check_failures("Sentinel-1", failed=0, attempted=0, fraction=0.3)
 
 
-def test_una_lectura_rota_no_desincroniza_las_polarizaciones(monkeypatch):
-    """Si VH falla, VV no debe quedar apilado por su cuenta.
+def test_a_broken_read_does_not_desynchronise_the_polarisations(monkeypatch):
+    """If VH fails, VV must not stay stacked on its own.
 
-    Las medianas de una y otra polarización saldrían calculadas sobre conjuntos de escenas
-    distintos, y la razón entre ambas dejaría de significar lo que dice significar.
+    The medians of the two polarisations would come out computed over different sets of
+    scenes, and the ratio between them would stop meaning what it claims to mean.
     """
 
-    def leer(href, bbox, shape=None):
+    def read(href, bbox, shape=None):
         if href == "b/vh":
-            raise OSError("lectura rota")
-        return np.ones(FORMA, dtype="float32")
+            raise OSError("broken read")
+        return np.ones(SHAPE, dtype="float32")
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    escenas = [escena_sar(nombre) for nombre in "abcde"]  # una sola falla, bajo el umbral
-    bandas, meta = composite_s1(escenas, BBOX, FORMA)
+    monkeypatch.setattr(composite, "read_window", read)
+    scenes = [sar_scene(name) for name in "abcde"]  # a single failure, under the threshold
+    bands, meta = composite_s1(scenes, BBOX, SHAPE)
 
-    assert bandas["vv"].shape == FORMA
+    assert bands["vv"].shape == SHAPE
     assert meta["scenes_used"] == 4
 
 
-def test_si_fallan_casi_todas_aborta(monkeypatch):
-    def leer(href, bbox, shape=None):
+def test_it_aborts_when_almost_every_read_fails(monkeypatch):
+    def read(href, bbox, shape=None):
         raise OSError("HTTP response code: 403")
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    escenas = [escena_sar(nombre) for nombre in "abcde"]
+    monkeypatch.setattr(composite, "read_window", read)
+    scenes = [sar_scene(name) for name in "abcde"]
     with pytest.raises(RuntimeError, match="failed to read"):
-        composite_s1(escenas, BBOX, FORMA)
+        composite_s1(scenes, BBOX, SHAPE)
 
 
-def test_sin_escenas_falla_con_mensaje_claro():
+def test_no_scenes_fails_with_a_clear_message():
     with pytest.raises(ValueError, match="no Sentinel-1 scenes"):
-        composite_s1([], BBOX, FORMA)
+        composite_s1([], BBOX, SHAPE)
 
 
-def test_la_orbita_se_elige_por_cobertura_medida(monkeypatch):
-    """Una órbita con menos pasadas gana si es la que de verdad ve la ciudad.
+def test_the_orbit_is_chosen_by_measured_coverage(monkeypatch):
+    """An orbit with fewer passes wins if it is the one that really sees the city.
 
-    Es el caso de Mexicali: la órbita más repetida del catálogo roza el recuadro por el
-    filo de la franja y deja casi todo sin observar.
+    Mexicali's case: the most repeated orbit of the catalogue grazes the box at the edge of
+    its swath and leaves almost everything unobserved.
     """
-    escenas = [escena_sar(f"filo{i}", orbit=166) for i in range(5)]
-    escenas += [escena_sar(f"plena{i}", orbit=173) for i in range(2)]
+    scenes = [sar_scene(f"edge{i}", orbit=166) for i in range(5)]
+    scenes += [sar_scene(f"full{i}", orbit=173) for i in range(2)]
 
-    def leer(href, bbox, forma):
-        arreglo = np.full(forma, np.nan, dtype="float32")
-        if href.startswith("plena"):
-            arreglo[:] = 1.0
+    def read(href, bbox, shape):
+        array = np.full(shape, np.nan, dtype="float32")
+        if href.startswith("full"):
+            array[:] = 1.0
         else:
-            arreglo[0, 0] = 1.0
-        return arreglo
+            array[0, 0] = 1.0
+        return array
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    clave, seleccion, cobertura = composite.useful_orbit(escenas, BBOX)
-    assert clave == ("ascending", 173)
-    assert len(seleccion) == 2
-    assert cobertura == pytest.approx(1.0)
+    monkeypatch.setattr(composite, "read_window", read)
+    key, selection, coverage = composite.useful_orbit(scenes, BBOX)
+    assert key == ("ascending", 173)
+    assert len(selection) == 2
+    assert coverage == pytest.approx(1.0)
 
 
-def test_a_igual_cobertura_gana_la_orbita_con_mas_escenas(monkeypatch):
-    escenas = [escena_sar(f"a{i}", orbit=10) for i in range(2)]
-    escenas += [escena_sar(f"b{i}", orbit=20) for i in range(6)]
+def test_at_equal_coverage_the_orbit_with_more_scenes_wins(monkeypatch):
+    scenes = [sar_scene(f"a{i}", orbit=10) for i in range(2)]
+    scenes += [sar_scene(f"b{i}", orbit=20) for i in range(6)]
     monkeypatch.setattr(composite, "read_window", lambda h, b, f: np.ones(f, dtype="float32"))
-    clave, seleccion, _ = composite.useful_orbit(escenas, BBOX)
-    assert clave == ("ascending", 20)
-    assert len(seleccion) == 6
+    key, selection, _ = composite.useful_orbit(scenes, BBOX)
+    assert key == ("ascending", 20)
+    assert len(selection) == 6
 
 
-def test_una_orbita_ilegible_por_completo_cuenta_como_sin_cobertura(monkeypatch):
-    def leer(href, bbox, forma):
+def test_an_entirely_unreadable_orbit_counts_as_no_coverage(monkeypatch):
+    def read(href, bbox, shape):
         raise OSError("403")
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    assert composite.useful_coverage([escena_sar("x")], BBOX) == 0.0
+    monkeypatch.setattr(composite, "read_window", read)
+    assert composite.useful_coverage([sar_scene("x")], BBOX) == 0.0
 
 
-def test_una_lectura_cortada_no_hunde_a_su_orbita(monkeypatch):
-    """El caso de Guasave: una petición perdida tumbaba una órbita que cubre todo.
+def test_a_dropped_read_does_not_sink_its_orbit(monkeypatch):
+    """Guasave's case: one lost request knocked out an orbit that covers everything.
 
-    Contar la lectura fallida como cobertura cero confunde que la órbita no vea la ciudad
-    con que el enlace se cortara, y bajo congestión lo segundo es frecuente.
+    Counting the failed read as zero coverage confuses the orbit not seeing the city with
+    the link being cut, and under congestion the second is frequent.
     """
-    escenas = [escena_sar(f"buena{i}", orbit=20) for i in range(4)]
+    scenes = [sar_scene(f"good{i}", orbit=20) for i in range(4)]
 
-    def leer(href, bbox, forma):
-        if href.startswith("buena0"):
-            raise OSError("conexión cortada")
-        return np.ones(forma, dtype="float32")
+    def read(href, bbox, shape):
+        if href.startswith("good0"):
+            raise OSError("connection dropped")
+        return np.ones(shape, dtype="float32")
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    assert composite.useful_coverage(escenas, BBOX) == pytest.approx(1.0)
+    monkeypatch.setattr(composite, "read_window", read)
+    assert composite.useful_coverage(scenes, BBOX) == pytest.approx(1.0)
 
 
-def test_un_compuesto_de_radar_con_ceros_se_rechaza():
-    """Gamma0 lineal es positiva: un cero delata al sin-dato colado en la mediana."""
-    arreglo = np.full((8, 8), 0.2, dtype="float32")
-    arreglo[0, 0] = 0.0
+def test_a_radar_composite_with_zeros_is_rejected():
+    """Linear gamma0 is positive: a zero betrays no-data that slipped into the median."""
+    array = np.full((8, 8), 0.2, dtype="float32")
+    array[0, 0] = 0.0
     with pytest.raises(RuntimeError, match="zero or negative"):
-        composite._check_composite_s1({"vv": arreglo})
+        composite._check_composite_s1({"vv": array})
 
 
-def test_un_compuesto_de_radar_con_valor_intermedio_se_rechaza():
-    """El caso que no se ve: la mediana promedia -32768 con un valor bueno."""
-    arreglo = np.full((8, 8), -16384.0, dtype="float32")
+def test_a_radar_composite_with_an_intermediate_value_is_rejected():
+    """The case that hides: the median averages -32768 with a good value."""
+    array = np.full((8, 8), -16384.0, dtype="float32")
     with pytest.raises(RuntimeError, match="zero or negative"):
-        composite._check_composite_s1({"vv": arreglo})
+        composite._check_composite_s1({"vv": array})
 
 
-def test_un_compuesto_de_radar_mayormente_sin_observar_se_rechaza():
-    arreglo = np.full((10, 10), np.nan, dtype="float32")
-    arreglo[:5] = 0.2
+def test_a_radar_composite_mostly_unobserved_is_rejected():
+    array = np.full((10, 10), np.nan, dtype="float32")
+    array[:5] = 0.2
     with pytest.raises(RuntimeError, match="no orbit covers"):
-        composite._check_composite_s1({"vv": arreglo})
+        composite._check_composite_s1({"vv": array})
 
 
-def test_un_compuesto_de_radar_sano_pasa():
-    arreglo = np.full((10, 10), 0.2, dtype="float32")
-    arreglo[0] = np.nan
-    assert composite._check_composite_s1({"vv": arreglo, "vh": arreglo}) == pytest.approx(0.9)
+def test_a_healthy_radar_composite_passes():
+    array = np.full((10, 10), 0.2, dtype="float32")
+    array[0] = np.nan
+    assert composite._check_composite_s1({"vv": array, "vh": array}) == pytest.approx(0.9)
 
 
-def escena_optica(nombre: str, tesela: str, nubes: float = 10.0) -> ItemFalso:
-    return ItemFalso(
-        id=nombre,
-        assets={b: ActivoFalso(f"{nombre}/{b}") for b in ("SCL", "B04", "B03", "B02")},
-        properties={"s2:mgrs_tile": tesela, "eo:cloud_cover": nubes},
+def optical_scene(name: str, tile: str, cloud_cover: float = 10.0) -> FakeItem:
+    return FakeItem(
+        id=name,
+        assets={b: FakeAsset(f"{name}/{b}") for b in ("SCL", "B04", "B03", "B02")},
+        properties={"s2:mgrs_tile": tile, "eo:cloud_cover": cloud_cover},
     )
 
 
-def test_se_descarta_la_tesela_que_no_toca_el_recuadro(monkeypatch):
-    """El caso de San Pedro Tlaquepaque: las más despejadas son de la tesela equivocada.
+def test_the_tile_that_does_not_touch_the_box_is_dropped(monkeypatch):
+    """San Pedro Tlaquepaque's case: the clearest scenes belong to the wrong tile.
 
-    Fuera de su huella la lectura llega en ceros y el SCL en cero significa sin dato, de
-    modo que la escena no aporta un solo píxel por muy despejada que venga.
+    Outside its footprint the read arrives as zeros, and SCL zero means no data, so the
+    scene contributes not one pixel however clear it comes.
     """
-    escenas = [escena_optica(f"lejos{i}", "13QFD", nubes=1.0) for i in range(19)]
-    escenas += [escena_optica("encima", "13QFC", nubes=40.0)]
+    scenes = [optical_scene(f"far{i}", "13QFD", cloud_cover=1.0) for i in range(19)]
+    scenes += [optical_scene("over", "13QFC", cloud_cover=40.0)]
 
-    def leer(href, bbox, forma):
-        return np.full(forma, 0 if href.startswith("lejos") else 4, dtype="uint8")
+    def read(href, bbox, shape):
+        return np.full(shape, 0 if href.startswith("far") else 4, dtype="uint8")
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    utiles = composite.useful_tiles(escenas, BBOX)
-    assert [e.id for e in utiles] == ["encima"]
+    monkeypatch.setattr(composite, "read_window", read)
+    useful = composite.useful_tiles(scenes, BBOX)
+    assert [e.id for e in useful] == ["over"]
 
 
-def test_un_recuadro_partido_conserva_las_dos_teselas(monkeypatch):
-    escenas = [escena_optica(f"a{i}", "14QKH") for i in range(3)]
-    escenas += [escena_optica(f"b{i}", "14QLH") for i in range(3)]
+def test_a_split_box_keeps_both_tiles(monkeypatch):
+    scenes = [optical_scene(f"a{i}", "14QKH") for i in range(3)]
+    scenes += [optical_scene(f"b{i}", "14QLH") for i in range(3)]
 
-    def leer(href, bbox, forma):
-        arreglo = np.zeros(forma, dtype="uint8")
+    def read(href, bbox, shape):
+        array = np.zeros(shape, dtype="uint8")
         if href.startswith("a"):
-            arreglo[:, : forma[1] // 2] = 4
+            array[:, : shape[1] // 2] = 4
         else:
-            arreglo[:, forma[1] // 2 :] = 5
-        return arreglo
+            array[:, shape[1] // 2 :] = 5
+        return array
 
-    monkeypatch.setattr(composite, "read_window", leer)
-    assert len(composite.useful_tiles(escenas, BBOX)) == 6
+    monkeypatch.setattr(composite, "read_window", read)
+    assert len(composite.useful_tiles(scenes, BBOX)) == 6
 
 
-def test_sin_ninguna_tesela_util_falla(monkeypatch):
+def test_no_useful_tile_at_all_fails(monkeypatch):
     monkeypatch.setattr(composite, "read_window", lambda h, b, f: np.zeros(f, dtype="uint8"))
     with pytest.raises(RuntimeError, match="none of the"):
-        composite.useful_tiles([escena_optica("x", "14QKH")], BBOX)
+        composite.useful_tiles([optical_scene("x", "14QKH")], BBOX)

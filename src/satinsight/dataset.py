@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 
 from satinsight import bags, encoders, tiling
-from satinsight.agebs import cities_by_size
+from satinsight.agebs import GRADES, cities_by_size
 from satinsight.cache import load
 from satinsight.download import DATA_ROOT
 from satinsight.pipeline import city_aoi
@@ -36,7 +36,7 @@ def paths(root: Path = DATA_ROOT) -> dict[str, Path]:
         "bags": root / "bags",
         "vectors": root / "vectors",
         "partition": root / "partition.csv",
-        "cities": root / "ciudades_nacional.csv",
+        "cities": root / "cities_national.csv",
     }
 
 
@@ -48,7 +48,7 @@ def city_table(root: Path = DATA_ROOT, *, force: bool = False) -> pd.DataFrame:
     """
     destination = paths(root)["cities"]
     if destination.exists() and not force:
-        return pd.read_csv(destination, dtype={"clave": str})
+        return pd.read_csv(destination, dtype={"key": str})
 
     catalogue = cities_by_size(root=root, stratify=True)
     rows = []
@@ -60,11 +60,11 @@ def city_table(root: Path = DATA_ROOT, *, force: bool = False) -> pd.DataFrame:
             continue
         rows.append(
             {
-                "clave": key,
-                "nombre": catalogue[key].name,
-                "entidad": catalogue[key].state,
+                "key": key,
+                "name": catalogue[key].name,
+                "state": catalogue[key].state,
                 "agebs": len(agebs),
-                "altos": float(agebs.grado.isin(("Alto", "Muy alto")).mean()),
+                "high_share": float(agebs.grade.isin(GRADES[3:]).mean()),
             }
         )
     table = pd.DataFrame(rows)
@@ -171,7 +171,7 @@ def collect(sensor: str, root: Path = DATA_ROOT) -> tuple[pd.DataFrame, pd.DataF
     if not instance_files:
         raise FileNotFoundError(f"no city has been tiled for {sensor} yet")
     instances = pd.concat([pd.read_parquet(p) for p in instance_files], ignore_index=True)
-    keys = set(instances.ciudad)
+    keys = set(instances.city)
     bag_table = pd.concat(
         [pd.read_parquet(p) for p in sorted(where["bags"].glob("*.parquet")) if p.stem in keys],
         ignore_index=True,

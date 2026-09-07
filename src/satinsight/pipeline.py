@@ -174,7 +174,7 @@ def build_composite(
         depth = int(meta["scenes_used"])
 
     _require_depth(key, sensor, depth, min(MIN_DEPTH, cap))
-    tags |= {"ciudad": key, "sensor": sensor, "period": period, "bbox": list(area.bbox)}
+    tags |= {"city": key, "sensor": sensor, "period": period, "bbox": list(area.bbox)}
     return bands, grid, tags
 
 
@@ -329,7 +329,7 @@ def features_of_city(
         how="left",
     )
 
-    labels = agebs[["cvegeo", "ciudad", "grado", "ordinal", "poblacion", "viviendas"]]
+    labels = agebs[["cvegeo", "city", "grade", "ordinal", "population", "dwellings"]]
     table = table.merge(labels, on="cvegeo", how="left")
     table["area_km2"] = projected.geometry.area.to_numpy() / 1e6
     return table
@@ -410,7 +410,7 @@ def reliability_of_cities(
                         list(agebs.cvegeo),
                         prefix=name,
                         value_range=_channel_range(name, scale),
-                    ).assign(ciudad=key)
+                    ).assign(city=key)
                 )
         except Exception:
             log.warning("no reliability for %s", key, exc_info=True)
@@ -424,5 +424,5 @@ def reliability_of_cities(
         .reset_index()
         .sort_values("r_median", ascending=False)
     )
-    log.info("reliability of %d features over %d cities", len(summary), together.ciudad.nunique())
+    log.info("reliability of %d features over %d cities", len(summary), together.city.nunique())
     return summary

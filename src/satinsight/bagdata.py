@@ -53,7 +53,9 @@ class Bag:
         return len(self.instances)
 
 
-def _by_position(instances: pd.DataFrame, source: str, root: Path) -> tuple[np.ndarray, np.ndarray]:
+def _by_position(
+    city: str, instances: pd.DataFrame, source: str, root: Path
+) -> tuple[np.ndarray, np.ndarray]:
     """Rows of another feature file matched to `instances` by grid position.
 
     Returns the matched vectors and a mask of the instances that found a counterpart.
@@ -61,11 +63,12 @@ def _by_position(instances: pd.DataFrame, source: str, root: Path) -> tuple[np.n
     ground when one source dropped a token the other kept.
     """
     where = paths(root)
-    pair = pd.read_parquet(where["instances"] / f"{instances.ciudad.iloc[0]}_{source}.parquet")
-    vectors, _ = load(where["vectors"] / f"{instances.ciudad.iloc[0]}_{source}.npz")
+    pair = pd.read_parquet(where["instances"] / f"{city}_{source}.parquet")
+    vectors, _ = load(where["vectors"] / f"{city}_{source}.npz")
     index = {(y, x): i for i, (y, x) in enumerate(zip(pair.y0, pair.x0, strict=True))}
     rows = np.array(
-        [index.get((y, x), -1) for y, x in zip(instances.y0, instances.x0, strict=True)]
+        [index.get((y, x), -1) for y, x in zip(instances.y0, instances.x0, strict=True)],
+        dtype=np.int64,
     )
     keep = rows >= 0
     return vectors[rows[keep]], keep
@@ -106,7 +109,7 @@ def load_city(
     # token for want of observed pixels
     sources = (["s1" if sensor == "s2" else "s2"] if fuse else []) + list(extras)
     for source in sources:
-        matched, keep = _by_position(instances, source, root)
+        matched, keep = _by_position(city, instances, source, root)
         if not keep.all():
             log.info(
                 "%s/%s: %d instances without a counterpart dropped", city, source, (~keep).sum()
@@ -114,18 +117,18 @@ def load_city(
         instances = instances[keep].reset_index(drop=True)
         vectors = np.hstack([vectors[keep], matched])
 
-    grades = dict(zip(labels.municipio, labels.ordinal, strict=True))
+    grades = dict(zip(labels.municipality, labels.ordinal, strict=True))
     columns = [f"p{k}" for k in range(1, 5)]
     shares = (
         {
-            row.municipio: np.array([getattr(row, c) for c in columns], dtype="float32")
+            row.municipality: np.array([getattr(row, c) for c in columns], dtype="float32")
             for row in labels.itertuples()
         }
         if all(c in labels.columns for c in columns)
         else {}
     )
     bags = []
-    for municipality, group in instances.groupby("municipio", observed=True):
+    for municipality, group in instances.groupby("municipality", observed=True):
         if municipality not in grades:
             continue
         bags.append(

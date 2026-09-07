@@ -43,10 +43,10 @@ LOG_SCALED = frozenset({"built_surface", "population"})
 def product_files(product: str, root: Path = DATA_ROOT) -> list[Path]:
     """Every tile of one product already on disk, or the single nightlights layer."""
     if product == "nightlights":
-        path = root / "externos" / "nightlights" / NIGHTLIGHTS_NAME
+        path = root / "external" / "nightlights" / NIGHTLIGHTS_NAME
         return [path] if path.exists() else []
     spec = GHSL_PRODUCTS[product]
-    return sorted((root / "externos" / "ghsl" / product).glob(f"{spec.dataset}_*.tif"))
+    return sorted((root / "external" / "ghsl" / product).glob(f"{spec.dataset}_*.tif"))
 
 
 def _overlaps(source, grid: Grid) -> bool:
@@ -111,7 +111,7 @@ def city_features(grid: Grid, y0: np.ndarray, x0: np.ndarray, root: Path = DATA_
     for name in FEATURES:
         paths = product_files(name, root)
         if not paths:
-            raise FileNotFoundError(f"no {name} raster on disk under {root / 'externos'}")
+            raise FileNotFoundError(f"no {name} raster on disk under {root / 'external'}")
         layers[name] = onto_grid(paths, grid)
         covered = float(np.isfinite(layers[name]).mean())
         if covered < 0.99:

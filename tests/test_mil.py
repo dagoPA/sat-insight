@@ -20,10 +20,10 @@ def test_attention_refuses_mismatched_lengths():
 
 
 def test_the_rare_grade_gets_the_heaviest_weight():
-    """Cuatro bolsas de grado alto contra ciento setenta de grado bajo.
+    """Four high-grade bags against a hundred and seventy low-grade ones.
 
-    Sin reponderar, predecir la clase mayoritaria en todas partes es un óptimo local que el
-    modelo alcanza en dos épocas y del que no sale.
+    Without reweighting, predicting the majority class everywhere is a local optimum the
+    model reaches in two epochs and never leaves.
     """
     bags = [
         Bag("c", "m", np.zeros((1, 2)), np.array(["a"]), 1, np.zeros(4), np.zeros(1), np.zeros(1))
@@ -33,13 +33,13 @@ def test_the_rare_grade_gets_the_heaviest_weight():
     ] * 10
     w = _bag_weights(bags, 5)
     assert w[4] > w[1]
-    assert w[0] == 0.0  # una clase ausente no recibe peso
+    assert w[0] == 0.0  # an absent class receives no weight
 
 
-def _bag(city, keys, n_por_clave=1):
-    claves = np.repeat(keys, n_por_clave)
-    n = len(claves)
-    return Bag(city, "m", np.zeros((n, 2)), claves, 2, np.zeros(4), np.zeros(n), np.zeros(n))
+def _bag(city, keys, per_key=1):
+    cvegeo = np.repeat(keys, per_key)
+    n = len(cvegeo)
+    return Bag(city, "m", np.zeros((n, 2)), cvegeo, 2, np.zeros(4), np.zeros(n), np.zeros(n))
 
 
 def test_the_heatmap_scores_perfectly_when_attention_follows_the_grade():
@@ -58,7 +58,7 @@ def test_the_heatmap_scores_negative_when_attention_runs_backwards():
 
 
 def test_a_bag_of_one_grade_contributes_nothing():
-    """No hay orden que recuperar dentro de una bolsa cuyas AGEB comparten grado."""
+    """There is no order to recover inside a bag whose AGEB share one grade."""
     bag = _bag("x", ["a", "b", "c"])
     r = score_heatmap([bag], [np.array([0.5, 0.3, 0.2])], {"a": 1, "b": 1, "c": 1})
     assert r["bags_scored"] == 0
@@ -74,7 +74,7 @@ def test_bags_with_too_few_agebs_are_skipped():
 
 
 def test_agebs_without_a_grade_are_left_out():
-    bag = _bag("x", ["a", "b", "c", "sin_grado"])
+    bag = _bag("x", ["a", "b", "c", "ungraded"])
     grades = {"a": 0, "b": 2, "c": 4}
     r = score_heatmap([bag], [np.array([0.1, 0.2, 0.3, 0.4])], grades)
     assert r["agebs_scored"] == 3

@@ -1,50 +1,63 @@
 # sat-insight
 
-Spatial disaggregation of social deprivation from weakly supervised satellite imagery.
+Mapping neighborhood-scale social deprivation from Sentinel imagery, trained on municipal
+aggregates only.
 
-A bag is a Mexican municipality; its label is the five-class ordinal Social Deprivation
-Grade (GRS) that CONEVAL publishes, an aggregate over census units (AGEB). The model never
-receives spatial supervision. The per-instance predictions form a map, validated against
-AGEB-level grades that are entirely held out from training.
-
-The headline quantity under construction is the supervision-efficiency curve: the fraction
-of a fully supervised ceiling that aggregate supervision recovers, as a function of how
-many aggregates exist, their size, and the level they are published at. Mexico can
-calibrate that curve because it publishes ground truth at both levels at once.
+A bag is a Mexican municipality; its label is the five-level Social Deprivation Grade
+(GRS) that CONEVAL publishes, aggregated over urban census tracts (AGEB). The model never
+receives spatial supervision. Every 160 m token gets a prediction, the bag prediction is
+the mean of its tokens, and the per-token predictions form a map that is scored against
+tract-level grades held out from training entirely. A fully supervised oracle trained on
+the tract labels bounds what the frozen features support, so the result is stated as the
+fraction of that upper bound that aggregate supervision recovers.
 
 ## Layout
 
-- `src/satinsight/`: installable library: STAC catalog queries, windowed COG reads,
-  annual median composites (Sentinel-1 RTC and Sentinel-2 L2A), tiling into bags, frozen
-  DOFA encoding, label-proportion models, evaluation.
-- `herramientas/`: experiment drivers (Spanish filenames, English code).
+- `src/satinsight/`: installable library. STAC catalog queries, windowed COG reads, annual
+  median composites (Sentinel-1 RTC and Sentinel-2 L2A), tiling into bags, frozen DOFA
+  encoding, auxiliary product layers, the label-proportion head, evaluation, and the
+  figure guard.
+- `scripts/`: experiment drivers, one per analysis, plus `reproduce.sh` with the canonical
+  sequence from composites to figures.
 - `tests/`: network-free tests over pure logic. `uv run pytest`.
-- `data/`: regenerable; ignored by git.
+- `docs/manuscript/`: LaTeX sources, figures, per-panel source data, and
+  `canonical_results.json`, the file every figure is checked against.
+- `data/`: composites, tiles, vectors, labels and results; regenerable and ignored by git.
 
 ## Conventions
 
 Everything runs through [uv](https://docs.astral.sh/uv/): `uv run ...`, `uv add ...`.
-Format and lint with `uv run ruff format . && uv run ruff check .` before any change
-closes. Satellite data comes from Microsoft Planetary Computer via windowed reads; no
-whole-scene downloads.
+Format and lint with `uv run ruff format . && uv run ruff check .` before a change closes.
+Satellite data comes from Microsoft Planetary Computer through windowed reads of the
+cloud-optimized GeoTIFFs; no whole-scene downloads.
+
+Data tables use English column names throughout: `city`, `municipality`, `grade`,
+`population`, and the five grade labels `Very low` to `Very high`. `cvegeo` stays as the
+official INEGI tract key. Tables written before this schema are converted in place by
+`scripts/migrate_schema.py`.
 
 ## Reproducing
 
-Each figure of the paper maps to one driver in `herramientas/`:
+`scripts/reproduce.sh` lists the canonical run in order. From the frozen vectors on,
+everything reproduces in a few hours on one GPU; the compositing and encoding steps
+before that take days of downloading.
+
+Each figure of the paper maps to one driver in `scripts/`:
 
 | Figure | Driver |
 | --- | --- |
-| 1, study design | `figura_diseno.py` |
-| 2, supervision efficiency | `figura_curva.py` |
-| 3, prediction against localization | `figura_disociacion.py` |
-| 4, external validity | `figura_validez.py` |
-| 5, free products and uncertainty | `figura_incumbentes.py` |
+| 1, study design | `fig1_design.py` |
+| 2, supervision efficiency | `fig2_curve.py` |
+| 3, prediction against localization | `fig3_dissociation.py` |
+| 4, external validity | `fig4_validation.py` |
+| 5, free products and uncertainty | `fig5_incumbents.py` |
 
 Drivers 2 to 5 recompute every quantity they draw from the per-seed artifacts and stop if
-one departs from `data/canon_manuscrito.json`, so a stale artifact fails the build instead
-of quietly redrawing the page. `datos_fuente.py` exports the per-panel source data.
+one departs from `docs/manuscript/canonical_results.json`, so a stale artifact fails the
+build instead of quietly redrawing the page. `source_data.py` exports the per-panel
+source data.
 
-`empaquetar_benchmark.py` builds the frozen benchmark (DOFA vectors, labels, splits,
-evaluation protocol) under `dist/benchmark`, so heads can be trained in minutes without
-the satellite pipeline. Until it is deposited, `satinsight probe` verifies the live data
+`package_benchmark.py` builds the frozen benchmark (DOFA vectors, labels, splits,
+evaluation protocol) under `dist/benchmark` for deposit on Zenodo, so heads can be trained
+in minutes without the satellite pipeline. `satinsight probe` verifies the live data
 access the pipeline needs.
