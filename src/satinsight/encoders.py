@@ -211,10 +211,33 @@ class CopernicusFmEncoder(DofaEncoder):
 
     def _load(self, checkpoint: str):
         import torchgeo.models as models
+        from torchgeo.models import copernicusfm
 
         if checkpoint != "copernicusfm_base":
             raise KeyError(f"unknown Copernicus-FM checkpoint {checkpoint!r}")
+        self._expand_on_cpu(copernicusfm.FourierExpansion)
         return models.copernicusfm_base(weights=models.CopernicusFM_Base_Weights.CopernicusFM_ViT)
+
+    @staticmethod
+    def _expand_on_cpu(expansion_class) -> None:
+        """Routes the Fourier expansions through the CPU in double precision.
+
+        The model encodes wavelengths, coordinates, dates and areas with sines of
+        products that reach 1e12 radians, which it computes in float64 on purpose. Apple
+        silicon has no float64, so those few small tensors take a detour through the CPU
+        and come back as float32 on the accelerator, exactly as the reference computes
+        them; everything heavy stays on the device.
+        """
+        if getattr(expansion_class, "_satinsight_cpu_detour", False):
+            return
+        original = expansion_class.forward
+
+        def forward(self, x, d):
+            device = x.device
+            return original(self, x.detach().to("cpu"), d).to(device)
+
+        expansion_class.forward = forward
+        expansion_class._satinsight_cpu_detour = True
 
     def embed(self, batch, wavelengths, metadata=None):
         return self.embed_tokens(batch, wavelengths, metadata).mean(axis=1)
