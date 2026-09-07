@@ -106,6 +106,23 @@ publishes ground truth at both levels. Mexico publishes its Social Deprivation G
 (AGEB)~\cite{coneval2020}; we train only on the former and score maps against the
 latter, held out entirely, in cities the model never saw (Fig.~\ref{fig:design}).
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig1_design.pdf}
+\caption{\textbf{Study design.}
+\textbf{a}, The 351 study units: 110 training cities, the 213-municipality expansion
+toward the deprived half of urban Mexico (municipalities overlapping held-out ground
+excluded), 14 validation and 14 held-out test cities. A city box is a conurbation and
+typically yields several municipal bags, which is how 351 units produce 771 bags. \textbf{b}, What the
+model consumes: the 2020 Sentinel-2 median composite of Tapachula (a validation city)
+with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, The held-out
+tract truth, every token painted with the GRS grade of the AGEB it falls in.
+\textbf{d}, What the model produces: the token-level deprivation score from municipal
+aggregates alone, on the same scale. Tapachula sits at the validation median
+($\rho = 0.47$), chosen as a median-performing, representative example.}
+\label{fig:design}
+\end{figure}
+
 Three design choices constrain the measurement. Supervision is weak: a model sees a bag
 of image tokens for a municipality and one vector, the population shares at each grade
 threshold, with no spatial annotation of any kind. Every comparison is scored
@@ -330,6 +347,22 @@ against 0.747 optical). Sensor content dominates ground sampling distance, with 
 real secondary cost on test; a sensor's prediction accuracy is a poor guide to its map
 quality.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig2_curve.pdf}
+\caption{\textbf{The exchange rate between aggregates and maps.} All panels: mean over
+three seeds against held-out tract grades; blue, the 14 validation cities used for
+selection (error bars, s.d. over seeds); red, the 14 held-out test cities, drawn
+without a spread; dashed and dotted lines, the fully supervised oracle upper bound on each split
+($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
+many municipal aggregates supervise training (nested, grade-stratified sampling).
+\textbf{b}, The same 771 bags relabeled with coarser aggregates. \textbf{c},
+Single-sensor configurations: degrading optical resolution to the radar's 20 m grain
+costs little on validation and a real but secondary amount on test; radar sits far
+below both.}
+\label{fig:curve}
+\end{figure}
+
 \begin{table}[htbp]
 \centering
 \caption{The supervision-efficiency curve (Fig.~\ref{fig:curve}a). Mean over three seeds;
@@ -357,6 +390,21 @@ municipal labels well (quadratic-weighted $\kappa = 0.62$) and produces a map at
 pool). An entropy penalty that flattens the attention to near-uniform costs no bag
 AUROC (0.899 $\to$ 0.895): the bag task is solvable from the plain feature mean, so the
 attention weights receive no gradient that rewards localization.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig3_dissociation.pdf}
+\caption{\textbf{Bag prediction versus localization.}
+\textbf{a}, Map quality by model family on identical features and labels; the first
+three bars are measured on the national-set pool, the swept bar on the expanded pool of
+Fig.~2. Attention pooling solves the bag task from the feature mean and receives no
+localization gradient; predicting instances and averaging predictions makes the map the
+mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
+folds of the national set), the only criterion weak supervision may monitor is nearly
+uncorrelated with within-municipality map quality, and positively correlated
+($+0.62$) with the pooled AUROC it would seem to proxy.}
+\label{fig:dissociation}
+\end{figure}
 
 Reversing the order of prediction and aggregation removes the failure. Predicting every
 token and averaging the predictions (deep learning from label
@@ -417,6 +465,28 @@ smoothly ($+0.001$). An earlier $+0.14$ border jump traced to bag-limited neighb
 adjacency at inference and disappeared after the adjacency was computed city-wide. The
 test cities contain too few same-grade cross-border pairs to repeat this control there.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig4_validation.pdf}
+\caption{\textbf{External validity.} Blue, validation; red, held-out test;
+purple in \textbf{d}, which belongs to neither split. \textbf{a}, Within-municipality agreement on the identical AGEB
+universe reached by the incumbent's grid; annotation, city-clustered bootstraps of the
+paired difference per split. \textbf{b}, Replication against an independent
+institution's continuous index, beside the map's agreement with the construct it was
+trained toward (error bars: s.d. over seeds on the CONEVAL bars, city-clustered bootstrap
+half-widths on the CONAPO bars).
+\textbf{c}, Share of the aggregate-to-census targeting gap closed at each budget,
+people pooled per split; validation loses at the tightest budget, test does not.
+\textbf{d}, Transfer under each country's own aggregates: within-municipality $\rho$
+against Bogot\'a's block strata (35 bags; $n = 12{,}738$ built tokens) and against
+tract median income across 47 Brazilian municipalities (48 bags; $n = 110{,}728$), for
+the Mexican model unadapted, the head trained from scratch on the local municipal
+aggregates, the Mexican heads fine-tuned on them, and the fully supervised oracle; bars
+are means over three seeds with their s.d. where seeds apply, under grouped folds by
+municipality (Bogot\'a's oracle: spatial folds).}
+\label{fig:validation}
+\end{figure}
+
 The sharper version of the question is what a practitioner would get for free. Four global
 products were scored on the identical universe under the identical protocol
 (Fig.~\ref{fig:incumbents}a, Table~\ref{tab:products}). Against GHSL residential population the map wins clearly,
@@ -432,6 +502,22 @@ does. That comparison is handicapped in the light product's disfavor by resoluti
 63\% of test tracts are smaller than one of its cells and take the value at an interior
 point, and it is reported at face value regardless: within the precision fourteen
 cities allow, we cannot show the map beats nighttime lights.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig5_incumbents.pdf}
+\caption{\textbf{Free products, and the confidence the map can carry.}
+\textbf{a}, Paired within-municipality difference between the map and each downloadable
+global product on the identical tract universe, blue validation and red test, with
+city-clustered bootstrap intervals; only gridded population separates from the map on
+test, and nighttime lights straddle zero on both splits. \textbf{b}, Pooled detection of
+high and very-high grade tracts across the test cities: all four products land at or
+above the map, which is the bag-versus-map dissociation of Fig.~3 arriving on external ground.
+\textbf{c}, Conformal coverage per test city at 90\% nominal, calibrated on the
+validation cities. The marginal rule falls below nominal in ten of fourteen cities; the
+clustered rule restores coverage at a half-width of 1.68 of the five grades.}
+\label{fig:incumbents}
+\end{figure}
 
 \begin{table}[htbp]
 \centering
@@ -880,101 +966,4 @@ could have influenced this work.
 Correspondence to D.P.A.
 
 \clearpage
-\section*{Figures}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig1_design.pdf}
-\caption{\textbf{Study design.}
-\textbf{a}, The 351 study units: 110 training cities, the 213-municipality expansion
-toward the deprived half of urban Mexico (municipalities overlapping held-out ground
-excluded), 14 validation and 14 held-out test cities. A city box is a conurbation and
-typically yields several municipal bags, which is how 351 units produce 771 bags. \textbf{b}, What the
-model consumes: the 2020 Sentinel-2 median composite of Tapachula (a validation city)
-with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, What it
-produces: the token-level deprivation score from municipal aggregates alone. Tract
-ground truth for the same city is shown in Fig.~\ref{fig:truth}; Tapachula sits at the
-validation median ($\rho = 0.47$), chosen as a median-performing, representative example.}
-\label{fig:design}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.62\linewidth]{fig1_truth.pdf}
-\caption{Tract-level ground truth for Tapachula, on the color scale of
-Fig.~\ref{fig:design}c. Every token inherits the held-out GRS grade of the AGEB it
-falls in.}
-\label{fig:truth}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig2_curve.pdf}
-\caption{\textbf{The exchange rate between aggregates and maps.} All panels: mean over
-three seeds against held-out tract grades; blue, the 14 validation cities used for
-selection (error bars, s.d. over seeds); red, the 14 held-out test cities, drawn
-without a spread; dashed and dotted lines, the fully supervised oracle upper bound on each split
-($\rho = 0.251$ validation, $0.233$ test). \textbf{a}, Agreement as a function of how
-many municipal aggregates supervise training (nested, grade-stratified sampling).
-\textbf{b}, The same 771 bags relabeled with coarser aggregates. \textbf{c},
-Single-sensor configurations: degrading optical resolution to the radar's 20 m grain
-costs little on validation and a real but secondary amount on test; radar sits far
-below both.}
-\label{fig:curve}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig3_dissociation.pdf}
-\caption{\textbf{Bag prediction versus localization.}
-\textbf{a}, Map quality by model family on identical features and labels; the first
-three bars are measured on the national-set pool, the swept bar on the expanded pool of
-Fig.~2. Attention pooling solves the bag task from the feature mean and receives no
-localization gradient; predicting instances and averaging predictions makes the map the
-mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
-folds of the national set), the only criterion weak supervision may monitor is nearly
-uncorrelated with within-municipality map quality, and positively correlated
-($+0.62$) with the pooled AUROC it would seem to proxy.}
-\label{fig:dissociation}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig4_validation.pdf}
-\caption{\textbf{External validity.} Blue, validation; red, held-out test;
-purple in \textbf{d}, which belongs to neither split. \textbf{a}, Within-municipality agreement on the identical AGEB
-universe reached by the incumbent's grid; annotation, city-clustered bootstraps of the
-paired difference per split. \textbf{b}, Replication against an independent
-institution's continuous index, beside the map's agreement with the construct it was
-trained toward (error bars: s.d. over seeds on the CONEVAL bars, city-clustered bootstrap
-half-widths on the CONAPO bars).
-\textbf{c}, Share of the aggregate-to-census targeting gap closed at each budget,
-people pooled per split; validation loses at the tightest budget, test does not.
-\textbf{d}, Transfer under each country's own aggregates: within-municipality $\rho$
-against Bogot\'a's block strata (35 bags; $n = 12{,}738$ built tokens) and against
-tract median income across 47 Brazilian municipalities (48 bags; $n = 110{,}728$), for
-the Mexican model unadapted, the head trained from scratch on the local municipal
-aggregates, the Mexican heads fine-tuned on them, and the fully supervised oracle; bars
-are means over three seeds with their s.d. where seeds apply, under grouped folds by
-municipality (Bogot\'a's oracle: spatial folds).}
-\label{fig:validation}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig5_incumbents.pdf}
-\caption{\textbf{Free products, and the confidence the map can carry.}
-\textbf{a}, Paired within-municipality difference between the map and each downloadable
-global product on the identical tract universe, blue validation and red test, with
-city-clustered bootstrap intervals; only gridded population separates from the map on
-test, and nighttime lights straddle zero on both splits. \textbf{b}, Pooled detection of
-high and very-high grade tracts across the test cities: all four products land at or
-above the map, which is the bag-versus-map dissociation of Fig.~3 arriving on external ground.
-\textbf{c}, Conformal coverage per test city at 90\% nominal, calibrated on the
-validation cities. The marginal rule falls below nominal in ten of fourteen cities; the
-clustered rule restores coverage at a half-width of 1.68 of the five grades.}
-\label{fig:incumbents}
-\end{figure}
-
-
 \end{document}

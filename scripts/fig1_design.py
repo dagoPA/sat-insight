@@ -1,9 +1,10 @@
 """Figure 1 of the manuscript: study design, where, what the model sees, what it produces.
 
-Panel a: every municipality of the study on the national map, coloured by role. Panel b:
-the true-colour composite of one held-out city with its AGEB boundaries, the imagery the
-model actually consumes. Panels c and d: AGEB truth and the token-level prediction for
-the same city, on one colour scale. Tapachula is the display city: median size, all five
+Panel a: every municipality of the study on the national map, colored by role. Panel b:
+the true-color composite of one held-out city with its AGEB boundaries, the imagery the
+model actually consumes. Panels c and d: the held-out tract truth and the token-level
+prediction for the same city, painted as one continuous lattice of 160 m cells on one
+color scale. Tapachula is the display city: median size, all five
 grades present, and a within-municipality rho close to the validation mean, so the
 example neither flatters nor sandbags the method.
 
@@ -100,9 +101,21 @@ def rgb_of(city: str) -> tuple[np.ndarray, object]:
     return np.clip((stack - low) / (high - low), 0, 1), grid
 
 
+def token_raster(tokens: pd.DataFrame, values: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    """Values painted as a continuous lattice of 160 m cells over the pixel grid.
+
+    Each token fills its whole 16 by 16 pixel footprint, so the map reads as a surface
+    with no gaps between cells; ground with no token stays transparent.
+    """
+    raster = np.full(shape, np.nan, dtype="float32")
+    for y0, x0, value in zip(tokens.y0, tokens.x0, values, strict=True):
+        raster[y0 : y0 + TOKEN_SIZE, x0 : x0 + TOKEN_SIZE] = value
+    return raster
+
+
 def main() -> None:
-    fig = plt.figure(figsize=(7.2, 6.6), constrained_layout=True)
-    grid_spec = fig.add_gridspec(2, 2, height_ratios=[1.15, 1])
+    fig = plt.figure(figsize=(7.2, 7.4), constrained_layout=True)
+    grid_spec = fig.add_gridspec(2, 3, height_ratios=[1.25, 1])
 
     # a, the national map
     ax = fig.add_subplot(grid_spec[0, :])
@@ -114,7 +127,7 @@ def main() -> None:
         "train": ("#9ecae1", 4, "training cities"),
         "expansion": ("#fdd0a2", 3, "expansion municipalities"),
         "val": ("#2166ac", 14, "validation cities (held out)"),
-        "test": ("#b2182b", 14, "test cities (unopened)"),
+        "test": ("#b2182b", 14, "test cities (held out)"),
     }
     for role, (colour, size, label) in style.items():
         chosen = points[points.role == role]
@@ -159,11 +172,9 @@ def main() -> None:
     )
     ax.text(44, 30, "10×10 tokens (1.6 km)", color="#ffd92f", fontsize=6.5)
     ax.set_axis_off()
-    ax.set_title(
-        f"b  Sentinel-2 median composite, {CITY.title()}", loc="left", fontsize=9, fontweight="bold"
-    )
+    ax.set_title(f"b  Composite, {CITY.title()}", loc="left", fontsize=9, fontweight="bold")
 
-    # c y d, truth and prediction on one scale
+    # c and d, truth and prediction as one lattice on one scale
     scores = pd.read_parquet("data/predictions_val.parquet")
     tokens = (
         scores[scores.city == CITY]
@@ -172,28 +183,23 @@ def main() -> None:
         .reset_index()
     )
     grades = dict(zip(layer.cvegeo, layer.ordinal.astype(int), strict=True))
-
-    ax = fig.add_subplot(grid_spec[1, 1])
-    ax.imshow(rgb * 0.35)
     norm = colors.Normalize(vmin=0, vmax=4)
-    half = TOKEN_SIZE // 2
-    ax.scatter(
-        tokens.x0 + half,
-        tokens.y0 + half,
-        c=tokens.score,
-        cmap=CMAP,
-        norm=norm,
-        s=1.6,
-        marker="s",
-        linewidths=0,
+    shape = rgb.shape[:2]
+    truth = tokens.cvegeo.map(grades).to_numpy(dtype="float32")
+    panels = (
+        ("c  Tract truth (held out)", token_raster(tokens, truth, shape)),
+        (
+            "d  Prediction, weak supervision",
+            token_raster(tokens, tokens.score.to_numpy(), shape),
+        ),
     )
-    ax.set_axis_off()
-    ax.set_title(
-        "c  Token-level prediction (weak supervision)", loc="left", fontsize=9, fontweight="bold"
-    )
-    colourbar = fig.colorbar(
-        plt.cm.ScalarMappable(norm=norm, cmap=CMAP), ax=ax, fraction=0.04, pad=0.02
-    )
+    for column, (title, raster) in enumerate(panels, start=1):
+        ax = fig.add_subplot(grid_spec[1, column])
+        ax.imshow(rgb * 0.35)
+        image = ax.imshow(raster, cmap=CMAP, norm=norm, interpolation="nearest")
+        ax.set_axis_off()
+        ax.set_title(title, loc="left", fontsize=9, fontweight="bold")
+    colourbar = fig.colorbar(image, ax=ax, fraction=0.04, pad=0.02)
     colourbar.set_label("deprivation grade", fontsize=7)
     colourbar.set_ticks([0, 4])
     colourbar.set_ticklabels(["very low", "very high"])
@@ -201,25 +207,6 @@ def main() -> None:
     fig.savefig("docs/manuscript/figures/fig1_design.pdf", bbox_inches="tight")
     fig.savefig("docs/manuscript/figures/fig1_design.png", bbox_inches="tight")
     print("fig1_design saved", flush=True)
-
-    # el gemelo de la verdad, como panel suplementario del mismo tamaño
-    fig2, ax = plt.subplots(figsize=(3.6, 3.0), constrained_layout=True)
-    ax.imshow(rgb * 0.35)
-    truth = tokens.assign(o=tokens.cvegeo.map(grades)).dropna(subset=["o"])
-    ax.scatter(
-        truth.x0 + half,
-        truth.y0 + half,
-        c=truth.o,
-        cmap=CMAP,
-        norm=norm,
-        s=1.6,
-        marker="s",
-        linewidths=0,
-    )
-    ax.set_axis_off()
-    ax.set_title("AGEB ground truth (held out)", loc="left", fontsize=9, fontweight="bold")
-    fig2.savefig("docs/manuscript/figures/fig1_truth.pdf", bbox_inches="tight")
-    print("fig1_truth saved", flush=True)
 
 
 if __name__ == "__main__":
