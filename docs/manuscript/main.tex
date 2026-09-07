@@ -36,9 +36,14 @@ keep buying map, state aggregates forfeit part of it, one national figure erases
 optical content matters where resolution does not. The maps close 31--66\% of the
 aggregate-to-census targeting gap on test, replicate against an independent
 institution's index, beat the incumbent wealth index where selection occurred and match
-it on test, and order Bogot\'a's block strata without retraining. Against free global
-grids the margin is resolvable only for population; nighttime lights order tracts inside a
-municipality as well as the maps do. Attention-based multiple-instance learning fails here
+it on test, and order Bogot\'a's block strata without retraining. Repeating the design
+abroad on each country's own municipal aggregates, Colombia's poverty rate and Brazil's
+mean income, recovers a within-municipality ordering of block strata in Bogot\'a
+($\rho = 0.21$) and of tract income across 47 Brazilian municipalities ($0.12$) from 35
+and 48 bags, the small-supply end of the Mexican curve. Against free global grids the
+margin is resolvable only for population; nighttime lights order tracts inside a
+municipality as well as the maps do, and feeding those grids to the model as inputs lifts
+the fully supervised bound by $0.03$ without lifting the weakly supervised map. Attention-based multiple-instance learning fails here
 for a measurable, structural reason, and ensembling over seeds yields no usable
 uncertainty layer: an honest 90\% grade interval spans 1.7 of the five levels.
 \end{abstract}
@@ -87,7 +92,11 @@ city boxes are conurbations and typically span several municipalities.
 grade thresholds supervise training; AGEB-level grades are used only for evaluation and
 for the oracle. Auxiliary evaluation sources: CONAPO IMU 2020~\cite{conapo2020}, ESA
 WorldCover 2020~\cite{worldcover}, Meta RWI~\cite{chi2022}, IBGE AGSN
-2019~\cite{ibge2019}, Bogot\'a's district stratification~\cite{bogota}.
+2019~\cite{ibge2019}, Bogot\'a's district stratification~\cite{bogota}. For training
+abroad: Colombia's municipal multidimensional poverty rate (DANE, census
+2018)~\cite{dane_ipm} with the MGN 2023 municipal boundaries~\cite{mgn2023}, and
+Brazil's municipal mean and tract median monthly income of the household head (IBGE,
+census 2022)~\cite{ibge2022} with the 2022 census tract geometries.
 
 \section{Methods}
 
@@ -119,11 +128,33 @@ error bars are s.d. over seeds.
 \noindent The same head
 trained on tract labels, with the same context, bounds the representation
 ($\rho = 0.251$ with context, $0.202$ without). 
-\subsection{Zero-shot transfer}
-\noindent Bogot\'a
+\subsection{Transfer to Colombia and Brazil}
+\noindent Zero-shot: Bogot\'a
 and Rio get the same 2020 composite protocol; tokens are scored by the three final seeds
 with Mexican standardization statistics, deliberately unadapted. Rio's evaluation is
 restricted to tokens with WorldCover built fraction $\geq 0.10$.
+
+Training on local aggregates: six composited boxes (Bogot\'a, the Aburr\'a valley,
+Cali; Rio, S\~ao Paulo, Belo Horizonte) are cut into 160 m tokens, encoded by the same
+frozen model, and kept where the WorldCover built fraction is $\geq 0.10$. A bag is a
+municipality with at least 5\% of its area inside a box and at least 32 built tokens,
+assigned from each country's official boundaries: 35 bags in Colombia, 48 in Brazil.
+The label is what each office publishes at municipal level and nothing finer: Colombia's
+multidimensional poverty rate, a share that enters the one-output label-proportion head
+unchanged; Brazil's mean monthly income of the household head, mapped to a deprivation
+share by scaling minus its logarithm to $[0, 1]$ over the country's bags, a monotone
+transform carrying no spatial information. The head, context and training settings are
+the Mexican ones with a single threshold, 40 epochs, no early stopping. Evaluation runs
+under five grouped folds by municipality and three seeds, so every token is scored by a
+model that never saw its municipality's label, against fine ground that never enters
+training: Bogot\'a's block strata (nearest block within 120 m, inverted; 12{,}738
+tokens) and, in Brazil, minus the log median income of the household head in the census
+tract containing the token (110{,}728 tokens across 47 municipalities with at least 20
+such tokens). Two further rows share the folds: the Mexican heads fine-tuned on the local
+aggregates (projection and scaler loaded, scoring row initialised as the mean of the four
+Mexican thresholds, learning rate $5 \times 10^{-5}$), and the oracle, the same head
+trained on the token truth. Colombia's truth exists in Bogot\'a alone, so its oracle folds
+over 3.2 km spatial cells inside the city; Brazil's oracle keeps the municipal folds.
 
 \subsection{Sweep}
 \noindent Fourteen configurations varied one ingredient each (learning rate
@@ -160,6 +191,20 @@ tract smaller than one cell takes the value at a representative interior point, 
 count of such fallbacks is reported. All four are used in practice as development proxies, so
 deprivation is taken as the negative of each, an orientation fixed before any correlation
 was computed. Scoring is the RWI protocol unchanged.
+
+\subsection{Global products as input features}
+\noindent The same four products, plus the eleven WorldCover class fractions and the
+NDVI mean and dispersion of the composite, are also tested as inputs. Each is
+reprojected onto the 10 m grid and averaged inside every 160 m token (population and
+built surface as $\log(1 + x)$), giving four GHSL and light columns and thirteen
+WorldCover columns appended to the 1{,}536 encoder dimensions. Two fusions are
+compared on the full pool, three seeds each, against the canonical head: early, the
+columns enter the projection with the encoder vector; late, they bypass it and enter the
+scoring layer beside the hidden representation, each with a weight of its own per
+threshold. The oracle is re-measured with the same inputs, standardised, since a
+nighttime-light column near 45 on an unstandardised scale would dominate the first
+layer; its no-extras reference is re-run under the same standardisation, and differences
+are paired by municipality with a city-clustered bootstrap.
 
 \subsection{Uncertainty and intervals}
 \noindent Uncertainty is read from the three training seeds: a tract's map value is the
@@ -324,7 +369,7 @@ easy half of the problem and the half gridded global layers are built for. What 
 supervision buys, where it buys anything, is the ordering inside a municipality, the half
 a targeting decision needs and the half no global product was built to deliver.
 
-\subsection{Zero-shot transfer to Bogot\'a and Rio de Janeiro}
+\subsection{Transfer to Colombia and Brazil}
 
 Applied unchanged to Bogot\'a, the model orders Colombia's block-level socioeconomic
 strata at $\rho = 0.318$ (AUROC 0.716 for the deprived strata 1--2 over 14{,}132 tokens
@@ -335,6 +380,41 @@ deprivation ordering as the GRS over the whole urban fabric, while the AGSN mask
 delimits informality, a partly orthogonal notion. The model learned a deprivation
 gradient from the aggregates, and that gradient transfers across countries; informality
 detection does not follow from it.
+
+Repeating the design on each country's own aggregates asks whether the Mexican result is
+a property of the method or of Mexico (Fig.~\ref{fig:validation}d, Supplementary
+Table~8). Trained from scratch on Colombia's municipal poverty rate over 35 bags, the
+head orders Bogot\'a's block strata at $\rho = 0.21$ (seeds $0.22$, $0.18$, $0.24$;
+AUROC 0.63 for the most deprived quartile), against $0.31$ for the Mexican model applied
+unchanged to the same built tokens and $0.25$ for the Mexican heads fine-tuned on the
+Colombian aggregates ($0.29$, $0.14$, $0.31$, the least stable row). Trained on
+Brazil's municipal mean income over 48 bags, it orders tract median income within
+municipalities at $\rho = 0.12$ [$0.07$, $0.17$] over 47 municipalities ($0.11$,
+$0.12$, $0.13$; pooled $0.33$; AUROC 0.64), against $0.10$ [$0.05$, $0.15$] zero-shot
+and $0.08$ for the fine-tuned Mexican heads. The fully supervised references are
+$0.75$ in Bogot\'a under spatial folds (AUROC 0.91) and $0.25$ [$0.20$, $0.30$] in
+Brazil under municipal folds. Both countries land where the Mexican curve places a
+supply of a few dozen bags ($\rho \approx 0.15$ at fifty), and Brazil's aggregate
+is a mean income rather than a graded deprivation share, a weaker match to the head. The
+method replicates on labels of a different construct from a different office; what the
+two countries lack at this stage is the supply of aggregates, which is the axis the
+curve measures.
+
+\subsection{Global products as input features}
+
+The products that match the map as competitors were also offered to it as inputs. With
+full tract supervision the four GHSL and light columns lift the standardised oracle from
+$\rho = 0.261$ to $0.291$ on validation (paired difference $+0.030$ [$+0.011$,
+$+0.050$] over 36 municipalities); the WorldCover fractions add $+0.014$ [$-0.004$,
+$+0.030$], and both together $+0.030$ [$+0.012$, $+0.046$]. Under municipal
+supervision none of it reaches the map. Early fusion gives $0.225$ with the GHSL and
+light columns, $0.212$ with WorldCover and $0.221$ with both, against the canonical
+$0.227$; late fusion, which hands the columns their own scoring weights, gives $0.210$
+and $0.226$ (Supplementary Table~7). Information that a tract-supervised head
+extracts from four columns is invisible to a gradient carried by a few hundred bag
+labels, and a dedicated pathway makes it worse rather than better, consistent with the
+rurality shortcut: built surface and population explain the municipal label well, the
+head leans on them, and the ordering inside the municipality degrades.
 
 \subsection{Uncertainty, and the cities where the map fails}
 
@@ -408,7 +488,9 @@ work.
 The comparison against free global grids sets the operational recommendation more
 honestly than an accuracy table would. On the pooled task every downloadable product
 outperforms the map, and within municipalities only the population grid separates from it
-on test, with nighttime lights matching it on both splits. So where the question is which
+on test, with nighttime lights matching it on both splits, and offering the grids to the
+model as inputs raises the fully supervised bound without moving the weakly supervised
+map. So where the question is which
 municipalities are poor, a global layer answers it today at no cost; where the question is
 which neighborhoods inside a municipality are poorest, the aggregate-trained map is the
 better instrument, by a margin smaller than the enthusiasm in this literature would
@@ -418,12 +500,13 @@ coverage across cities spans 1.7 of the five grades. What this method supports p
 is a ranking with the small municipalities named and excluded; a graded raster would
 overstate it.
 
-Mexico's dual-level publication made the calibration possible; the measured fractions
-can be extrapolated to countries that publish only aggregates, and the Bogot\'a
-transfer is a first test of that extrapolation. Extending the dual calibration to
-Colombia's own strata, holding out the block-level strata and building coarse
-aggregates from them, is the natural next measurement, and every number here is
-reproducible from the released frozen features.
+Mexico's dual-level publication made the calibration possible, and the Colombian and
+Brazilian rows test the extrapolation the paper invites: a country that publishes only
+municipal aggregates, of a construct and an office of its own, recovers a
+within-municipality ordering from them, at the level the Mexican curve assigns to a
+supply of a few dozen bags. The two countries hold 1{,}122 and 5{,}570 labelled
+municipalities; walking their curves toward the Mexican supply is the measurement that
+follows, and every number here is reproducible from the released frozen features.
 
 \section{Conclusions}
 
@@ -443,7 +526,9 @@ with held-out instance labels wherever maps are the product. A third caution is
 operational: measured against the free global grids a practitioner already has, the map's
 advantage is confined to the within-municipality ordering and is resolvable on fourteen
 test cities only against gridded population, while ensembling supplies no uncertainty
-layer and an honest grade interval spans 1.7 of the five levels. All data, frozen
+layer and an honest grade interval spans 1.7 of the five levels. The design repeats
+outside Mexico on each country's own municipal aggregates, in Colombia and Brazil, at
+the recovery the curve predicts for their present supply of bags. All data, frozen
 features, labels, splits and code are released.
 
 \begin{thebibliography}{10}
@@ -495,6 +580,14 @@ Random World} (Springer, 2005).
 \bibitem{ibge2019} IBGE. Aglomerados subnormais 2019: classifica\c{c}\~ao preliminar.
 \url{https://www.ibge.gov.br/geociencias/organizacao-do-territorio/tipologias-do-territorio/15788-aglomerados-subnormais.html}
 (2020; accessed August 2026).
+\bibitem{dane_ipm} DANE. Medida de pobreza multidimensional municipal de fuente censal
+2018. Departamento Administrativo Nacional de Estad\'istica, Bogot\'a (2020).
+\bibitem{mgn2023} DANE. Marco Geoestad\'istico Nacional 2023, nivel municipio.
+\url{https://geoportal.dane.gov.co/} (2023; accessed September 2026).
+\bibitem{ibge2022} IBGE. Censo Demogr\'afico 2022: agregados por setores censit\'arios e
+por munic\'ipios, rendimento do respons\'avel.
+\url{https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/} (2026; accessed September
+2026).
 \bibitem{bogota} Secretar\'ia Distrital de Planeaci\'on. Estratificaci\'on
 socioecon\'omica urbana de Bogot\'a D.C. Datos Abiertos Bogot\'a
 \url{https://datosabiertos.bogota.gov.co/dataset/estratificacion-para-bogota} (2024;
@@ -593,11 +686,13 @@ trained toward (error bars: s.d. over seeds on the CONEVAL bars, city-clustered 
 half-widths on the CONAPO bars).
 \textbf{c}, Share of the aggregate-to-census targeting gap closed at each budget,
 people pooled per split; validation loses at the tightest budget, test does not.
-\textbf{d}, Zero-shot transfer: the Mexican model, unchanged and unadapted, ordering
-Bogot\'a's block strata (AUROC for strata 1--2; $n = 14{,}132$ tokens) and detecting
-Rio's mapped informal settlements among built-up tokens ($n = 34{,}331$). The model
-transfers to a graded deprivation target and fails on informality, a different
-construct.}
+\textbf{d}, Transfer under each country's own aggregates: within-municipality $\rho$
+against Bogot\'a's block strata (35 bags; $n = 12{,}738$ built tokens) and against
+tract median income across 47 Brazilian municipalities (48 bags; $n = 110{,}728$), for
+the Mexican model unadapted, the head trained from scratch on the local municipal
+aggregates, the Mexican heads fine-tuned on them, and the fully supervised oracle; bars
+are means over three seeds with their s.d. where seeds apply, under grouped folds by
+municipality (Bogot\'a's oracle: spatial folds).}
 \label{fig:validation}
 \end{figure}
 

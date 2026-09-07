@@ -4,4 +4,4 @@ Highlights (Remote Sensing of Environment)
 - Weak supervision recovers 84-90% of the fully supervised upper bound
 - Attention MIL maps are at chance; bag error barely predicts map quality
 - Nighttime lights order tracts within municipalities as well as the trained map
-- The learned deprivation gradient transfers zero-shot to Bogota block strata
+- Colombia and Brazil replicate the design on their own municipal aggregates

@@ -7,8 +7,9 @@
     set, beside the map's agreement with the construct it was trained toward.
 (c) The share of the aggregate-to-census targeting gap the map closes at each budget,
     people pooled over cities, including the validation budget where it loses.
-(d) Zero-shot transfer to two countries, in purple because neither belongs to a Mexican
-    split.
+(d) Colombia and Brazil trained on their own municipal aggregates, beside the Mexican
+    model unadapted and fine-tuned and the fully supervised oracle, in purple because
+    neither country belongs to a Mexican split.
 
 Every plotted number is recomputed from the committed artifacts and checked against
 `docs/manuscript/canonical_results.json`; a divergence raises rather than redrawing the page.
@@ -183,22 +184,63 @@ def _targeting(ax, book) -> None:
     ax.legend(frameon=False, fontsize=9, loc="upper left")
 
 
-def _transfer(ax, book) -> None:
-    """Panel d: the Mexican model applied unchanged to two other countries."""
-    table = pd.read_csv("data/transfer_zeroshot.csv").set_index("city")
-    stored = {row["city"]: row for row in book["zeroshot"]}
-    for city in ("bogota", "riodejaneiro"):
-        agrees(table.loc[city, "auroc"], stored[city]["auroc"], name=f"zero-shot AUROC, {city}")
+METHODS = (
+    ("zero-shot", "Mexican\nunadapted"),
+    ("aggregates", "local\naggregates"),
+    ("mexico-init", "Mexican\nfine-tuned"),
+    ("oracle", "oracle"),
+)
 
-    labels = ["Bogotá\nstrata 1–2", "Rio\nAGSN"]
-    values = [table.loc["bogota", "auroc"], table.loc["riodejaneiro", "auroc"]]
-    ax.bar(labels, values, color=TRANSFER, width=0.55)
-    ax.axhline(CHANCE, color=INK, ls=":", lw=1.1)
-    ax.set_ylim(0.4, 0.8)
-    ax.set_ylabel("zero-shot AUROC")
-    ax.set_title("d  Transfer")
-    for index, value in enumerate(values):
-        ax.text(index, value + 0.006, f"{value:.3f}", ha="center", size=9, color=INK)
+
+def _transfer(ax, book) -> None:
+    """Panel d: each country trained on its own municipal aggregates, with the references.
+
+    Within-municipality Spearman against the fine truth under grouped folds; the oracle
+    is drawn as the same bar family so the recovered fraction reads off the panel.
+    """
+    table = pd.read_csv("data/transfer_training.csv")
+    stored = book["transfer_training"]
+    width = 0.2
+    countries = (("colombia", "Bogot\u00e1 · block strata"), ("brazil", "Brazil · tract income"))
+    for index, (country, _label) in enumerate(countries):
+        rows = table[table.country == country]
+        for offset, (method, _) in enumerate(METHODS):
+            seeds = rows[rows.method == method].sort_values("seed").within
+            expected = stored[country]["methods"][method]
+            mean = agrees(seeds.mean(), expected["within"], name=f"transfer {country} {method}")
+            x = index + (offset - 1.5) * width
+            color = MUTED if method == "oracle" else TRANSFER
+            alpha = 1.0 if method in ("aggregates", "oracle") else 0.55
+            ax.bar(
+                x,
+                mean,
+                width * 0.92,
+                yerr=seeds.std() if len(seeds) > 1 else None,
+                capsize=2,
+                color=color,
+                alpha=alpha,
+                ecolor=INK,
+            )
+            top = mean + (seeds.std() if len(seeds) > 1 else 0.0)
+            ax.text(x, top + 0.012, f"{mean:.2f}", ha="center", size=7.5, color=INK)
+    ax.set_xticks(range(len(countries)))
+    ax.set_xticklabels([label for _, label in countries])
+    ax.set_ylabel(r"within-municipality $\rho$")
+    ax.set_ylim(0, 0.85)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.set_title("d  Own aggregates abroad")
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color=TRANSFER, alpha=0.55),
+        plt.Rectangle((0, 0), 1, 1, color=TRANSFER),
+        plt.Rectangle((0, 0), 1, 1, color=MUTED),
+    ]
+    ax.legend(
+        handles,
+        ["Mexican, unadapted / fine-tuned", "trained on local aggregates", "oracle"],
+        frameon=False,
+        fontsize=7.5,
+        loc="upper left",
+    )
 
 
 def draw(destination: str) -> None:

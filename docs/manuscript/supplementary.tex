@@ -146,4 +146,61 @@ Iguala de la Independencia & 1 & 133 & $0.639$ & 0.125\\
 \end{tabular}
 \end{table}
 
+
+\begin{table}[h]
+\centering
+\caption{Global products offered to the model as input features, validation cities,
+within-municipality Spearman, three seeds. GHSL built-up surface, building height,
+population and nighttime lights as four token columns; WorldCover as its eleven class
+fractions plus NDVI mean and dispersion. The oracle rows are standardised, with their
+own no-extras reference; the paired difference is per municipality, seed-averaged, with a
+city-clustered bootstrap. The map rows fuse the columns either into the projection
+(early) or straight into the scoring layer (late).}
+\begin{tabular}{llccc}
+\toprule
+Head & Extra inputs & Seeds & Mean & Paired difference [95\%]\\
+\midrule
+Oracle & none (reference) & 0.288 / 0.239 / 0.257 & 0.261 & \\
+Oracle & WorldCover & 0.288 / 0.261 / 0.272 & 0.274 & $+0.014$ [$-0.004$, $+0.030$]\\
+Oracle & GHSL + lights & 0.293 / 0.281 / 0.298 & 0.291 & $+0.030$ [$+0.011$, $+0.050$]\\
+Oracle & both & 0.291 / 0.278 / 0.300 & 0.289 & $+0.030$ [$+0.012$, $+0.046$]\\
+\midrule
+Map & none (canonical) & 0.242 / 0.224 / 0.215 & 0.227 & \\
+Map, early & WorldCover & 0.207 / 0.221 / 0.209 & 0.212 & \\
+Map, early & GHSL + lights & 0.226 / 0.236 / 0.214 & 0.225 & \\
+Map, early & both & 0.220 / 0.227 / 0.217 & 0.221 & \\
+Map, late & GHSL + lights & 0.214 / 0.217 / 0.198 & 0.210 & \\
+Map, late & both & 0.241 / 0.221 / 0.216 & 0.226 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Transfer under each country's own municipal aggregates (main-text Fig.~4d).
+Within-municipality Spearman against the fine truth, grouped five-fold by municipality,
+per seed; Bogot\'a's oracle folds over 3.2 km spatial cells. Colombia: 35 bags, the
+Bogot\'a block strata as truth over 12{,}738 built tokens. Brazil: 48 bags, tract median
+income of the household head as truth over 110{,}728 tokens in 47 municipalities, with
+the municipality-bootstrap interval of the mean. AUROC is for the most deprived quartile
+of the truth, pooled. The earlier zero-shot protocol, without the built-token filter,
+gave $\rho = 0.318$ and AUROC 0.716 (strata 1--2) in Bogot\'a over 14{,}132 tokens and
+AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
+\begin{tabular}{llcccc}
+\toprule
+Country & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
+\midrule
+Colombia & Mexican, unadapted & 0.311 & 0.311 & 0.311 & 0.705\\
+Colombia & local aggregates & 0.223 / 0.178 / 0.238 & 0.213 & 0.213 & 0.630\\
+Colombia & Mexican, fine-tuned & 0.294 / 0.138 / 0.305 & 0.246 & 0.246 & 0.660\\
+Colombia & oracle & 0.741 / 0.758 / 0.749 & 0.749 & 0.749 & 0.906\\
+\midrule
+Brazil & Mexican, unadapted & 0.099 & 0.099 [0.048, 0.148] & 0.283 & 0.648\\
+Brazil & local aggregates & 0.115 / 0.119 / 0.130 & 0.121 [0.074, 0.171] & 0.332 & 0.636\\
+Brazil & Mexican, fine-tuned & 0.074 / 0.077 / 0.084 & 0.078 [0.026, 0.129] & 0.337 & 0.633\\
+Brazil & oracle & 0.239 / 0.269 / 0.234 & 0.247 [0.197, 0.297] & 0.472 & 0.704\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \end{document}
