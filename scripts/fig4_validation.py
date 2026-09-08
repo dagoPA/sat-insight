@@ -117,12 +117,19 @@ def _incumbent(ax, book) -> None:
         )
     _paired_bars(ax, ["Meta RWI", "this work"], validation, test)
     ax.set_ylabel(r"within-municipality $\rho$")
-    ax.set_ylim(0, 0.5)
+    ax.set_ylim(0, 0.62)
     ax.set_title("a  Incumbent, same AGEB")
     ax.text(
-        0.03, 0.97, "\n".join(notes), transform=ax.transAxes, ha="left", va="top", size=7, color=INK
+        0.03,
+        0.97,
+        "\n".join(notes),
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        size=6.5,
+        color=INK,
     )
-    ax.legend(frameon=False, fontsize=7, loc="upper right")
+    ax.legend(frameon=False, fontsize=6.5, loc="upper right")
 
 
 def _curve_file(tag: str) -> str:
@@ -262,7 +269,7 @@ def _transfer(ax, book) -> None:
     ax.set_xticks(range(len(countries)))
     ax.set_xticklabels([label for _, label in countries])
     ax.set_ylabel(r"within-municipality $\rho$")
-    ax.set_ylim(0, 0.85)
+    ax.set_ylim(0, 1.0)
     ax.axhline(0, color=MUTED, lw=0.8)
     ax.set_title("d  Own aggregates abroad")
     handles = [

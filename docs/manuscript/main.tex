@@ -532,8 +532,9 @@ directionally consistent and not individually significant over 22 municipalities
 (Fig.~\ref{fig:validation}a). A
 land-cover-plus-NDVI head with no learned representation reaches $\rho = 0.150$ on
 validation and $0.219$ on test, where it is statistically indistinguishable from the
-full model (paired $\Delta\rho = -0.02$ [$-0.18$, $+0.10$], the full model winning 16
-of 29 municipalities). The learned features' advantage within municipalities is
+full model with either backbone (paired $\Delta\rho = -0.02$ [$-0.18$, $+0.10$] for
+DOFA base, winning 16 of 29 municipalities; $+0.01$ [$-0.10$, $+0.11$] for DOFA large,
+winning 18). The learned features' advantage within municipalities is
 therefore split-dependent; what holds on both splits is their edge on the bag task (bag
 error 0.095 against 0.110) and, on test, on high-deprivation detection (AUROC 0.821
 against 0.781). Much of the within-municipality ordering is captured by land cover
