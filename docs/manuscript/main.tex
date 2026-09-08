@@ -500,7 +500,8 @@ cities are held out. The 771 row gives the test value of the retrained models an
 the semicolon, of the validation-selected saved weights that every downstream analysis
 scores; the last row gives those saved weights' values with a 95\% percentile bootstrap
 that resamples cities (34 validation and 29 test municipalities).}
-\begin{tabular}{rcccc}
+\small
+\begin{tabular}{lcccc}
 \toprule
  & \multicolumn{2}{c}{DOFA-B} & \multicolumn{2}{c}{DOFA-L}\\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
@@ -512,7 +513,7 @@ Bags & Validation (s.d.) & Test & Validation (s.d.) & Test\\
 400 & 0.182 (0.017) & 0.192 & 0.222 (0.024) & 0.205\\
 771 & 0.227 (0.014) & 0.185; 0.196 & 0.242 (0.006) & 0.219; 0.226\\
 \midrule
-771, saved weights, 95\% city bootstrap & 0.225 [0.17, 0.28] & 0.196 [0.07, 0.28] & 0.233 [0.19, 0.28] & 0.227 [0.15, 0.29]\\
+771, saved weights [95\% CI] & 0.225 [0.17, 0.28] & 0.196 [0.07, 0.28] & 0.233 [0.19, 0.28] & 0.227 [0.15, 0.29]\\
 \bottomrule
 \end{tabular}
 \label{tab:curve}
