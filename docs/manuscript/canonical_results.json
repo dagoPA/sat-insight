@@ -1297,5 +1297,43 @@
    "ci_low": 0.1497,
    "ci_high": 0.3647
   }
- ]
+ ],
+ "finetune": {
+  "split_at": 10,
+  "seeds": 3,
+  "by_encoder_lr": {
+   "1e-5": {
+    "test": {
+     "within": 0.1688,
+     "sd": 0.0203,
+     "ageb": 0.2152,
+     "auroc": 0.8259,
+     "bag_mae": 0.0976
+    },
+    "val": {
+     "within": 0.2086,
+     "sd": 0.0231,
+     "ageb": 0.2478,
+     "auroc": 0.785,
+     "bag_mae": 0.0915
+    }
+   },
+   "1e-4": {
+    "test": {
+     "within": 0.151,
+     "sd": 0.0275,
+     "ageb": 0.2176,
+     "auroc": 0.7868,
+     "bag_mae": 0.1004
+    },
+    "val": {
+     "within": 0.1672,
+     "sd": 0.0117,
+     "ageb": 0.2229,
+     "auroc": 0.7731,
+     "bag_mae": 0.0922
+    }
+   }
+  }
+ }
 }
