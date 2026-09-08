@@ -858,9 +858,11 @@ Iguala de la Independencia & 1 & 133 & $0.639$ & 0.125 & $0.658$ & 0.187\\
 \end{table}
 
 Beyond the named failures, three limits bound every claim. The upper bound itself is low: even with full tract labels and neighborhood context,
-160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test:
-sufficient to order neighborhoods, too coarse to resolve individual blocks. Agreement depends strongly on tract
-size: $\rho = 0.26$ for tracts covered by 1--3 tokens, rising to $0.43$ at 20--49
+160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test
+with DOFA base, $0.318$ and $0.295$ with DOFA large: sufficient to order neighborhoods,
+too coarse to resolve individual blocks. Agreement depends strongly on tract size with
+either backbone: $\rho = 0.26$ for tracts covered by 1--3 tokens ($0.18$ with DOFA
+large), rising to $0.43$ at 20--49
 tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
 tracts; the test split reproduces the pattern noisily, peaking at $0.38$ and collapsing
 in its single large-tract municipality. This is the modifiable areal unit problem,
