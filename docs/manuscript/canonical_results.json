@@ -79,7 +79,11 @@
   "difference": 0.2186,
   "ci_low": 0.0793,
   "ci_high": 0.2876,
-  "wins": 18
+  "wins": 18,
+  "ours_ci_low": 0.2924,
+  "ours_ci_high": 0.4439,
+  "rwi_ci_low": 0.0535,
+  "rwi_ci_high": 0.2663
  },
  "targeting_pooled": {
   "0.05": -0.05,
@@ -265,7 +269,11 @@
    "difference": 0.1294,
    "ci_low": -0.0648,
    "ci_high": 0.2579,
-   "wins": 15
+   "wins": 15,
+   "ours_ci_low": 0.0788,
+   "ours_ci_high": 0.3581,
+   "rwi_ci_low": 0.0185,
+   "rwi_ci_high": 0.2142
   },
   "conapo": {
    "agebs": 2618,
@@ -776,7 +784,11 @@
    "difference": 0.2193,
    "ci_low": 0.0986,
    "ci_high": 0.2902,
-   "wins": 18
+   "wins": 18,
+   "ours_ci_low": 0.3117,
+   "ours_ci_high": 0.4109,
+   "rwi_ci_low": 0.0535,
+   "rwi_ci_high": 0.2663
   },
   "targeting_pooled": {
    "0.05": 0.039,
@@ -914,7 +926,11 @@
     "difference": 0.1641,
     "ci_low": -0.0214,
     "ci_high": 0.2905,
-    "wins": 18
+    "wins": 18,
+    "ours_ci_low": 0.1447,
+    "ours_ci_high": 0.3655,
+    "rwi_ci_low": 0.0185,
+    "rwi_ci_high": 0.2142
    },
    "conapo": {
     "agebs": 2618,
@@ -1119,5 +1135,167 @@
     }
    }
   }
- }
+ },
+ "headline_intervals": [
+  {
+   "backbone": "base backbone",
+   "split": "val",
+   "estimator": "seed mean",
+   "unit": "token",
+   "municipalities": 34,
+   "within": 0.225,
+   "ci_low": 0.1649,
+   "ci_high": 0.2789
+  },
+  {
+   "backbone": "base backbone",
+   "split": "val",
+   "estimator": "seed mean",
+   "unit": "ageb",
+   "municipalities": 34,
+   "within": 0.2884,
+   "ci_low": 0.1996,
+   "ci_high": 0.3438
+  },
+  {
+   "backbone": "base backbone",
+   "split": "val",
+   "estimator": "ensemble",
+   "unit": "token",
+   "municipalities": 34,
+   "within": 0.2345,
+   "ci_low": 0.1702,
+   "ci_high": 0.289
+  },
+  {
+   "backbone": "base backbone",
+   "split": "val",
+   "estimator": "ensemble",
+   "unit": "ageb",
+   "municipalities": 34,
+   "within": 0.3035,
+   "ci_low": 0.2042,
+   "ci_high": 0.363
+  },
+  {
+   "backbone": "base backbone",
+   "split": "test",
+   "estimator": "seed mean",
+   "unit": "token",
+   "municipalities": 29,
+   "within": 0.1955,
+   "ci_low": 0.0692,
+   "ci_high": 0.2843
+  },
+  {
+   "backbone": "base backbone",
+   "split": "test",
+   "estimator": "seed mean",
+   "unit": "ageb",
+   "municipalities": 28,
+   "within": 0.2625,
+   "ci_low": 0.1155,
+   "ci_high": 0.3761
+  },
+  {
+   "backbone": "base backbone",
+   "split": "test",
+   "estimator": "ensemble",
+   "unit": "token",
+   "municipalities": 29,
+   "within": 0.1976,
+   "ci_low": 0.0649,
+   "ci_high": 0.2921
+  },
+  {
+   "backbone": "base backbone",
+   "split": "test",
+   "estimator": "ensemble",
+   "unit": "ageb",
+   "municipalities": 28,
+   "within": 0.2693,
+   "ci_low": 0.1198,
+   "ci_high": 0.3839
+  },
+  {
+   "backbone": "large backbone",
+   "split": "val",
+   "estimator": "seed mean",
+   "unit": "token",
+   "municipalities": 34,
+   "within": 0.2325,
+   "ci_low": 0.1912,
+   "ci_high": 0.281
+  },
+  {
+   "backbone": "large backbone",
+   "split": "val",
+   "estimator": "seed mean",
+   "unit": "ageb",
+   "municipalities": 34,
+   "within": 0.2873,
+   "ci_low": 0.239,
+   "ci_high": 0.3263
+  },
+  {
+   "backbone": "large backbone",
+   "split": "val",
+   "estimator": "ensemble",
+   "unit": "token",
+   "municipalities": 34,
+   "within": 0.2434,
+   "ci_low": 0.1975,
+   "ci_high": 0.2955
+  },
+  {
+   "backbone": "large backbone",
+   "split": "val",
+   "estimator": "ensemble",
+   "unit": "ageb",
+   "municipalities": 34,
+   "within": 0.3149,
+   "ci_low": 0.2616,
+   "ci_high": 0.3588
+  },
+  {
+   "backbone": "large backbone",
+   "split": "test",
+   "estimator": "seed mean",
+   "unit": "token",
+   "municipalities": 29,
+   "within": 0.2268,
+   "ci_low": 0.149,
+   "ci_high": 0.2919
+  },
+  {
+   "backbone": "large backbone",
+   "split": "test",
+   "estimator": "seed mean",
+   "unit": "ageb",
+   "municipalities": 28,
+   "within": 0.2671,
+   "ci_low": 0.1622,
+   "ci_high": 0.3456
+  },
+  {
+   "backbone": "large backbone",
+   "split": "test",
+   "estimator": "ensemble",
+   "unit": "token",
+   "municipalities": 29,
+   "within": 0.2418,
+   "ci_low": 0.1552,
+   "ci_high": 0.3146
+  },
+  {
+   "backbone": "large backbone",
+   "split": "test",
+   "estimator": "ensemble",
+   "unit": "ageb",
+   "municipalities": 28,
+   "within": 0.2723,
+   "ci_low": 0.1497,
+   "ci_high": 0.3647
+  }
+ ]
 }

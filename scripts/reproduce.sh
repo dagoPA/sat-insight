@@ -39,6 +39,7 @@ uv run python scripts/transfer_eval.py > logs/transfer_eval.log 2>&1
 uv run python scripts/conapo_replication.py > logs/conapo_replication.log 2>&1
 uv run python scripts/targeting.py > logs/targeting.log 2>&1
 uv run python scripts/rwi_paired.py > logs/rwi_paired.log 2>&1
+uv run python scripts/headline_intervals.py > logs/headline_intervals.log 2>&1
 uv run python scripts/border_discontinuity.py data/predictions_val_city.parquet > logs/border_discontinuity.log 2>&1
 uv run python scripts/maup.py > logs/maup.log 2>&1
 uv run python scripts/global_products.py > logs/global_products.log 2>&1

@@ -87,11 +87,30 @@ def main() -> None:
         means[k] = float(np.concatenate([groups[j] for j in chosen]).mean())
     low, high = np.percentile(means, [2.5, 97.5])
 
+    def interval(values: dict) -> tuple[float, float]:
+        """City-clustered bootstrap of one mean, on the same city groups."""
+        grouped: dict = {}
+        for m in muns:
+            grouped.setdefault(cities_of_mun[m], []).append(values[m])
+        parts = [np.array(v) for v in grouped.values()]
+        draws = np.random.default_rng(0)
+        out = np.empty(RESAMPLES)
+        for k in range(RESAMPLES):
+            chosen = draws.integers(0, len(parts), len(parts))
+            out[k] = float(np.concatenate([parts[j] for j in chosen]).mean())
+        return float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5))
+
+    ours_low, ours_high = interval(ours)
+    rwi_low, rwi_high = interval(theirs)
     result = {
         "agebs": len(both),
         "municipalities": len(muns),
         "ours_within": float(np.mean(list(ours.values()))),
+        "ours_ci_low": ours_low,
+        "ours_ci_high": ours_high,
         "rwi_within": float(np.mean(list(theirs.values()))),
+        "rwi_ci_low": rwi_low,
+        "rwi_ci_high": rwi_high,
         "difference": float(np.mean(list(diff.values()))),
         "ci_low": float(low),
         "ci_high": float(high),

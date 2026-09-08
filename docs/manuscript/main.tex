@@ -426,10 +426,14 @@ benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a): fifty aggregates yield
 $\rho = 0.15$ and $0.18$ within municipalities on validation; the full national supply
 yields $0.196$ and $0.226$ on test against fully supervised upper bounds of $0.233$ and
 $0.295$ there (per-point values in Table~\ref{tab:curve}), a recovery of 84\% and 77\%
-(validation: $0.227$ of $0.251$ and $0.242$ of $0.318$, 90\% and 76\%). Pairing model
-and oracle by municipality, the city-clustered bootstrap puts the test fraction of the base backbone at $0.85$ with a wide interval [$0.29$, $1.83$]; fourteen cities bound the precision,
-and it is the point estimate, consistent across splits and backbones, that the title
-claims. The larger backbone raises the upper bound by $0.06$ and the map by $0.02$ to
+(validation: $0.227$ of $0.251$ and $0.242$ of $0.318$, 90\% and 76\%). The
+city-clustered bootstrap of the saved validation-selected models puts these values at
+$0.196$ [$0.07$, $0.28$] and $0.227$ [$0.15$, $0.29$] on the 29 test municipalities and
+at $0.225$ [$0.17$, $0.28$] and $0.233$ [$0.19$, $0.28$] on the 34 validation
+municipalities; the same models score $0.263$ [$0.12$, $0.38$] and $0.267$ [$0.16$,
+$0.35$] per AGEB on test. Fourteen cities per split bound the precision, which is why
+the backbones are compared under cross-validation below and why it is the point
+estimates, consistent across splits and backbones, that the title claims. The larger backbone raises the upper bound by $0.06$ and the map by $0.02$ to
 $0.03$ on both splits, so the aggregates recover a smaller share of a richer
 representation. The test curve of the base backbone reproduces the rise through 400 aggregates
 almost exactly and flattens at the top; the large backbone is higher at every point of the curve
@@ -474,9 +478,10 @@ real but secondary amount on test; radar sits far below both with either backbon
 \caption{The supervision-efficiency curve (Fig.~\ref{fig:curve}a) for both backbones.
 Within-municipality Spearman $\rho$ against held-out tract grades, mean over three seeds
 (s.d. over seeds on validation); validation cities were used for model selection, test
-cities are held out. The last row gives the test value of the retrained models and, after
+cities are held out. The 771 row gives the test value of the retrained models and, after
 the semicolon, of the validation-selected saved weights that every downstream analysis
-scores.}
+scores; the last row gives those saved weights' values with a 95\% percentile bootstrap
+that resamples cities (34 validation and 29 test municipalities).}
 \begin{tabular}{rcccc}
 \toprule
  & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone}\\
@@ -488,6 +493,8 @@ Bags & Validation (s.d.) & Test & Validation (s.d.) & Test\\
 200 & 0.151 (0.006) & 0.161 & 0.231 (0.023) & 0.172\\
 400 & 0.182 (0.017) & 0.192 & 0.222 (0.024) & 0.205\\
 771 & 0.227 (0.014) & 0.185; 0.196 & 0.242 (0.006) & 0.219; 0.226\\
+\midrule
+771, saved weights, 95\% city bootstrap & 0.225 [0.17, 0.28] & 0.196 [0.07, 0.28] & 0.233 [0.19, 0.28] & 0.227 [0.15, 0.29]\\
 \bottomrule
 \end{tabular}
 \label{tab:curve}
@@ -635,11 +642,14 @@ labels.
 We ran four independent comparisons to test whether the map measures deprivation or a
 pipeline artifact (Fig.~\ref{fig:validation}). Against the leading downloadable product, Meta's Relative
 Wealth Index~\cite{chi2022}, scored per tract on an identical universe
-with a city-clustered bootstrap of the paired difference (2{,}958 shared AGEB), the map
-wins in 18 of 22 municipalities with either backbone: $\Delta\rho = +0.22$ [$+0.08,
-+0.29$] for the base backbone and $+0.22$ [$+0.10$, $+0.29$] for the large backbone; on the test cities
-the differences are $+0.13$ [$-0.07, +0.26$] and $+0.16$ [$-0.02$, $+0.29$],
-directionally consistent and not individually significant over 22 municipalities
+with a city-clustered bootstrap over 22 municipalities (2{,}958 shared AGEB), the map
+reaches $\rho = 0.35$ [$0.29$, $0.44$] with the base backbone and $0.35$ [$0.31$,
+$0.41$] with the large one against $0.14$ [$0.05$, $0.27$] for the index on validation,
+and $0.23$ [$0.08$, $0.36$] and $0.27$ [$0.15$, $0.37$] against $0.10$ [$0.02$, $0.21$]
+on test; paired by municipality the map wins in 18 of 22 on validation with either
+backbone ($\Delta\rho = +0.22$ [$+0.08$, $+0.29$] and $+0.22$ [$+0.10$, $+0.29$]) and
+in 15 and 18 of 22 on test ($+0.13$ [$-0.07$, $+0.26$] and $+0.16$ [$-0.02$, $+0.29$]),
+directionally consistent and not individually significant there
 (Fig.~\ref{fig:validation}a). A
 land-cover-plus-NDVI head with no learned representation reaches $\rho = 0.150$ on
 validation and $0.219$ on test, where it is statistically indistinguishable from the
@@ -697,18 +707,19 @@ municipality (Bogot\'a's oracle: spatial folds).}
 
 The sharper version of the question is what a practitioner would get for free. Four global
 products were scored on the identical universe under the identical protocol
-(Fig.~\ref{fig:incumbents}a, Table~\ref{tab:products}). Against GHSL residential
-population the map wins clearly, $\Delta\rho = +0.29$ [$-0.00$, $+0.50$] on validation
-and $+0.19$ [$+0.05$, $+0.29$] on test with the base backbone, $+0.29$ [$+0.02$, $+0.46$] and
-$+0.22$ [$+0.07$, $+0.37$] with the large backbone, the only one of the four that separates on
-test. Against GHSL built-up surface ($+0.15$ [$-0.10$, $+0.30$]; $+0.06$ [$-0.10$,
-$+0.16$] with the base backbone) and GHSL building height ($+0.13$ [$-0.10$, $+0.29$]; $+0.11$
-[$-0.06$, $+0.23$]) the map leads on both splits and both backbones, winning 14 to 16 of
-22 municipalities on test, with intervals that include zero throughout. Against
-nighttime lights the two are tied: $+0.04$ [$-0.11$, $+0.15$] on validation and $-0.04$
-[$-0.25$, $+0.10$] on test with the base backbone, $+0.04$ [$-0.09$, $+0.13$] and $+0.00$
-[$-0.18$, $+0.13$] with the large backbone. A 1 km light product, free and requiring no model,
-orders tracts inside a Mexican municipality about as well as the maps do. That comparison is handicapped in the light product's disfavor by resolution, since
+(Fig.~\ref{fig:incumbents}a, Table~\ref{tab:products}). On the 22 test municipalities
+the maps reach a within-municipality $\rho$ of $0.23$ [$0.08$, $0.36$] with the base
+backbone and $0.27$ [$0.15$, $0.37$] with the large one; GHSL residential population
+reaches $0.05$ [$-0.10$, $0.17$], built-up surface $0.17$ [$0.05$, $0.31$], building
+height $0.12$ [$0.03$, $0.25$] and nighttime lights $0.25$ [$0.16$, $0.39$]. On
+validation the maps stand at $0.35$ [$0.29$, $0.44$] and $0.35$ [$0.31$, $0.41$] against
+$0.07$, $0.20$, $0.23$ and $0.33$ for the four products. Paired by municipality, only the
+population grid separates from the map on test ($\Delta\rho = +0.19$ [$+0.05$, $+0.29$]
+and $+0.22$ [$+0.07$, $+0.37$]); the built-up and height grids sit below the map on both
+splits with intervals that include zero, and nighttime lights are tied with it on both
+splits ($+0.04$ and $-0.04$ with the base backbone, $+0.04$ and $+0.00$ with the large
+one). A 1 km light product, free and requiring no model, orders tracts inside a Mexican
+municipality about as well as the maps do. That comparison is handicapped in the light product's disfavor by resolution, since
 63\% of test tracts are smaller than one of its cells and take the value at an interior
 point, and it is reported at face value regardless: within the precision fourteen
 cities allow, we cannot show the map beats nighttime lights.
@@ -734,29 +745,30 @@ clustered rule restores coverage at a half-width of 1.68 and 1.85 of the five gr
 \centering
 \caption{Free global products under the map's own protocol, for both backbones.
 Within-$\rho$ is the mean over municipalities of the within-municipality Spearman
-correlation against the held-out tract grade, on the identical universe; $\Delta$ is the
-paired difference, map minus product, with a city-clustered bootstrap interval; AUROC is
-pooled detection of high and very-high grade tracts across the split (map with the base backbone
-0.828 on validation and 0.829 on test, with the large backbone 0.818 and 0.827). Orientation was
-fixed before measurement: deprivation is the negative of every product. The
-nighttime-light row rests on interior-point sampling for 63\% of tracts, which are
-smaller than one of its 30 arcsec cells.}
+correlation against the held-out tract grade on the identical universe (22 municipalities
+per split), each with its 95\% percentile bootstrap over cities; $\Delta$ is the paired
+difference, map minus product, on the same city draws. AUROC is pooled detection of high
+and very-high grade tracts across the split (map: 0.828 on validation and 0.829 on test
+with the base backbone, 0.818 and 0.827 with the large one). Orientation was fixed before
+measurement: deprivation is the negative of every product. The nighttime-light row rests
+on interior-point sampling for 63\% of tracts, which are smaller than one of its 30 arcsec
+cells.}
 \small
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{llcccccc}
 \toprule
  & & & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone} & \\
 \cmidrule(lr){4-5}\cmidrule(lr){6-7}
-Product & Split & Product $\rho$ & Map $\rho$ & $\Delta$ [95\% CI] & Map $\rho$ & $\Delta$ [95\% CI] & AUROC product\\
+Product & Split & Product $\rho$ [95\%] & Map $\rho$ [95\%] & $\Delta$ [95\%] & Map $\rho$ [95\%] & $\Delta$ [95\%] & AUROC product\\
 \midrule
-GHSL built-up surface & val & 0.202 & 0.354 & $+0.152$ [$-0.103$, $+0.303$] & 0.354 & $+0.152$ [$-0.085$, $+0.268$] & 0.866\\
- & test & 0.174 & 0.232 & $+0.059$ [$-0.098$, $+0.160$] & 0.267 & $+0.093$ [$-0.078$, $+0.218$] & 0.908\\
-GHSL building height & val & 0.226 & 0.354 & $+0.128$ [$-0.096$, $+0.291$] & 0.354 & $+0.128$ [$-0.068$, $+0.245$] & 0.859\\
- & test & 0.119 & 0.232 & $+0.113$ [$-0.062$, $+0.233$] & 0.267 & $+0.148$ [$-0.037$, $+0.278$] & 0.886\\
-GHSL population & val & 0.065 & 0.354 & $+0.289$ [$-0.001$, $+0.497$] & 0.354 & $+0.290$ [$+0.022$, $+0.460$] & 0.872\\
- & test & 0.045 & 0.232 & $+0.188$ [$+0.051$, $+0.289$] & 0.267 & $+0.222$ [$+0.066$, $+0.366$] & 0.855\\
-Nighttime lights & val & 0.327 & 0.364 & $+0.037$ [$-0.109$, $+0.149$] & 0.363 & $+0.036$ [$-0.093$, $+0.125$] & 0.840\\
- & test & 0.249 & 0.210 & $-0.039$ [$-0.245$, $+0.104$] & 0.252 & $+0.002$ [$-0.178$, $+0.126$] & 0.831\\
+GHSL built-up surface & val & 0.202 [0.093, 0.436] & 0.354 [0.292, 0.444] & $+0.152$ [$-0.103$, $+0.303$] & 0.354 [0.312, 0.411] & $+0.152$ [$-0.085$, $+0.268$] & 0.866\\
+ & test & 0.174 [0.054, 0.307] & 0.232 [0.079, 0.358] & $+0.059$ [$-0.098$, $+0.160$] & 0.267 [0.145, 0.366] & $+0.093$ [$-0.078$, $+0.218$] & 0.908\\
+GHSL building height & val & 0.226 [0.125, 0.421] & 0.354 [0.292, 0.444] & $+0.128$ [$-0.096$, $+0.291$] & 0.354 [0.312, 0.411] & $+0.128$ [$-0.068$, $+0.245$] & 0.859\\
+ & test & 0.119 [0.029, 0.249] & 0.232 [0.079, 0.358] & $+0.113$ [$-0.062$, $+0.233$] & 0.267 [0.145, 0.366] & $+0.148$ [$-0.037$, $+0.278$] & 0.886\\
+GHSL population & val & 0.065 [$-$0.083, 0.333] & 0.354 [0.292, 0.444] & $+0.289$ [$-0.001$, $+0.497$] & 0.354 [0.312, 0.411] & $+0.290$ [$+0.022$, $+0.460$] & 0.872\\
+ & test & 0.045 [$-$0.095, 0.174] & 0.232 [0.079, 0.358] & $+0.188$ [$+0.051$, $+0.289$] & 0.267 [0.145, 0.366] & $+0.222$ [$+0.066$, $+0.366$] & 0.855\\
+Nighttime lights & val & 0.327 [0.246, 0.436] & 0.364 [0.285, 0.445] & $+0.037$ [$-0.109$, $+0.149$] & 0.363 [0.309, 0.417] & $+0.036$ [$-0.093$, $+0.125$] & 0.840\\
+ & test & 0.249 [0.159, 0.385] & 0.210 [0.079, 0.329] & $-0.039$ [$-0.245$, $+0.104$] & 0.252 [0.140, 0.349] & $+0.002$ [$-0.178$, $+0.126$] & 0.831\\
 \bottomrule
 \end{tabular}}
 \label{tab:products}
@@ -869,6 +881,7 @@ earlier zero-shot protocol, without the built-token filter and with the base bac
 gave $\rho = 0.318$ and AUROC 0.716 (strata 1--2) in Bogot\'a over 14{,}132 tokens and
 AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
 \small
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lllcccc}
 \toprule
 Country & Backbone & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
@@ -895,7 +908,7 @@ Brazil & Large & local aggregates, 48 bags & 0.150 / 0.159 / 0.157 & 0.155 [0.10
 Brazil & Large & Mexican, fine-tuned & 0.177 / 0.190 / 0.190 & 0.185 [0.136, 0.236] & 0.460 & 0.689\\
 Brazil & Large & oracle & 0.283 / 0.277 / 0.294 & 0.285 [0.230, 0.337] & 0.539 & 0.736\\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \label{tab:transfer}
 \end{table}
 
@@ -935,14 +948,15 @@ between-city variation will be too narrow.
 cities and evaluated on the test cities, for both backbones. The marginal rule assumes all
 tracts exchangeable; the clustered rule takes each calibration city's quantile and then
 the 90th percentile across cities.}
-\begin{tabular}{llccccc}
+\small
+\begin{tabular}{llcccc}
 \toprule
-Backbone & Rule & Half-width (grades) & Coverage & Worst city & Worst city coverage & Cities below\\
+Backbone & Rule & Half-width (grades) & Coverage & Worst city (coverage) & Cities below nominal\\
 \midrule
-Base & marginal & 1.29 & 0.869 & La Paz & 0.768 & 10 of 14\\
-Base & clustered by city & 1.68 & 0.953 & Madera & 0.870 & 1 of 14\\
-Large & marginal & 1.30 & 0.857 & Hidalgo & 0.718 & 11 of 14\\
-Large & clustered by city & 1.85 & 0.963 & La Paz & 0.899 & 1 of 14\\
+Base & marginal & 1.29 & 0.869 & La Paz (0.768) & 10 of 14\\
+Base & clustered by city & 1.68 & 0.953 & Madera (0.870) & 1 of 14\\
+Large & marginal & 1.30 & 0.857 & Hidalgo (0.718) & 11 of 14\\
+Large & clustered by city & 1.85 & 0.963 & La Paz (0.899) & 1 of 14\\
 \bottomrule
 \end{tabular}
 \label{tab:conformal}
@@ -968,6 +982,7 @@ Guerrero's median spread (0.101 with the base backbone) sits at the middle of th
 achieves with the base backbone, worst first, with the large backbone value beside it. Tract-mean
 scores. Spread is the median across tracts of the standard deviation over three seeds,
 which does not separate the failures from the successes.}
+\small
 \begin{tabular}{lrrrrrr}
 \toprule
  & & & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone}\\

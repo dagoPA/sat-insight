@@ -154,6 +154,8 @@ def main() -> None:
 
         diff = {m: ours[m] - theirs[m] for m in ours}
         low, high = paired_interval(diff, city_of)
+        ours_low, ours_high = paired_interval(ours, city_of)
+        proxy_low, proxy_high = paired_interval(theirs, city_of)
         high_grade = (frame.ordinal >= 4).to_numpy()
         pooled_auc = (
             float(roc_auc_score(high_grade, frame.proxy))
@@ -173,7 +175,11 @@ def main() -> None:
                 "municipalities": len(ours),
                 "centroid_fallback": int((frame[f"{product}_n_px"] == 0).sum()),
                 "ours_within": float(np.mean(list(ours.values()))),
+                "ours_ci_low": ours_low,
+                "ours_ci_high": ours_high,
                 "proxy_within": float(np.mean(list(theirs.values()))),
+                "proxy_ci_low": proxy_low,
+                "proxy_ci_high": proxy_high,
                 "difference": float(np.mean(list(diff.values()))),
                 "ci_low": low,
                 "ci_high": high,
