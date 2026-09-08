@@ -364,13 +364,24 @@ def edge_weights(side: int, floor: float = 0.05) -> np.ndarray:
     return np.maximum(np.sin(np.pi * positions) ** 2, floor)
 
 
-def average_overlaps(matrix: np.ndarray, tokens: list, side: int) -> tuple[np.ndarray, list]:
-    """One vector per token position, the weighted mean over the windows that produced it.
+OVERLAP_RULE = "central"
+"""How a token covered by several windows gets its vector: "central" keeps the encoding
+from the window where the token sits nearest the center, so every token carries the
+most context the tiling offers on every side and nothing is blurred; "hann" takes the
+Hann-weighted mean over the covering windows instead."""
+
+
+def average_overlaps(
+    matrix: np.ndarray, tokens: list, side: int, rule: str = OVERLAP_RULE
+) -> tuple[np.ndarray, list]:
+    """One vector per token position from the windows that produced it.
 
     With non-overlapping windows every position appears once and this is the identity.
     With overlapping windows a token near a window edge has been encoded with context on
-    each side of that edge; the Hann-weighted mean of those encodings favors the windows
-    where the token was central and is what removes the seam between windows.
+    one side only; the "central" rule keeps the encoding from the window where the token
+    was most central, and the "hann" rule averages the encodings with weights that favor
+    those windows. Either removes the seam at the old window borders; the central rule
+    keeps each token a single, unblurred encoding.
     """
     if not tokens:
         return matrix, tokens
@@ -381,10 +392,18 @@ def average_overlaps(matrix: np.ndarray, tokens: list, side: int) -> tuple[np.nd
         return matrix, tokens
     profile = edge_weights(side)
     weights = np.array([profile[t.row] * profile[t.col] for t in tokens], dtype="float64")
-    sums = np.zeros((len(unique), matrix.shape[1]), dtype="float64")
-    np.add.at(sums, inverse, matrix.astype("float64") * weights[:, None])
-    counts = np.bincount(inverse, weights=weights, minlength=len(unique))
-    averaged = (sums / counts[:, None]).astype(matrix.dtype)
+    if rule == "central":
+        best = np.full(len(unique), -1.0)
+        np.maximum.at(best, inverse, weights)
+        chosen = np.flatnonzero(weights >= best[inverse] - 1e-12)
+        keep = np.zeros(len(unique), dtype=np.int64)
+        keep[inverse[chosen]] = chosen  # one occurrence per position, the most central
+        averaged = matrix[keep]
+    else:
+        sums = np.zeros((len(unique), matrix.shape[1]), dtype="float64")
+        np.add.at(sums, inverse, matrix.astype("float64") * weights[:, None])
+        counts = np.bincount(inverse, weights=weights, minlength=len(unique))
+        averaged = (sums / counts[:, None]).astype(matrix.dtype)
     order = np.argsort(first)
     log.info(
         "%d token positions averaged from %d window tokens (%.2f windows per token)",

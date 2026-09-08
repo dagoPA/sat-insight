@@ -37,7 +37,7 @@ def test_average_overlaps_means_repeated_positions_and_keeps_first_order():
         Tile(0, 2, 0, 32, 16),
     ]
     matrix = np.array([[1.0, 1.0], [2.0, 2.0], [4.0, 4.0], [8.0, 8.0]], dtype="float32")
-    averaged, kept = average_overlaps(matrix, tokens, side=4)
+    averaged, kept = average_overlaps(matrix, tokens, side=4, rule="hann")
     assert [(t.y0, t.x0) for t in kept] == [(0, 0), (0, 16), (0, 32)]
     # equal in-window positions carry equal weights, so the repeat is a plain mean
     np.testing.assert_allclose(averaged, [[1.0, 1.0], [3.0, 3.0], [8.0, 8.0]])
@@ -47,11 +47,21 @@ def test_average_overlaps_favors_the_window_where_the_token_is_central():
     edge = Tile(0, 0, 0, 0, 16)  # at the edge of its window
     center = Tile(2, 2, 0, 0, 16)  # the same position, central in another window
     matrix = np.array([[0.0], [10.0]], dtype="float32")
-    averaged, _ = average_overlaps(matrix, [edge, center], side=4)
+    averaged, _ = average_overlaps(matrix, [edge, center], side=4, rule="hann")
     w = edge_weights(4)
     expected = (0.0 * w[0] * w[0] + 10.0 * w[2] * w[2]) / (w[0] * w[0] + w[2] * w[2])
     np.testing.assert_allclose(averaged, [[expected]], rtol=1e-5)
     assert averaged[0, 0] > 9.0
+
+
+def test_central_rule_keeps_the_encoding_from_the_most_central_window():
+    edge = Tile(0, 0, 0, 0, 16)
+    center = Tile(2, 2, 0, 0, 16)
+    other = Tile(1, 1, 0, 16, 16)
+    matrix = np.array([[0.0], [10.0], [5.0]], dtype="float32")
+    picked, kept = average_overlaps(matrix, [edge, center, other], side=4, rule="central")
+    assert [(t.y0, t.x0) for t in kept] == [(0, 0), (0, 16)]
+    np.testing.assert_array_equal(picked, [[10.0], [5.0]])
 
 
 def test_average_overlaps_is_identity_without_repeats():
