@@ -918,8 +918,9 @@ proceeds.
 for both feature extractors on the same bags. Within-municipality Spearman against the
 fine truth, grouped five-fold by municipality, mean over three seeds; Bogot\'a's oracle
 folds over 3.2 km spatial cells. Colombia: 153 bags, 89{,}064 built tokens, the Bogot\'a
-block strata as truth over 12{,}738 of them, so the within and pooled values coincide
-and the parenthesis is the s.d. over seeds (the unadapted model has one). Brazil: 48
+block strata as truth over 12{,}738 of them, so the within-municipality value is the
+correlation inside that one municipality and a pooled value would repeat it; the
+parenthesis is the s.d. over seeds (the unadapted model has one). Brazil: 48
 bags, 121{,}647 built tokens, tract median income of the household head as truth over
 110{,}728 tokens in 47 municipalities, with the 95\% municipality-bootstrap interval of
 the mean. AUROC is for the most deprived quartile of the truth, pooled. The
@@ -932,18 +933,18 @@ AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
 \toprule
 Country & Features & Method & Within-$\rho$ & Pooled $\rho$ & AUROC\\
 \midrule
-Colombia & DOFA-B & Mexican, unadapted & 0.311 & 0.311 & 0.705\\
-Colombia & DOFA-B & local aggregates, 50 bags & 0.329 (0.066) & 0.329 & 0.701\\
-Colombia & DOFA-B & local aggregates, 100 bags & 0.242 (0.038) & 0.242 & 0.655\\
-Colombia & DOFA-B & local aggregates, 153 bags & 0.254 (0.027) & 0.254 & 0.657\\
-Colombia & DOFA-B & Mexican, fine-tuned & 0.315 (0.048) & 0.315 & 0.696\\
-Colombia & DOFA-B & oracle & 0.747 (0.010) & 0.747 & 0.903\\
-Colombia & DOFA-L & Mexican, unadapted & 0.520 & 0.520 & 0.806\\
-Colombia & DOFA-L & local aggregates, 50 bags & 0.183 (0.039) & 0.183 & 0.610\\
-Colombia & DOFA-L & local aggregates, 100 bags & 0.189 (0.046) & 0.189 & 0.615\\
-Colombia & DOFA-L & local aggregates, 153 bags & 0.168 (0.037) & 0.168 & 0.602\\
-Colombia & DOFA-L & Mexican, fine-tuned & 0.414 (0.019) & 0.414 & 0.748\\
-Colombia & DOFA-L & oracle & 0.793 (0.005) & 0.793 & 0.918\\
+Colombia & DOFA-B & Mexican, unadapted & 0.311 & -- & 0.705\\
+Colombia & DOFA-B & local aggregates, 50 bags & 0.329 (0.066) & -- & 0.701\\
+Colombia & DOFA-B & local aggregates, 100 bags & 0.242 (0.038) & -- & 0.655\\
+Colombia & DOFA-B & local aggregates, 153 bags & 0.254 (0.027) & -- & 0.657\\
+Colombia & DOFA-B & Mexican, fine-tuned & 0.315 (0.048) & -- & 0.696\\
+Colombia & DOFA-B & oracle & 0.747 (0.010) & -- & 0.903\\
+Colombia & DOFA-L & Mexican, unadapted & 0.520 & -- & 0.806\\
+Colombia & DOFA-L & local aggregates, 50 bags & 0.183 (0.039) & -- & 0.610\\
+Colombia & DOFA-L & local aggregates, 100 bags & 0.189 (0.046) & -- & 0.615\\
+Colombia & DOFA-L & local aggregates, 153 bags & 0.168 (0.037) & -- & 0.602\\
+Colombia & DOFA-L & Mexican, fine-tuned & 0.414 (0.019) & -- & 0.748\\
+Colombia & DOFA-L & oracle & 0.793 (0.005) & -- & 0.918\\
 \midrule
 Brazil & DOFA-B & Mexican, unadapted & 0.099 [0.048, 0.148] & 0.283 & 0.648\\
 Brazil & DOFA-B & local aggregates, 48 bags & 0.123 [0.075, 0.171] & 0.340 & 0.640\\
