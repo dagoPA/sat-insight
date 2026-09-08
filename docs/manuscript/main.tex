@@ -547,8 +547,12 @@ the thirteen land-cover columns of WorldCover fractions and NDVI with no learned
 representation ($0.219$, indistinguishable from the base backbone on test and far below it on
 validation, $0.150$), the optical vectors of either backbone alone ($0.179$ and
 $0.207$), the same vectors from imagery degraded to 20 m ($0.129$ and $0.191$), and the
-radar vectors ($0.084$ and $0.016$). Copernicus-FM base sits at the base backbone under
-cross-validation. Offering the four GHSL and nighttime-light columns to the head as
+radar vectors ($0.084$ and $0.016$). Copernicus-FM base reaches $0.212$ on validation,
+$0.234$ [$0.13$, $0.31$] on test and $0.197$ [$0.170$, $0.225$] under cross-validation:
+the three backbones are within $0.04$ of one another on any one split, and only the
+cross-validation over 138 cities orders them, which is the reason it is the comparison
+this paper relies on. Its fully supervised bound is $0.235$ on validation and $0.278$
+on test. Offering the four GHSL and nighttime-light columns to the head as
 inputs changes none of this (Table~\ref{tab:inputs}), and the hand-crafted texture
 features of the phase-one baseline predict the municipal label (quadratic-weighted
 $\kappa = 0.54$ with both sensors) without producing a map, so they enter no row.
@@ -559,8 +563,7 @@ $\kappa = 0.54$ with both sensors) without producing a map, so they enter no row
 $\rho$ of token scores against held-out tract grades, mean over three seeds, on the
 validation cities (selection), the held-out test cities (validation-selected models), and
 under grouped five-fold cross-validation over all 138 cities with a 95\% city bootstrap
-where it was run. Dimensions are per token. Copernicus-FM's test column is filled by the
-same validation-selected protocol as the other backbones.}
+where it was run. Dimensions are per token.}
 \small
 \begin{tabular}{llccc}
 \toprule
@@ -574,7 +577,7 @@ Base backbone, optical and radar fused & 1536 & 0.227 & 0.196 & 0.203 [0.170, 0.
 Base backbone, optical 10 m & 768 & 0.183 & 0.179 & \\
 Base backbone, optical degraded to 20 m & 768 & 0.171 & 0.129 & \\
 Base backbone, radar & 768 & 0.006 & 0.084 & \\
-Copernicus-FM base, optical and radar fused & 1536 & 0.212 & -- & 0.197 [0.170, 0.225]\\
+Copernicus-FM base, optical and radar fused & 1536 & 0.212 & 0.234 & 0.197 [0.170, 0.225]\\
 WorldCover fractions and NDVI, no encoder & 13 & 0.150 & 0.219 & \\
 Base backbone fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
 \bottomrule
