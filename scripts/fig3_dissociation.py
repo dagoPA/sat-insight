@@ -10,6 +10,10 @@
     Across the fourteen sweep configurations, bag error barely ranks map quality, so a
     pipeline whose product is the map cannot be tuned on the error it can see. Drawn for
     every backbone whose sweep exists.
+(c) The backbone comparison city by city: under grouped cross-validation over the 138
+    cities, the mean within-municipality correlation each city gets with the large
+    backbone against the base one, with the pooled means of Table 3 checked against the
+    canon.
 
 Every plotted number is recomputed from the per-fold or per-seed artifacts and checked
 against `docs/manuscript/canonical_results.json`; a divergence raises rather than redrawing
@@ -165,12 +169,67 @@ def _blindness(ax, book) -> None:
     ax.legend(frameon=False, fontsize=8, loc="center right")
 
 
+def _cross_validation(ax, book) -> None:
+    """Panel c: per-city map quality under cross-validation, large against base backbone."""
+    from satinsight.agebs import load_grs
+
+    sys.path.insert(0, "scripts")
+    from backbone_paired import within
+
+    grades = load_grs().set_index("cvegeo").ordinal.astype(float)
+    per_city = {}
+    for tag, name in BACKBONES:
+        table = pd.read_parquet(suffixed("data/cv_predictions.parquet", tag))
+        tokens = (
+            table.groupby(["city", "municipality", "cvegeo", "y0", "x0"], observed=True)
+            .score.mean()
+            .reset_index()
+            .drop_duplicates(["cvegeo", "y0", "x0"])
+        )
+        municipalities = within(tokens, grades)
+        agrees(
+            municipalities.token.mean(),
+            book["backbone_cv"]["backbones"][_cv_name(tag)]["within_token"],
+            name=f"{name} cross-validated within-municipality correlation",
+        )
+        per_city[tag] = municipalities.groupby("city").token.mean()
+    pair = pd.concat(
+        [per_city[""].rename("base"), per_city["dofal"].rename("large")], axis=1
+    ).dropna()
+    lim = (min(pair.min()) - 0.05, max(pair.max()) + 0.05)
+    ax.plot(lim, lim, color=MUTED, lw=1, ls="--")
+    ax.scatter(pair.base, pair.large, s=22, color=VALIDATION, alpha=0.8, zorder=3)
+    ax.set_xlim(lim)
+    ax.set_ylim(lim)
+    ax.set_xlabel(r"within-municipality $\rho$, base backbone")
+    ax.set_ylabel(r"within-municipality $\rho$, large backbone")
+    ax.set_title("c  Cross-validation over 138 cities, city by city")
+    above = int((pair.large > pair.base).sum())
+    ax.text(
+        0.03,
+        0.97,
+        f"{above} of {len(pair)} cities above the diagonal\n"
+        f"pooled means {book['backbone_cv']['backbones']['DOFA base']['within_token']:.3f} "
+        f"and {book['backbone_cv']['backbones']['DOFA large']['within_token']:.3f}",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        size=9,
+        color=INK,
+    )
+
+
+def _cv_name(tag: str) -> str:
+    return {"": "DOFA base", "dofal": "DOFA large"}[tag]
+
+
 def draw(destination: str) -> None:
     book = canon()
     sns.set_theme(**STYLE)
-    figure, axes = plt.subplots(1, 2, figsize=(14, 5.0))
+    figure, axes = plt.subplots(1, 3, figsize=(19, 5.0))
     _families(axes[0], book)
     _blindness(axes[1], book)
+    _cross_validation(axes[2], book)
     figure.tight_layout()
     Path(destination).parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(destination, bbox_inches="tight")

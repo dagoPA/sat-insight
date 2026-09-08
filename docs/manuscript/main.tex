@@ -500,6 +500,28 @@ Bags & Validation (s.d.) & Test & Validation (s.d.) & Test\\
 \label{tab:curve}
 \end{table}
 
+Figure~\ref{fig:gallery} shows the map beside the truth in six cities, at the tract
+unit every evaluation scores: the best and the median validation city, and the two
+highest and two lowest test cities of the audit in Section~\ref{sec:uncertainty}. Where
+the map works it recovers the gradient from the consolidated center to the periphery
+and the outlying settlements; where it fails, in Guerrero and Esc\'arcega, the
+municipality holds two dozen tracts of nearly one grade and the map has almost nothing
+to order.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig6_gallery.pdf}
+\caption{\textbf{The map beside the truth in six cities.} Each row is a city; the
+first panel fills every AGEB with its census grade, the other two with the seed-mean
+prediction of each backbone averaged to the tract, all on one color scale over the
+dimmed composite. Rows: San Luis R\'io Colorado and Culiac\'an, the best and the
+median validation city by per-tract correlation; Iguala de la Independencia and La Paz,
+the two best test cities; Guerrero and Esc\'arcega, the two worst. The annotated
+$\rho$ is the mean over the city's municipalities with at least twenty tracts of the
+within-municipality Spearman correlation of tract means.}
+\label{fig:gallery}
+\end{figure}
+
 \textbf{Backbone} (Table~\ref{tab:backbone}). Under grouped cross-validation over the
 138 cities (363 municipalities), the large backbone reaches a within-municipality $\rho$ of
 $0.230$ [$0.203$, $0.257$] per token and $0.294$ [$0.259$, $0.328$] per AGEB, against
@@ -608,7 +630,10 @@ mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped trainin
 folds of the national set), filled the base backbone and hollow the large backbone, the only criterion
 weak supervision may monitor is nearly uncorrelated with within-municipality map quality
 ($-0.14$ and $+0.25$), and positively correlated ($+0.62$ and $+0.59$) with the pooled
-AUROC it would seem to proxy.}
+AUROC it would seem to proxy. \textbf{c}, The backbone comparison of Table~3 city by
+city: under grouped cross-validation over the 138 cities, the mean within-municipality
+$\rho$ each city obtains with the large backbone against the base one; 84 of 138 cities
+lie above the diagonal and the pooled means are $0.203$ and $0.230$.}
 \label{fig:dissociation}
 \end{figure}
 
@@ -916,6 +941,7 @@ Brazil & Large & oracle & 0.283 / 0.277 / 0.294 & 0.285 [0.230, 0.337] & 0.539 &
 \end{table}
 
 \subsection{Uncertainty and limits}
+\label{sec:uncertainty}
 
 A map offered for targeting has to say where it is unsure. The ensemble of three seeds
 supplies the obvious candidate, and it does not work. Seed disagreement ranks the tract
@@ -964,6 +990,29 @@ Large & clustered by city & 1.85 & 0.963 & La Paz (0.899) & 1 of 14\\
 \end{tabular}
 \label{tab:conformal}
 \end{table}
+
+Figure~\ref{fig:calibration} shows what those widths mean. On the test tracts the
+score rises with the true grade for either backbone and the distributions of adjacent
+grades overlap by about half their spread (panel a); inside every test city the median
+score rises with the grade, while the level at which it does so shifts by up to a
+full grade between cities (panel b), which is the between-city variation the marginal
+rule ignores. The isotonic map fitted on validation turns a score into a grade in steps
+of roughly one grade per $0.6$ of score, and the conformal half-widths sit on it as
+bands that span two to four of the five grades (panel c).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig7_calibration.pdf}
+\caption{\textbf{From score to grade.} \textbf{a}, Tract-mean score by true grade on
+the test cities, base backbone solid and large backbone hatched (boxes: quartiles;
+whiskers: 5th to 95th percentile; $n$ tracts per grade below). \textbf{b}, Median tract
+score by grade in each of the fourteen test cities (gray, base backbone) and over all
+test tracts (red): the ordering holds inside cities and the level shifts between them.
+\textbf{c}, The isotonic score-to-grade map fitted on the validation tracts (blue line)
+with the marginal ($\pm 1.29$ grades) and clustered ($\pm 1.68$) conformal half-widths
+of Table~\ref{tab:conformal} as bands, over the test tracts (red, jittered).}
+\label{fig:calibration}
+\end{figure}
 
 The failures are concentrated and can be named (Table~\ref{tab:audit}). Ranking the
 fourteen test cities by the within-municipality correlation their map achieves, the same
@@ -1227,7 +1276,8 @@ Bogot\'a's open-data portal.
 The full pipeline (MIT licence) is available at the project repository, pinned by
 \texttt{uv.lock}. Each figure maps to one driver script under \texttt{scripts/}:
 \texttt{fig1\_design.py}, \texttt{fig2\_curve.py}, \texttt{fig3\_dissociation.py},
-\texttt{fig4\_validation.py} and \texttt{fig5\_incumbents.py}. Each recomputes the quantities it draws from
+\texttt{fig4\_validation.py}, \texttt{fig5\_incumbents.py}, \texttt{fig6\_gallery.py}
+and \texttt{fig7\_calibration.py}. Each recomputes the quantities it draws from
 the per-seed artifacts and halts if any of them departs from the canonical results file,
 so a figure and the text cannot disagree silently.
 
