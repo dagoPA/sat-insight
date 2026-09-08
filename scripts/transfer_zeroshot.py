@@ -26,7 +26,11 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import rasterio.warp  # noqa: E402
 
-from satinsight import encoders, tiling  # noqa: E402
+from satinsight import (  # noqa: E402
+    backbone,
+    encoders,
+    tiling,
+)
 from satinsight.cache import load  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
 from satinsight.dataset import CHANNELS  # noqa: E402
@@ -44,7 +48,9 @@ def encode_city(key: str, encoder) -> tuple[pd.DataFrame, np.ndarray]:
     for sensor in ("s2", "s1"):
         bands, grid, _ = load(DATA_ROOT / "composites" / f"{key}_{sensor}.tif")
         bands = {c: bands[c] for c in CHANNELS[sensor]}
-        windows = tiling.select(bands, min_valid_fraction=tiling.MIN_VALID_FRACTION)
+        windows = tiling.select(
+            bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=backbone.STRIDE
+        )
         matrix, tokens = encoders.extract(bands, windows, encoder, order=CHANNELS[sensor])
         vectors[sensor] = matrix
         positions[sensor] = {(t.y0, t.x0): i for i, t in enumerate(tokens)}

@@ -10,7 +10,7 @@ vectors with the sensor name as its only change.
 Copernicus-FM also takes the location, date and footprint of each window; they come from
 the composite grid, with the date fixed at the middle of the composited year.
 
-Usage: backbone_extract.py <dofa_large|copernicusfm> [index total]
+Usage: backbone_extract.py <dofa_large|copernicusfm|dofa_base_ov|dofa_large_ov> [index total]
 """
 
 import logging
@@ -30,12 +30,17 @@ from satinsight.dataset import CHANNELS, paths  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 
 BACKBONES = {
-    "dofa_large": ("dofal", lambda: encoders.DofaEncoder("dofa_large_patch16_224")),
-    "copernicusfm": ("cfm", lambda: encoders.CopernicusFmEncoder()),
+    "dofa_large": ("dofal", lambda: encoders.DofaEncoder("dofa_large_patch16_224"), 224),
+    "copernicusfm": ("cfm", lambda: encoders.CopernicusFmEncoder(), 224),
+    "dofa_base_ov": ("ov", lambda: encoders.DofaEncoder(), 112),
+    "dofa_large_ov": ("dofalov", lambda: encoders.DofaEncoder("dofa_large_patch16_224"), 112),
 }
+"""Name on the command line: the sensor tag, the encoder, and the window stride. The
+`_ov` entries extract with overlapping windows and average each token over the windows
+that cover it, which removes the window seams from the map."""
 
 
-def encode_city(city: str, sensor: str, tag: str, encoder) -> str:
+def encode_city(city: str, sensor: str, tag: str, encoder, stride: int = 224) -> str:
     where = paths(DATA_ROOT)
     out_vectors = where["vectors"] / f"{city}_{sensor}_{tag}.npz"
     out_instances = where["instances"] / f"{city}_{sensor}_{tag}.parquet"
@@ -44,7 +49,7 @@ def encode_city(city: str, sensor: str, tag: str, encoder) -> str:
     instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
     bands, grid, _ = load(DATA_ROOT / "composites" / f"{city}_{sensor}.tif")
     bands = {c: bands[c] for c in CHANNELS[sensor]}
-    windows = tiling.select(bands, min_valid_fraction=tiling.MIN_VALID_FRACTION)
+    windows = tiling.select(bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=stride)
     metadata = (
         encoders.window_metadata(windows, grid)
         if getattr(encoder, "needs_metadata", False)
@@ -68,7 +73,7 @@ def encode_city(city: str, sensor: str, tag: str, encoder) -> str:
 
 def main() -> int:
     name = sys.argv[1]
-    tag, make = BACKBONES[name]
+    tag, make, stride = BACKBONES[name]
     encoder = make()
     where = paths(DATA_ROOT)
     keys = sorted(p.stem[:-3] for p in where["instances"].glob("*_s2.parquet"))
@@ -80,7 +85,7 @@ def main() -> int:
             if not (where["instances"] / f"{city}_{sensor}.parquet").exists():
                 continue
             try:
-                result = encode_city(city, sensor, tag, encoder)
+                result = encode_city(city, sensor, tag, encoder, stride)
                 print(f"{result} {city}/{sensor} ({n}/{len(keys)})", flush=True)
             except Exception as e:
                 failed.append(f"{city}/{sensor}")

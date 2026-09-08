@@ -22,7 +22,17 @@ SUFFIX = f"_{TAG}" if TAG else ""
 ENCODED = ("s2", "s1", "s2deg")
 """Sensor names whose vectors come from the backbone."""
 
-MODELS = {"": "dofa_base_patch16_224", "dofal": "dofa_large_patch16_224"}
+MODELS = {
+    "": "dofa_base_patch16_224",
+    "dofal": "dofa_large_patch16_224",
+    "ov": "dofa_base_patch16_224",
+    "dofalov": "dofa_large_patch16_224",
+}
+"""Which pretrained weights each tag stands for; the `ov` tags are the same weights
+extracted with overlapping windows (stride 112 px) and per-token averaging."""
+
+STRIDE = 112 if TAG.endswith("ov") else 224
+"""Window stride of this tag's extraction; 224 is the non-overlapping reference."""
 
 
 def sensor(name: str) -> str:

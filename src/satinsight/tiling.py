@@ -80,24 +80,34 @@ class Tile(NamedTuple):
         return self.y0 + self.size / 2, self.x0 + self.size / 2
 
 
-def grid(shape: tuple[int, int], size: int = WINDOW_SIZE) -> list[Tile]:
+def grid(shape: tuple[int, int], size: int = WINDOW_SIZE, stride: int | None = None) -> list[Tile]:
     """Lays a grid of whole patches over an array of this shape.
 
     Partial patches along the right and bottom edges are dropped. A ragged instance would
     have to be padded, and padding invents texture in a project whose entire signal is
     texture. The loss is one patch width at two edges, under 4% of a typical city.
+
+    With a `stride` smaller than `size` the patches overlap, so that a token is covered
+    by several windows and its vectors can be averaged across them: the tokens near a
+    window's edge then see context on both sides, and the seams between windows, which
+    otherwise appear as blocks in the map, are averaged out. The stride must divide the
+    token grid, so that overlapping windows share token positions exactly.
     """
     if size <= 0:
         raise ValueError(f"patch side must be positive, got {size}")
+    stride = size if stride is None else stride
+    if stride <= 0 or stride > size or stride % TOKEN_SIZE:
+        raise ValueError(f"stride must be a multiple of {TOKEN_SIZE} in (0, {size}], got {stride}")
     height, width = shape
-    rows, cols = height // size, width // size
-    if rows == 0 or cols == 0:
+    rows, cols = (height - size) // stride + 1, (width - size) // stride + 1
+    if height < size or width < size:
         raise ValueError(f"a {height}x{width} array holds no whole {size}x{size} patch")
 
-    dropped = 1 - (rows * size * cols * size) / (height * width)
+    covered_rows, covered_cols = (rows - 1) * stride + size, (cols - 1) * stride + size
+    dropped = 1 - (covered_rows * covered_cols) / (height * width)
     log.info("%dx%d patch grid, %.1f%% of the array left over", rows, cols, 100 * dropped)
     return [
-        Tile(row=r, col=c, y0=r * size, x0=c * size, size=size)
+        Tile(row=r, col=c, y0=r * stride, x0=c * stride, size=size)
         for r in range(rows)
         for c in range(cols)
     ]
@@ -121,6 +131,7 @@ def select(
     bands: dict[str, np.ndarray],
     size: int = WINDOW_SIZE,
     min_valid_fraction: float = MIN_VALID_FRACTION,
+    stride: int | None = None,
 ) -> list[Tile]:
     """Patches of a city that carry enough observed pixels to be worth embedding."""
     if not bands:
@@ -130,7 +141,7 @@ def select(
     if mismatched:
         raise ValueError(f"bands disagree on shape: {shape} against {mismatched}")
 
-    todos = grid(shape, size)
+    todos = grid(shape, size, stride)
     kept = [t for t in todos if valid_fraction(bands, t) >= min_valid_fraction]
     log.info(
         "%d of %d patches kept above %.0f%% observed",

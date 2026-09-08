@@ -71,7 +71,9 @@ def one_city(city: str) -> None:
     bands = {c: degrade(bands[c]) for c in CHANNELS["s2"]}
 
     encoder = one_city.encoder
-    windows = tiling.select(bands, min_valid_fraction=tiling.MIN_VALID_FRACTION)
+    windows = tiling.select(
+        bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=backbone.STRIDE
+    )
     matrix, tokens = encoders.extract(bands, windows, encoder, order=CHANNELS["s2"])
     position = {(t.y0, t.x0): i for i, t in enumerate(tokens)}
     rows = [position.get((y, x), -1) for y, x in zip(instances.y0, instances.x0, strict=True)]

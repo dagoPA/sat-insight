@@ -347,8 +347,37 @@ def extract(
             output = encoder.embed_tokens(batch_in, wavelengths_list)
         vectors.append(output.reshape(-1, output.shape[-1]))
     matrix = np.concatenate(vectors)[indices]
+    matrix, tokens = average_overlaps(matrix, tokens)
     log.info("%d instances encoded into %d dimensions", *matrix.shape)
     return matrix, tokens
+
+
+def average_overlaps(matrix: np.ndarray, tokens: list) -> tuple[np.ndarray, list]:
+    """One vector per token position, the mean over the windows that produced it.
+
+    With non-overlapping windows every position appears once and this is the identity.
+    With overlapping windows a token near a window edge has been encoded with context on
+    each side of that edge, and the mean of those encodings is what removes the seam.
+    """
+    if not tokens:
+        return matrix, tokens
+    keys = np.array([(t.y0, t.x0) for t in tokens], dtype=np.int64)
+    unique, first, inverse = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    inverse = inverse.reshape(-1)
+    if len(unique) == len(tokens):
+        return matrix, tokens
+    sums = np.zeros((len(unique), matrix.shape[1]), dtype="float64")
+    np.add.at(sums, inverse, matrix.astype("float64"))
+    counts = np.bincount(inverse, minlength=len(unique)).astype("float64")
+    averaged = (sums / counts[:, None]).astype(matrix.dtype)
+    order = np.argsort(first)
+    log.info(
+        "%d token positions averaged from %d window tokens (%.2f windows per token)",
+        len(unique),
+        len(tokens),
+        len(tokens) / len(unique),
+    )
+    return averaged[order], [tokens[i] for i in first[order]]
 
 
 def save(embeddings: np.ndarray, destination: Path, **labels) -> Path:
