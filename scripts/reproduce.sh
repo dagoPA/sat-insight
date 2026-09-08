@@ -64,6 +64,10 @@ sh scripts/backbone_queue.sh
 sh scripts/backbone_protocol_queue.sh s2_dofal
 sh scripts/backbone_cv_queue.sh   # grouped cross-validation of the three backbones and the pooled comparison
 
+# 5c. partial fine-tuning of the base backbone: cache the frozen prefix, train the suffix
+uv run python scripts/finetune_cache.py 10 > logs/finetune_cache.log 2>&1
+sh scripts/finetune_queue.sh
+
 # 6. figures and source data, each checked against docs/manuscript/canonical_results.json
 for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents fig6_gallery fig7_calibration; do
   uv run python scripts/$fig.py > logs/$fig.log 2>&1
