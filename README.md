@@ -14,7 +14,7 @@ fraction of that upper bound that aggregate supervision recovers.
 ## Layout
 
 - `src/satinsight/`: installable library. STAC catalog queries, windowed COG reads, annual
-  median composites (Sentinel-1 RTC and Sentinel-2 L2A), tiling into bags, frozen DOFA
+  median composites (Sentinel-1 RTC and Sentinel-2 L2A), tiling into bags, frozen DOFA (base and large)
   encoding, auxiliary product layers, the label-proportion head, evaluation, and the
   figure guard.
 - `scripts/`: experiment drivers, one per analysis, plus `reproduce.sh` with the canonical
@@ -58,7 +58,7 @@ one departs from `docs/manuscript/canonical_results.json`, so a stale artifact f
 build instead of quietly redrawing the page. `source_data.py` exports the per-panel
 source data.
 
-`package_benchmark.py` builds the frozen benchmark (DOFA vectors, labels, splits,
+`package_benchmark.py` builds the frozen benchmark (DOFA base and DOFA large vectors, labels, splits,
 evaluation protocol) under `dist/benchmark` for deposit on Zenodo, so heads can be trained
 in minutes without the satellite pipeline. `satinsight probe` verifies the live data
 access the pipeline needs.

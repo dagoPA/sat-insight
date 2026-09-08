@@ -16,7 +16,7 @@
     <div style="display: flex; flex-direction: row; gap: 40px; padding-bottom: 6px;">
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div style="font-family: 'Newsreader', Georgia, serif; font-weight: 600; font-size: 64px; line-height: 1; color: #2166ac;">[[RECOVERED]]</div>
-        <div style="font-size: 18px; color: #4a5560; text-align: right; line-height: 1.25;">of the fully supervised bound<br>recovered on held-out cities</div>
+        <div style="font-size: 18px; color: #4a5560; text-align: right; line-height: 1.25;">of the fully supervised bound recovered<br>on held-out cities ([[RECOVERED_LARGE]] with DOFA large)</div>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <div style="font-family: 'Newsreader', Georgia, serif; font-weight: 600; font-size: 64px; line-height: 1; color: #2166ac;">[[BAGS]]</div>
@@ -71,17 +71,17 @@
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 22px 22px; border-radius: 8px; background: #f1ede6; border: 1.5px solid #e3ddd3;">
           <div style="font-size: 21px; font-weight: 600; color: #b2182b;">Attention MIL (ABMIL, CLAM)</div>
           <div style="font-size: 18px; color: #4a5560; line-height: 1.35;">Pool the tokens, then predict the bag. The bag is solved from the mean, so attention never learns where to look.</div>
-          <div style="font-size: 18px; font-weight: 600;">Map AUROC [[ABMIL_AUROC]], chance</div>
+          <div style="font-size: 18px; font-weight: 600;">Map AUROC [[ABMIL_AUROC]] / [[ABMIL_AUROC_LARGE]], chance</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 22px 22px; border-radius: 8px; background: #e8f0f8; border: 2px solid #2166ac;">
           <div style="font-size: 21px; font-weight: 600; color: #2166ac;">Label proportions (this work)</div>
           <div style="font-size: 18px; color: #4a5560; line-height: 1.35;">Predict every token, average the predictions, match the municipal share. The token scores are the map.</div>
-          <div style="font-size: 18px; font-weight: 600;">Map AUROC [[LLP_AUROC]] · within-municipality ρ [[LLP_TEST]] on test</div>
+          <div style="font-size: 18px; font-weight: 600;">Within-municipality ρ [[LLP_TEST]] / [[LLP_TEST_LARGE]] on test (DOFA base / large)</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 22px 22px; border-radius: 8px; background: #f1ede6; border: 1.5px solid #e3ddd3;">
           <div style="font-size: 21px; font-weight: 600; color: #4a5560;">Fully supervised oracle</div>
           <div style="font-size: 18px; color: #4a5560; line-height: 1.35;">The same head trained on the tract grades: what these features support at best.</div>
-          <div style="font-size: 18px; font-weight: 600;">Within-municipality ρ [[ORACLE_TEST]] on test</div>
+          <div style="font-size: 18px; font-weight: 600;">Within-municipality ρ [[ORACLE_TEST]] / [[ORACLE_TEST_LARGE]] on test</div>
         </div>
       </div>
     </div>

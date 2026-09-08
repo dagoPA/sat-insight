@@ -209,9 +209,12 @@ def main() -> None:
         "[[RECOVERED]]": f"{book['test']['fraction']:.0%}",
         "[[BAGS]]": str(book["pool"]["bags_clean"]),
         "[[ABMIL_AUROC]]": f"{book['abmil']['map_auroc']:.2f}",
-        "[[LLP_AUROC]]": f"{book['curve']['771']['auroc_high']:.2f}",
         "[[LLP_TEST]]": f"{book['test']['headline_token_within']:.2f}",
         "[[ORACLE_TEST]]": f"{book['test']['ceiling_r1']:.2f}",
+        "[[RECOVERED_LARGE]]": f"{book['dofal']['test']['fraction']:.0%}",
+        "[[ABMIL_AUROC_LARGE]]": f"{book['dofal']['abmil']['map_auroc']:.2f}",
+        "[[LLP_TEST_LARGE]]": f"{book['dofal']['test']['headline_token_within']:.2f}",
+        "[[ORACLE_TEST_LARGE]]": f"{book['dofal']['test']['ceiling_r1']:.2f}",
         "[[CITY]]": agebs.cities_by_size(stratify=True)[CITY].name,
     }
     for key, value in numbers.items():
