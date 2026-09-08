@@ -31,9 +31,9 @@ is trained on frozen foundation-model features of Sentinel-1 and Sentinel-2 toke
 only the five-level Social Deprivation Grade of 771 Mexican municipalities, with no
 spatial annotation, and its maps are scored within municipalities against census-tract
 grades held out entirely, in cities the model never saw. On fourteen held-out test
-cities the map reaches a within-municipality rank correlation of $\rho = 0.20$ with a base and $0.23$ with a large DOFA backbone, 84\% and 77\% of what the same features
+cities the map reaches a within-municipality rank correlation of $\rho = 0.20$ with DOFA-B features and $0.23$ with DOFA-L, 84\% and 77\% of what the same features
 attain under full tract supervision ($0.23$ and $0.30$); under grouped cross-validation
-over all 138 cities the larger backbone improves the map by $0.03$ [$0.01$, $0.05$].
+over all 138 cities DOFA-L improves the map by $0.03$ [$0.01$, $0.05$].
 Recovery rises with the number of aggregates, falls with state-level aggregates,
 vanishes with a single national figure, and depends on optical content more than on
 resolution. The maps close 31--66\% and 42--64\% of the aggregate-to-census targeting
@@ -43,12 +43,12 @@ Bogot\'a's block strata without retraining. Repeating the design on Colombia's
 municipal poverty rate and Brazil's municipal mean income recovers a within-municipality
 ordering of block strata in Bogot\'a ($\rho = 0.25$ and $0.17$ from 153 bags) and of
 tract income across 47 Brazilian municipalities ($0.12$ and $0.16$ from 48 bags), with
-the base and the large backbone. Against free global grids the
+DOFA-B and DOFA-L. Against free global grids the
 margin is resolvable only for population, and feeding those grids to the model as inputs
 lifts the fully supervised bound by $0.03$ without lifting the weakly supervised map.
 Attention-based multiple-instance learning produces chance-level maps for a structural
 reason, seed ensembles yield no usable uncertainty layer, and an honest 90\% grade
-interval spans 1.7 to 1.9 of the five levels. Data, frozen features of both backbones,
+interval spans 1.7 to 1.9 of the five levels. Data, frozen features of both feature extractors,
 labels, splits and code are released.
 \end{abstract}
 
@@ -58,7 +58,7 @@ Sentinel-1; Sentinel-2; foundation models; urban poverty mapping; Mexico
 \section*{Highlights}
 \begin{itemize}
 \item Municipal aggregates alone train neighborhood deprivation maps scored on held-out tracts
-\item Test maps reach 84\% (base backbone) and 77\% (large) of the fully supervised bound
+\item Test maps reach 84\% (DOFA-B) and 77\% (DOFA-L) of the fully supervised bound
 \item More and finer aggregates buy more map; a national figure erases it; optics beat radar
 \item Attention pooling maps at chance; bag error cannot select for map quality
 \item Colombia and Brazil reproduce the design from their own municipal aggregates
@@ -141,7 +141,7 @@ typically yields several municipal bags, which is how 351 units produce 771 bags
 model consumes: the 2020 Sentinel-2 median composite of Ac\'ambaro (a validation city)
 with AGEB boundaries overlaid; tokens of 160 m tile the box. \textbf{c}, The tract
 truth, which never enters training, each AGEB polygon filled with its GRS grade. \textbf{d}, What the model
-produces: the token-level deprivation score from municipal aggregates alone (base backbone), on the same scale. \textbf{e}, The same prediction averaged to the tract, the unit at which every
+produces: the token-level deprivation score from municipal aggregates alone (DOFA-B), on the same scale. \textbf{e}, The same prediction averaged to the tract, the unit at which every
 evaluation in this paper scores it. Ac\'ambaro is the validation municipality with the
 highest within-municipality agreement among those holding all five grades ($\rho =
 0.51$ at token level); the validation median over municipalities is $0.27$, so the panel
@@ -160,9 +160,9 @@ as a fraction of a measured upper bound.
 
 The contributions are the following. (1) A measured supervision-efficiency curve: on fourteen held-out
 test cities, the national supply of municipal aggregates recovers 84\% of the fully
-supervised bound within municipalities with the base backbone and 77\% with the large one, whose maps are higher in absolute terms, and the curve along the number of
+supervised bound within municipalities with DOFA-B and 77\% with DOFA-L, whose maps are higher in absolute terms, and the curve along the number of
 aggregates, their granularity and the sensor content is reported on both splits and both
-backbones, which are compared by grouped cross-validation over all 138 cities. (2) A structural
+feature extractors, which are compared by grouped cross-validation over all 138 cities. (2) A structural
 failure of attention-based multiple-instance learning in this setting, with its cause,
 and the observation that the only selection signal weak supervision may use, bag error,
 is close to uninformative about map quality. (3) Four external checks of the map, against
@@ -210,8 +210,8 @@ computed city-wide at inference. Fourteen configurations varied one ingredient e
 loss, input standardization), then a combination round; standardized inputs with binary
 cross-entropy won on bag error over five grouped training folds. The oracle is the same
 head trained on tract labels with the same context, and bounds what the representation
-supports ($\rho = 0.251$ with context and $0.202$ without for the base backbone; $0.318$ and
-$0.260$ for the large backbone). The two other axes of the
+supports ($\rho = 0.251$ with context and $0.202$ without for DOFA-B; $0.318$ and
+$0.260$ for DOFA-L). The two other axes of the
 curve reuse the pool unchanged: granularity relabels every bag with its state's or the
 national aggregate, and content re-encodes the optical composite block-averaged to the
 radar's 20 m effective resolution, or uses each sensor alone.
@@ -238,7 +238,7 @@ transformer pretrained across optical, multispectral and radar sources whose inp
 projection is generated by a hypernetwork from the central wavelength of each channel,
 which is what lets radar and optical share one extractor; we use its ViT-B/16 weights
 (768 dimensions per sensor, 1{,}536 fused) and its ViT-L/16 weights (1{,}024 per sensor,
-2{,}048 fused), called the base and the large backbone below. The optical channels are
+2{,}048 fused), DOFA-B and DOFA-L below. The optical channels are
 declared at their band centers (0.49, 0.56, 0.665, 0.842 and 1.61 $\mu$m) and the radar
 pair at the marker the checkpoint was trained with. The third encoder is Copernicus-FM
 base~\cite{wang2025cfm}, a ViT-B/16 whose spectral hypernetwork takes each channel's
@@ -247,7 +247,7 @@ and footprint of every window; it receives the window's coordinates and area fro
 composite grid and the middle of the composited year as its date. A fourth set of
 vectors, the degraded arm, re-encodes the optical composite after block-averaging it to
 the radar's 20 m effective resolution, so that sensor content and ground sampling
-distance can be separated. The head was tuned on the base backbone and reused unchanged
+distance can be separated. The head was tuned on DOFA-B and reused unchanged
 on the others.
 
 Three hand-crafted alternatives to the learned vectors enter the same head and the same
@@ -265,7 +265,7 @@ only where its sensor ranking is cited.
 
 \paragraph{Partial fine-tuning} Whether the frozen bound is a property of the
 representation or of freezing it is tested by letting the encoder move. The base
-backbone is split after its tenth block: the frozen prefix is applied once to every
+feature extractor is split after its tenth block: the frozen prefix is applied once to every
 224-pixel window of every city and its output cached, and the last two blocks with the
 final normalization (14.2 million parameters, shared by both sensors as in the
 pretrained model) train together with the head under the same label-proportion loss,
@@ -273,13 +273,13 @@ seeds, early stopping on validation bag error and evaluation as the frozen proto
 suffix starts from the pretrained weights, so at step zero it reproduces the frozen
 vectors to within half-precision rounding (largest gap $0.01$ on vectors of magnitude
 $0.3$) and the head's standardization statistics stay those of the frozen features. The
-backbone learning rate is $10^{-5}$, with $10^{-4}$ as a sensitivity run, against
+encoder learning rate is $10^{-5}$, with $10^{-4}$ as a sensitivity run, against
 $2 \times 10^{-4}$ for the head; three seeds each.
 
-\paragraph{Comparing backbones} Every experiment is run on the base and the large
-backbone with the same head, protocol, seeds and splits; every table reports both and
-every figure draws the large backbone hatched or with hollow markers. Fourteen cities
-are too few to separate backbones, so they are compared by grouped cross-validation
+\paragraph{Comparing feature extractors} Every experiment is run on the base and the large
+feature extractor with the same head, protocol, seeds and splits; every table reports both and
+every figure draws DOFA-L hatched or with hollow markers. Fourteen cities
+are too few to separate feature extractors, so they are compared by grouped cross-validation
 over all 138 cities of the partition. The cities are dealt into five folds stratified as
 the partition was, by size and by share of high-deprivation tracts; for each fold the
 head trains on the remaining cities plus the expansion municipalities, with every bag
@@ -288,7 +288,7 @@ bag-level error on 14 cities drawn from the training side, so the held-out fold 
 part in selection. Three seeds per fold; the seed-mean token scores of every held-out
 city are pooled and scored with the same metrics as the rest of the paper, with 95\%
 percentile bootstrap intervals that resample cities, and the difference between two
-backbones is bootstrapped on the same city draws. Copernicus-FM enters that comparison
+feature extractors is bootstrapped on the same city draws. Copernicus-FM enters that comparison
 and the feature-family table only.
 
 \subsection{Partition, selection and statistics}
@@ -381,9 +381,9 @@ The same four products, plus the eleven WorldCover class fractions and the NDVI 
 dispersion of the composite, are also tested as inputs. Each is reprojected onto the 10 m
 grid and averaged inside every 160 m token (population and built surface as
 $\log(1 + x)$), giving four GHSL and light columns and thirteen WorldCover columns
-appended to the 1{,}536 dimensions of the base backbone encoder; this ablation was run on
-the base backbone only. Two fusions are compared on the full pool,
-three seeds each, against the base backbone head without extras: early, the columns enter the projection
+appended to the 1{,}536 dimensions of DOFA-B encoder; this ablation was run on
+DOFA-B only. Two fusions are compared on the full pool,
+three seeds each, against DOFA-B head without extras: early, the columns enter the projection
 with the encoder vector; late, they bypass it and enter the scoring layer beside the
 hidden representation, each with a weight of its own per threshold. The oracle is
 re-measured with the same inputs, standardized, since a nighttime-light column near 45
@@ -403,10 +403,10 @@ Horizonte) plus a catalogue of municipal seats with an urban footprint of at lea
 1.5 km$^2$ in Colombia and at least 50{,}000 urban inhabitants in Brazil, composited in
 that order and used as far as compositing has reached (220 Colombian seats at the time
 of writing, none yet in Brazil), are cut into 160 m tokens, encoded by both frozen
-backbones, and kept where the WorldCover built fraction is $\geq 0.10$. A bag is a
+feature extractors, and kept where the WorldCover built fraction is $\geq 0.10$. A bag is a
 municipality with at least 5\% of its area inside a box and at least 32 built tokens,
 assigned from each country's official boundaries: 153 bags in Colombia, 48 in Brazil,
-the same for both backbones. Nested subsets of 50 and 100 Colombian bags give the
+the same for both feature extractors. Nested subsets of 50 and 100 Colombian bags give the
 supply axis abroad.
 The label is what each office publishes at municipal level and nothing finer: Colombia's
 multidimensional poverty rate, a share that enters the one-output label-proportion head
@@ -433,8 +433,8 @@ Figure~\ref{fig:curve} shows the measurement on a pool of 771 municipal bags: th
 training cities plus 213 municipalities added expressly to cover the deprived half of
 urban Mexico that large-city samples miss (Fig.~\ref{fig:design}a; municipalities
 overlapping any held-out city's ground are excluded, Methods). Every row below
-reports the fourteen held-out test cities with validation-selected models, for the base backbone
-and the large backbone in that order; validation values are shown beside them as the selection
+reports the fourteen held-out test cities with validation-selected models, for DOFA-B
+and DOFA-L in that order; validation values are shown beside them as the selection
 benchmark. \textbf{Quantity} (Fig.~\ref{fig:curve}a): fifty aggregates yield
 $\rho = 0.15$ and $0.18$ within municipalities on validation; the full national supply
 yields $0.196$ and $0.226$ on test against fully supervised upper bounds of $0.233$ and
@@ -445,27 +445,27 @@ $0.196$ [$0.07$, $0.28$] and $0.227$ [$0.15$, $0.29$] on the 29 test municipalit
 at $0.225$ [$0.17$, $0.28$] and $0.233$ [$0.19$, $0.28$] on the 34 validation
 municipalities; the same models score $0.263$ [$0.12$, $0.38$] and $0.267$ [$0.16$,
 $0.35$] per AGEB on test. Fourteen cities per split bound the precision, which is why
-the backbones are compared under cross-validation below and why it is the point
-estimates, consistent across splits and backbones, that the title claims. The larger backbone raises the upper bound by $0.06$ and the map by $0.02$ to
+the feature extractors are compared under cross-validation below and why it is the point
+estimates, consistent across splits and feature extractors, that the title claims. The larger feature extractor raises the upper bound by $0.06$ and the map by $0.02$ to
 $0.03$ on both splits, so the aggregates recover a smaller share of a richer
-representation. The test curve of the base backbone reproduces the rise through 400 aggregates
-almost exactly and flattens at the top; the large backbone is higher at every point of the curve
+representation. The test curve of DOFA-B reproduces the rise through 400 aggregates
+almost exactly and flattens at the top; DOFA-L is higher at every point of the curve
 on both splits, most at 100 to 200 aggregates on validation ($0.141 \to 0.199$ and
 $0.151 \to 0.231$), where the base representation has not yet begun to rise.
 \textbf{Granularity} (Fig.~\ref{fig:curve}b): relabeling the same bags with state-level
 aggregates cuts the map from $0.225$ to $\rho = 0.152$ on validation and from $0.195$ to
-$0.168$ on test with the base backbone, and from $0.238$ to $0.134$ and from $0.223$ to $0.182$
-with the large backbone; a single national aggregate erases it ($0.009$ and $0.010$ validation,
+$0.168$ on test with DOFA-B, and from $0.238$ to $0.134$ and from $0.223$ to $0.182$
+with DOFA-L; a single national aggregate erases it ($0.009$ and $0.010$ validation,
 $0.004$ and $-0.002$ test). Recovered map quality falls monotonically with coarser
-publication on both splits and both backbones, and with state aggregates the larger
-backbone has no advantage. \textbf{Content} (Fig.~\ref{fig:curve}c): block-averaging
+publication on both splits and both feature extractors, and with state aggregates the larger
+feature extractor has no advantage. \textbf{Content} (Fig.~\ref{fig:curve}c): block-averaging
 the optical input to the radar's 20 m effective resolution costs little on validation
 ($0.183 \to 0.172$ base, $0.235 \to 0.217$ large) and more on test ($0.179 \to 0.129$
 and $0.207 \to 0.191$), while radar sits far below both ($0.006$ and $0.022$ validation,
 $0.084$ and $0.016$ test), despite having been the best single sensor at detecting
 high-deprivation tracts in our feature-based phase-one baseline (per-city AUROC 0.773
-against 0.747 optical). With the large backbone the optical sensor alone reaches what the fused
-the base backbone model reaches. Sensor content dominates ground sampling distance, with
+against 0.747 optical). With DOFA-L the optical sensor alone reaches what the fused
+DOFA-B model reaches. Sensor content dominates ground sampling distance, with
 resolution carrying a real secondary cost on test; a sensor's prediction accuracy is a
 poor guide to its map quality.
 
@@ -473,22 +473,22 @@ poor guide to its map quality.
 \centering
 \includegraphics[width=\linewidth]{fig2_curve.pdf}
 \caption{\textbf{What the map recovers as a function of the aggregates.} All panels:
-mean over three seeds against held-out tract grades, for the base backbone (solid, filled) and
-the large backbone (dashed or hatched, hollow); blue, the 14 validation cities used for
+mean over three seeds against held-out tract grades, for DOFA-B (solid, filled) and
+DOFA-L (dashed or hatched, hollow); blue, the 14 validation cities used for
 selection (error bars, s.d. over seeds); red, the 14 held-out test cities, drawn without
 a spread; dashed and dotted green lines, the fully supervised oracle upper bound on each
-split ($\rho = 0.251$ validation and $0.233$ test for the base backbone; $0.318$ and $0.295$
-for the large backbone, lighter). \textbf{a}, Agreement as a function of how many municipal
+split ($\rho = 0.251$ validation and $0.233$ test for DOFA-B; $0.318$ and $0.295$
+for DOFA-L, lighter). \textbf{a}, Agreement as a function of how many municipal
 aggregates supervise training (nested, grade-stratified sampling). \textbf{b}, The same
 771 bags relabeled with coarser aggregates. \textbf{c}, Single-sensor configurations:
 degrading optical resolution to the radar's 20 m grain costs little on validation and a
-real but secondary amount on test; radar sits far below both with either backbone.}
+real but secondary amount on test; radar sits far below both with either feature extractor.}
 \label{fig:curve}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{The supervision-efficiency curve (Fig.~\ref{fig:curve}a) for both backbones.
+\caption{The supervision-efficiency curve (Fig.~\ref{fig:curve}a) for both feature extractors.
 Within-municipality Spearman $\rho$ against held-out tract grades, mean over three seeds
 (s.d. over seeds on validation); validation cities were used for model selection, test
 cities are held out. The 771 row gives the test value of the retrained models and, after
@@ -497,7 +497,7 @@ scores; the last row gives those saved weights' values with a 95\% percentile bo
 that resamples cities (34 validation and 29 test municipalities).}
 \begin{tabular}{rcccc}
 \toprule
- & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone}\\
+ & \multicolumn{2}{c}{DOFA-B} & \multicolumn{2}{c}{DOFA-L}\\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Bags & Validation (s.d.) & Test & Validation (s.d.) & Test\\
 \midrule
@@ -526,7 +526,7 @@ to order.
 \includegraphics[width=0.92\linewidth]{fig6_gallery.pdf}
 \caption{\textbf{The map beside the truth in six cities.} Each row is a city; the
 first panel fills every AGEB with its census grade, the other two with the seed-mean
-prediction of each backbone averaged to the tract, all on one color scale over the
+prediction of each feature extractor averaged to the tract, all on one color scale over the
 dimmed composite. Rows: San Luis R\'io Colorado and Culiac\'an, the best and the
 median validation city by per-tract correlation; Iguala de la Independencia and La Paz,
 the two best test cities; Guerrero and Esc\'arcega, the two worst. The annotated
@@ -535,56 +535,56 @@ within-municipality Spearman correlation of tract means.}
 \label{fig:gallery}
 \end{figure}
 
-\textbf{Backbone} (Table~\ref{tab:backbone}). Under grouped cross-validation over the
-138 cities (363 municipalities), the large backbone reaches a within-municipality $\rho$ of
+\textbf{Feature extractor} (Table~\ref{tab:feature extractor}). Under grouped cross-validation over the
+138 cities (363 municipalities), DOFA-L reaches a within-municipality $\rho$ of
 $0.230$ [$0.203$, $0.257$] per token and $0.294$ [$0.259$, $0.328$] per AGEB, against
-$0.203$ [$0.170$, $0.234$] and $0.252$ [$0.213$, $0.292$] for the base backbone; the paired
+$0.203$ [$0.170$, $0.234$] and $0.252$ [$0.213$, $0.292$] for DOFA-B; the paired
 difference is $+0.027$ [$+0.007$, $+0.049$] per token and $+0.041$ [$+0.006$, $+0.077$]
 per AGEB, and its interval excludes zero in both units. Copernicus-FM base is
-indistinguishable from the base backbone ($0.197$ per token; difference $-0.006$ [$-0.029$,
+indistinguishable from DOFA-B ($0.197$ per token; difference $-0.006$ [$-0.029$,
 $+0.016$]). AUROC for high deprivation is the same for the three ($0.80$); the larger
-backbone improves the ranking within municipalities and the pooled ranking ($0.49$
+feature extractor improves the ranking within municipalities and the pooled ranking ($0.49$
 against $0.45$), the quantities the map is for. The same comparison on the 14
 validation cities alone gave $0.243$ against $0.235$ with an interval spanning zero:
-with fourteen cities the difference is invisible, which is why both backbones are
+with fourteen cities the difference is invisible, which is why both feature extractors are
 carried through every experiment below rather than one being chosen on them. The
-cross-validated value of the base backbone ($0.203$) sits between its validation ($0.227$) and
+cross-validated value of DOFA-B ($0.203$) sits between its validation ($0.227$) and
 test ($0.196$) values.
 
 \begin{table}[htbp]
 \centering
-\caption{Backbone ablation under grouped five-fold cross-validation over the 138 cities
+\caption{Feature-extractor comparison under grouped five-fold cross-validation over the 138 cities
 of the partition (363 municipalities; 346 with at least five AGEB for the per-AGEB
 unit). Within-municipality Spearman $\rho$ of the seed-mean token score against tract
 grades, mean over municipalities, per token and per AGEB; pooled Spearman and AUROC for
 high deprivation over all tokens. Brackets: 95\% percentile bootstrap resampling cities.
-Differences are paired against DOFA base on the same city draws.}
+Differences are paired against DOFA-B on the same city draws.}
 \small
 \begin{tabular}{lcccc}
 \toprule
-Backbone & Within-$\rho$, token & Within-$\rho$, AGEB & Pooled $\rho$ & AUROC high\\
+Features & Within-$\rho$, token & Within-$\rho$, AGEB & Pooled $\rho$ & AUROC high\\
 \midrule
-DOFA base & 0.203 [0.170, 0.234] & 0.252 [0.213, 0.292] & 0.448 & 0.802\\
-DOFA large & 0.230 [0.203, 0.257] & 0.294 [0.259, 0.328] & 0.492 & 0.804\\
+DOFA-B & 0.203 [0.170, 0.234] & 0.252 [0.213, 0.292] & 0.448 & 0.802\\
+DOFA-L & 0.230 [0.203, 0.257] & 0.294 [0.259, 0.328] & 0.492 & 0.804\\
 Copernicus-FM base & 0.197 [0.170, 0.225] & 0.252 [0.221, 0.281] & 0.433 & 0.799\\
 \midrule
-DOFA large minus DOFA base & +0.027 [+0.007, +0.049] & +0.041 [+0.006, +0.077] & &\\
-Copernicus-FM minus DOFA base & $-$0.006 [$-$0.029, +0.016] & $-$0.001 [$-$0.028, +0.027] & &\\
+DOFA-L minus DOFA-B & +0.027 [+0.007, +0.049] & +0.041 [+0.006, +0.077] & &\\
+Copernicus-FM minus DOFA-B & $-$0.006 [$-$0.029, +0.016] & $-$0.001 [$-$0.028, +0.027] & &\\
 \bottomrule
 \end{tabular}
-\label{tab:backbone}
+\label{tab:feature extractor}
 \end{table}
 
 \textbf{Feature families} (Table~\ref{tab:features}). Under the same head, protocol and
 metric, the families of input features the paper touches order as follows on the test
-cities: the fused the large backbone vectors ($0.226$), the fused the base backbone vectors ($0.196$),
+cities: the fused DOFA-L vectors ($0.226$), the fused DOFA-B vectors ($0.196$),
 the thirteen land-cover columns of WorldCover fractions and NDVI with no learned
-representation ($0.219$, indistinguishable from the base backbone on test and far below it on
-validation, $0.150$), the optical vectors of either backbone alone ($0.179$ and
+representation ($0.219$, indistinguishable from DOFA-B on test and far below it on
+validation, $0.150$), the optical vectors of either feature extractor alone ($0.179$ and
 $0.207$), the same vectors from imagery degraded to 20 m ($0.129$ and $0.191$), and the
 radar vectors ($0.084$ and $0.016$). Copernicus-FM base reaches $0.212$ on validation,
 $0.234$ [$0.13$, $0.31$] on test and $0.197$ [$0.170$, $0.225$] under cross-validation:
-the three backbones are within $0.04$ of one another on any one split, and only the
+the three feature extractors are within $0.04$ of one another on any one split, and only the
 cross-validation over 138 cities orders them, which is the reason it is the comparison
 this paper relies on. Its fully supervised bound is $0.235$ on validation and $0.278$
 on test. Offering the four GHSL and nighttime-light columns to the head as
@@ -604,17 +604,17 @@ where it was run. Dimensions are per token.}
 \toprule
 Feature family & Dimensions & Validation & Test & Cross-validation [95\%]\\
 \midrule
-Large backbone, optical and radar fused & 2048 & 0.242 & 0.226 & 0.230 [0.203, 0.257]\\
-Large backbone, optical 10 m & 1024 & 0.235 & 0.207 & \\
-Large backbone, optical degraded to 20 m & 1024 & 0.217 & 0.191 & \\
-Large backbone, radar & 1024 & 0.022 & 0.016 & \\
-Base backbone, optical and radar fused & 1536 & 0.227 & 0.196 & 0.203 [0.170, 0.234]\\
-Base backbone, optical 10 m & 768 & 0.183 & 0.179 & \\
-Base backbone, optical degraded to 20 m & 768 & 0.171 & 0.129 & \\
-Base backbone, radar & 768 & 0.006 & 0.084 & \\
+DOFA-L, optical and radar fused & 2048 & 0.242 & 0.226 & 0.230 [0.203, 0.257]\\
+DOFA-L, optical 10 m & 1024 & 0.235 & 0.207 & \\
+DOFA-L, optical degraded to 20 m & 1024 & 0.217 & 0.191 & \\
+DOFA-L, radar & 1024 & 0.022 & 0.016 & \\
+DOFA-B, optical and radar fused & 1536 & 0.227 & 0.196 & 0.203 [0.170, 0.234]\\
+DOFA-B, optical 10 m & 768 & 0.183 & 0.179 & \\
+DOFA-B, optical degraded to 20 m & 768 & 0.171 & 0.129 & \\
+DOFA-B, radar & 768 & 0.006 & 0.084 & \\
 Copernicus-FM base, optical and radar fused & 1536 & 0.212 & 0.234 & 0.197 [0.170, 0.225]\\
 WorldCover fractions and NDVI, no encoder & 13 & 0.150 & 0.219 & \\
-Base backbone fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
+DOFA-B fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
 \bottomrule
 \end{tabular}
 \label{tab:features}
@@ -624,10 +624,10 @@ Base backbone fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
 
 The standard weakly supervised localizer, gated-attention multiple-instance learning
 (ABMIL~\cite{ilse2018} with the CLAM instance constraint~\cite{lu2021}), predicts
-municipal labels well (quadratic-weighted $\kappa = 0.62$ with the base backbone, $0.68$ with
-the large backbone) and produces a map at chance (AUROC 0.463 and 0.391;
+municipal labels well (quadratic-weighted $\kappa = 0.62$ with DOFA-B, $0.68$ with
+DOFA-L) and produces a map at chance (AUROC 0.463 and 0.391;
 Fig.~\ref{fig:dissociation}a; these diagnostics ran on the national-set pool). The
-larger backbone predicts the bag better and localizes worse. An entropy penalty that flattens the attention to near-uniform costs no bag
+larger feature extractor predicts the bag better and localizes worse. An entropy penalty that flattens the attention to near-uniform costs no bag
 AUROC (0.899 $\to$ 0.895): the bag task is solvable from the plain feature mean, so the
 attention weights receive no gradient that rewards localization.
 
@@ -635,17 +635,17 @@ attention weights receive no gradient that rewards localization.
 \centering
 \includegraphics[width=\linewidth]{fig3_dissociation.pdf}
 \caption{\textbf{Bag prediction versus localization.}
-\textbf{a}, Map quality by model family on identical features and labels, the base backbone
-solid and the large backbone hatched; the first three families are measured on the national-set
+\textbf{a}, Map quality by model family on identical features and labels, DOFA-B
+solid and DOFA-L hatched; the first three families are measured on the national-set
 pool, the swept head on the expanded pool of Fig.~2. Attention pooling solves the bag task from the feature mean and receives no
 localization gradient; predicting instances and averaging predictions makes the map the
 mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
-folds of the national set), filled the base backbone and hollow the large backbone, the only criterion
+folds of the national set), filled DOFA-B and hollow DOFA-L, the only criterion
 weak supervision may monitor is nearly uncorrelated with within-municipality map quality
 ($-0.14$ and $+0.25$), and positively correlated ($+0.62$ and $+0.59$) with the pooled
-AUROC it would seem to proxy. \textbf{c}, The backbone comparison of Table~3 city by
+AUROC it would seem to proxy. \textbf{c}, The feature extractor comparison of Table~3 city by
 city: under grouped cross-validation over the 138 cities, the mean within-municipality
-$\rho$ each city obtains with the large backbone against the base one; 84 of 138 cities
+$\rho$ each city obtains with DOFA-L against DOFA-B; 84 of 138 cities
 lie above the diagonal and the pooled means are $0.203$ and $0.230$.}
 \label{fig:dissociation}
 \end{figure}
@@ -653,27 +653,27 @@ lie above the diagonal and the pooled means are $0.203$ and $0.230$.}
 Reversing the order of prediction and aggregation removes the failure. Predicting every
 token and averaging the predictions (deep learning from label
 proportions~\cite{quadrianto2009,ardehaly2017,dulac2019}) ties the training signal
-directly to the token scores that form the map: AUROC 0.761 (base) and 0.782
-(large) under the same features, bags and labels on that national-set pool, and
-0.802 with either backbone for the swept head with 480 m of neighborhood context on the
+directly to the token scores that form the map: AUROC 0.761 (DOFA-B) and 0.782
+(DOFA-L) under the same features, bags and labels on that national-set pool, and
+0.802 with either feature extractor for the swept head with 480 m of neighborhood context on the
 expanded pool of Fig.~\ref{fig:curve}. Because
 Mexican municipal grades are population-weighted aggregates of tract grades, the setting
 is label proportions with \emph{known} instance weights; weighting each token by its
 tract's census population is a robustness variant that performs equivalently
 ($\rho = 0.232$ against $0.227$ on validation and $0.182$ against $0.196$ on test with
-the base backbone; $0.242$ against $0.242$ and $0.253$ against $0.226$ with the large backbone).
+DOFA-B; $0.242$ against $0.242$ and $0.253$ against $0.226$ with DOFA-L).
 
 The sweep also quantified a limitation of model selection under weak supervision.
 Across the fourteen configurations, bag-level error, the only selection signal weak
 supervision may legitimately use, has a rank correlation of $-0.14$ with
-within-municipality map quality on the base backbone and $+0.25$ on the large backbone, and $+0.62$ and
+within-municipality map quality on DOFA-B and $+0.25$ on DOFA-L, and $+0.62$ and
 $+0.59$ with the map's pooled AUROC, the wrong sign for a selection criterion
 (Fig.~\ref{fig:dissociation}b). Fourteen configurations give these correlations a
-standard error near $0.27$, so the estimates are coarse and the two backbones' values
+standard error near $0.27$, so the estimates are coarse and the two feature extractors' values
 of the first correlation are within one standard error of each other and of zero; what
 they support is that selection on bag error is close to uninformative about the
 quantity that matters, and that the whole sweep spans $0.04$ of within-municipality
-$\rho$ on either backbone ($0.15$ to $0.19$ and $0.18$ to $0.21$). Whether this extends beyond settings where the bag label is an average of
+$\rho$ on either feature extractor ($0.15$ to $0.19$ and $0.18$ to $0.21$). Whether this extends beyond settings where the bag label is an average of
 instance states is open, but any pipeline whose product is the map is affected,
 computational pathology included, which is why the benchmark includes held-out instance
 labels.
@@ -684,18 +684,18 @@ We ran four independent comparisons to test whether the map measures deprivation
 pipeline artifact (Fig.~\ref{fig:validation}). Against the leading downloadable product, Meta's Relative
 Wealth Index~\cite{chi2022}, scored per tract on an identical universe
 with a city-clustered bootstrap over 22 municipalities (2{,}958 shared AGEB), the map
-reaches $\rho = 0.35$ [$0.29$, $0.44$] with the base backbone and $0.35$ [$0.31$,
-$0.41$] with the large one against $0.14$ [$0.05$, $0.27$] for the index on validation,
+reaches $\rho = 0.35$ [$0.29$, $0.44$] with DOFA-B and $0.35$ [$0.31$,
+$0.41$] with DOFA-L against $0.14$ [$0.05$, $0.27$] for the index on validation,
 and $0.23$ [$0.08$, $0.36$] and $0.27$ [$0.15$, $0.37$] against $0.10$ [$0.02$, $0.21$]
 on test; paired by municipality the map wins in 18 of 22 on validation with either
-backbone ($\Delta\rho = +0.22$ [$+0.08$, $+0.29$] and $+0.22$ [$+0.10$, $+0.29$]) and
+feature extractor ($\Delta\rho = +0.22$ [$+0.08$, $+0.29$] and $+0.22$ [$+0.10$, $+0.29$]) and
 in 15 and 18 of 22 on test ($+0.13$ [$-0.07$, $+0.26$] and $+0.16$ [$-0.02$, $+0.29$]),
 directionally consistent and not individually significant there
 (Fig.~\ref{fig:validation}a). A
 land-cover-plus-NDVI head with no learned representation reaches $\rho = 0.150$ on
 validation and $0.219$ on test, where it is statistically indistinguishable from the
-full model with either backbone (paired $\Delta\rho = -0.02$ [$-0.18$, $+0.10$] for
-Base backbone, winning 16 of 29 municipalities; $+0.01$ [$-0.10$, $+0.11$] for the large backbone,
+full model with either feature extractor (paired $\Delta\rho = -0.02$ [$-0.18$, $+0.10$] for
+DOFA-B, winning 16 of 29 municipalities; $+0.01$ [$-0.10$, $+0.11$] for DOFA-L,
 winning 18). The learned features' advantage within municipalities is
 therefore split-dependent; what holds on both splits is their edge on the bag task (bag
 error 0.095 against 0.110) and, on test, on high-deprivation detection (AUROC 0.821
@@ -705,20 +705,20 @@ the published supervision recovers for a fixed feature set, whichever encoder pr
 it. Against an index from an institution whose data never entered training (CONAPO's
 continuous urban marginalization index, built from a different indicator set over the
 same census), the map correlates at $\rho = 0.361 \pm 0.073$ within municipalities on
-validation and $0.257 \pm 0.146$ on test with the base backbone, and at $0.341 \pm 0.053$ and
-$0.313 \pm 0.113$ with the large backbone, in every case at least as high as against its own
+validation and $0.257 \pm 0.146$ on test with DOFA-B, and at $0.341 \pm 0.053$ and
+$0.313 \pm 0.113$ with DOFA-L, in every case at least as high as against its own
 five-level training construct, consistent with the continuous index resolving ties that
 five levels cannot (Fig.~\ref{fig:validation}b). In simulated
 geographic targeting with fractional funding of the marginal tract, allocating by the
 map instead of the municipal aggregate closes 26--43\% of the gap to census-guided
 allocation on validation at budgets of 10\% and above and 31--66\% on the test cities
-with the base backbone, and 31--38\% and 42--64\% with the large backbone, with no crossover on test
+with DOFA-B, and 31--38\% and 42--64\% with DOFA-L, with no crossover on test
 for either (Fig.~\ref{fig:validation}c). At the tightest validation budget (5\%), where
-errors at the top of the ranking are most costly, the base backbone loses to the aggregate and
-the large backbone closes 4\% of the gap. The map is also not an administrative
+errors at the top of the ranking are most costly, DOFA-B loses to the aggregate and
+DOFA-L closes 4\% of the gap. The map is also not an administrative
 artifact. Crossing a municipal border where deprivation does not change moves it by
-$+0.019$ [$-0.002$, $+0.155$] with the base backbone and $-0.003$ [$-0.033$, $+0.126$] with
-the large backbone, and tract borders inside municipalities are crossed smoothly ($+0.001$ and
+$+0.019$ [$-0.002$, $+0.155$] with DOFA-B and $-0.003$ [$-0.033$, $+0.126$] with
+DOFA-L, and tract borders inside municipalities are crossed smoothly ($+0.001$ and
 $-0.004$). An earlier $+0.14$ border jump traced to bag-limited neighborhood
 adjacency at inference and disappeared after the adjacency was computed city-wide. The
 test cities contain too few same-grade cross-border pairs to repeat this control there.
@@ -727,7 +727,7 @@ test cities contain too few same-grade cross-border pairs to repeat this control
 \centering
 \includegraphics[width=\linewidth]{fig4_validation.pdf}
 \caption{\textbf{External validity.} Blue, validation; red, held-out test;
-purple in \textbf{d}, which belongs to neither split; the base backbone solid and filled, the large backbone hatched or hollow. \textbf{a}, Within-municipality agreement on the identical AGEB
+purple in \textbf{d}, which belongs to neither split; DOFA-B solid and filled, DOFA-L hatched or hollow. \textbf{a}, Within-municipality agreement on the identical AGEB
 universe reached by the incumbent's grid; annotation, city-clustered bootstraps of the
 paired difference per split. \textbf{b}, Replication against an independent
 institution's continuous index, beside the map's agreement with the construct it was
@@ -750,7 +750,7 @@ The sharper version of the question is what a practitioner would get for free. F
 products were scored on the identical universe under the identical protocol
 (Fig.~\ref{fig:incumbents}a, Table~\ref{tab:products}). On the 22 test municipalities
 the maps reach a within-municipality $\rho$ of $0.23$ [$0.08$, $0.36$] with the base
-backbone and $0.27$ [$0.15$, $0.37$] with the large one; GHSL residential population
+feature extractor and $0.27$ [$0.15$, $0.37$] with DOFA-L; GHSL residential population
 reaches $0.05$ [$-0.10$, $0.17$], built-up surface $0.17$ [$0.05$, $0.31$], building
 height $0.12$ [$0.03$, $0.25$] and nighttime lights $0.25$ [$0.16$, $0.39$]. On
 validation the maps stand at $0.35$ [$0.29$, $0.44$] and $0.35$ [$0.31$, $0.41$] against
@@ -758,7 +758,7 @@ $0.07$, $0.20$, $0.23$ and $0.33$ for the four products. Paired by municipality,
 population grid separates from the map on test ($\Delta\rho = +0.19$ [$+0.05$, $+0.29$]
 and $+0.22$ [$+0.07$, $+0.37$]); the built-up and height grids sit below the map on both
 splits with intervals that include zero, and nighttime lights are tied with it on both
-splits ($+0.04$ and $-0.04$ with the base backbone, $+0.04$ and $+0.00$ with the large
+splits ($+0.04$ and $-0.04$ with DOFA-B, $+0.04$ and $+0.00$ with the large
 one). A 1 km light product, free and requiring no model, orders tracts inside a Mexican
 municipality about as well as the maps do. That comparison is handicapped in the light product's disfavor by resolution, since
 63\% of test tracts are smaller than one of its cells and take the value at an interior
@@ -771,26 +771,26 @@ cities allow, we cannot show the map beats nighttime lights.
 \caption{\textbf{Free products, and the confidence the map can carry.}
 \textbf{a}, Paired within-municipality difference between the map and each downloadable
 global product on the identical tract universe, blue validation and red test, filled
-the base backbone and hollow the large backbone, with city-clustered bootstrap intervals; only gridded population separates from the map on
+DOFA-B and hollow DOFA-L, with city-clustered bootstrap intervals; only gridded population separates from the map on
 test, and nighttime lights straddle zero on both splits. \textbf{b}, Pooled detection of
 high and very-high grade tracts across the test cities: all four products land at or
 above the map, which is the bag-versus-map dissociation of Fig.~3 arriving on external ground.
 \textbf{c}, Conformal coverage per test city at 90\% nominal, calibrated on the
-validation cities, the base backbone solid and the large backbone dashed. The marginal rule falls below
-nominal in ten of fourteen cities with the base backbone and eleven with the large backbone; the
+validation cities, DOFA-B solid and DOFA-L dashed. The marginal rule falls below
+nominal in ten of fourteen cities with DOFA-B and eleven with DOFA-L; the
 clustered rule restores coverage at a half-width of 1.68 and 1.85 of the five grades.}
 \label{fig:incumbents}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{Free global products under the map's own protocol, for both backbones.
+\caption{Free global products under the map's own protocol, for both feature extractors.
 Within-$\rho$ is the mean over municipalities of the within-municipality Spearman
 correlation against the held-out tract grade on the identical universe (22 municipalities
 per split), each with its 95\% percentile bootstrap over cities; $\Delta$ is the paired
 difference, map minus product, on the same city draws. AUROC is pooled detection of high
 and very-high grade tracts across the split (map: 0.828 on validation and 0.829 on test
-with the base backbone, 0.818 and 0.827 with the large one). Orientation was fixed before
+with DOFA-B, 0.818 and 0.827 with DOFA-L). Orientation was fixed before
 measurement: deprivation is the negative of every product. The nighttime-light row rests
 on interior-point sampling for 63\% of tracts, which are smaller than one of its 30 arcsec
 cells.}
@@ -798,7 +798,7 @@ cells.}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{llcccccc}
 \toprule
- & & & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone} & \\
+ & & & \multicolumn{2}{c}{DOFA-B} & \multicolumn{2}{c}{DOFA-L} & \\
 \cmidrule(lr){4-5}\cmidrule(lr){6-7}
 Product & Split & Product $\rho$ [95\%] & Map $\rho$ [95\%] & $\Delta$ [95\%] & Map $\rho$ [95\%] & $\Delta$ [95\%] & AUROC product\\
 \midrule
@@ -819,7 +819,7 @@ The pooled comparison points the other way, and in doing so repeats the dissocia
 the previous section on external ground. For detecting high and very-high grade tracts
 across the whole test set, all four products land at or above the map: built-up surface
 reaches AUROC 0.908, building height 0.886, population 0.855 and nighttime lights 0.831,
-against the map's 0.829 with the base backbone and 0.827 with the large backbone
+against the map's 0.829 with DOFA-B and 0.827 with DOFA-L
 (Fig.~\ref{fig:incumbents}b). The products carry more of the national gradient, which is the
 easy half of the problem and the half gridded global layers are built for. What the
 supervision buys, where it buys anything, is the ordering inside a municipality, the half
@@ -884,22 +884,22 @@ Repeating the design on each country's own aggregates asks whether the Mexican r
 a property of the method or of Mexico (Fig.~\ref{fig:validation}d,
 Table~\ref{tab:transfer}). Trained from scratch on Colombia's municipal poverty rate over
 153 bags, the head orders Bogot\'a's block strata at $\rho = 0.25$ with the base
-backbone (seeds $0.23$, $0.28$, $0.24$; AUROC 0.66 for the most deprived quartile) and
-$0.17$ with the large one ($0.21$, $0.16$, $0.14$), against $0.31$ and $0.52$ for the
+feature extractor (seeds $0.23$, $0.28$, $0.24$; AUROC 0.66 for the most deprived quartile) and
+$0.17$ with DOFA-L ($0.21$, $0.16$, $0.14$), against $0.31$ and $0.52$ for the
 Mexican model applied unchanged to the same built tokens and $0.32$ and $0.41$ for the
 Mexican heads fine-tuned on the Colombian aggregates. Nested subsets of 50 and 100 bags
-give $0.33$ and $0.24$ with the base backbone and $0.18$ and $0.19$ with the large one:
+give $0.33$ and $0.24$ with DOFA-B and $0.18$ and $0.19$ with DOFA-L:
 more Colombian aggregates do not buy more of Bogot\'a's ordering, and the label, a
 multidimensional poverty rate dominated by rural municipalities, is a weaker match to a
 map of one capital than the Mexican grade is to Mexican cities. Trained on Brazil's
 municipal mean income over 48 bags, the head orders tract median income within
 municipalities at $\rho = 0.12$ [$0.08$, $0.17$] over 47 municipalities with the base
-backbone ($0.12$, $0.13$, $0.13$; pooled $0.34$; AUROC 0.64) and $0.16$ [$0.10$, $0.21$]
-with the large one, against $0.10$ [$0.05$, $0.15$] and $0.17$ [$0.12$, $0.22$]
+feature extractor ($0.12$, $0.13$, $0.13$; pooled $0.34$; AUROC 0.64) and $0.16$ [$0.10$, $0.21$]
+with DOFA-L, against $0.10$ [$0.05$, $0.15$] and $0.17$ [$0.12$, $0.22$]
 zero-shot and $0.08$ and $0.19$ for the fine-tuned Mexican heads. The fully supervised
 references are $0.75$ and $0.79$ in Bogot\'a under spatial folds (AUROC 0.90 and 0.92)
 and $0.24$ [$0.19$, $0.29$] and $0.29$ [$0.23$, $0.34$] in Brazil under municipal folds.
-The Mexican model transfers better with the larger backbone in both countries without
+The Mexican model transfers better with DOFA-L in both countries without
 any local training, and in Colombia it stays ahead of every head trained on the local
 aggregates. Both countries land where the Mexican curve places a supply of a few dozen to
 a few hundred bags, and Brazil's aggregate is a mean income rather than a graded
@@ -911,21 +911,21 @@ proceeds.
 \begin{table}[htbp]
 \centering
 \caption{Transfer under each country's own municipal aggregates (Fig.~\ref{fig:validation}d),
-for both backbones on the same bags. Within-municipality Spearman against the fine truth,
+for both feature extractors on the same bags. Within-municipality Spearman against the fine truth,
 grouped five-fold by municipality, per seed; Bogot\'a's oracle folds over 3.2 km spatial
 cells. Colombia: 153 bags, 89{,}064 built tokens, the Bogot\'a block strata as truth
 over 12{,}738 of them, so the within and pooled values coincide and no interval is
 formed. Brazil: 48 bags, 121{,}647 built tokens, tract median income of the household
 head as truth over 110{,}728 tokens in 47 municipalities, with the municipality-bootstrap
 interval of the mean. AUROC is for the most deprived quartile of the truth, pooled. The
-earlier zero-shot protocol, without the built-token filter and with the base backbone,
+earlier zero-shot protocol, without the built-token filter and with DOFA-B,
 gave $\rho = 0.318$ and AUROC 0.716 (strata 1--2) in Bogot\'a over 14{,}132 tokens and
 AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
 \small
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lllcccc}
 \toprule
-Country & Backbone & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
+Country & Features & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
 \midrule
 Colombia & Base & Mexican, unadapted & 0.311 & 0.311 & 0.311 & 0.705\\
 Colombia & Base & local aggregates, 50 bags & 0.388 / 0.257 / 0.343 & 0.329 & 0.329 & 0.701\\
@@ -959,13 +959,13 @@ Brazil & Large & oracle & 0.283 / 0.277 / 0.294 & 0.285 [0.230, 0.337] & 0.539 &
 A map offered for targeting has to say where it is unsure. The ensemble of three seeds
 supplies the obvious candidate, and it does not work. Seed disagreement ranks the tract
 errors at $\rho = 0.084$ [$0.002$, $0.140$] within municipalities on validation and
-$0.044$ [$-0.011$, $0.084$] on test with the base backbone, and at $0.115$ [$0.045$, $0.187$] and
-$0.079$ [$0.030$, $0.120$] with the large backbone: a signal too weak to act on. Acting on it
+$0.044$ [$-0.011$, $0.084$] on test with DOFA-B, and at $0.115$ [$0.045$, $0.187$] and
+$0.079$ [$0.030$, $0.120$] with DOFA-L: a signal too weak to act on. Acting on it
 anyway buys nothing. Setting aside the least confident tracts inside each municipality,
 over a panel of municipalities held fixed at every depth so attrition cannot manufacture
 a trend, leaves map quality flat or lower: $0.390$ to $0.369$ from no discard to half
-discarded on validation and $0.317$ to $0.327$ on test with the base backbone, $0.382$ to
-$0.346$ and $0.316$ to $0.274$ with the large backbone, every point inside every other point's
+discarded on validation and $0.317$ to $0.327$ on test with DOFA-B, $0.382$ to
+$0.346$ and $0.316$ to $0.274$ with DOFA-L, every point inside every other point's
 interval. (These are tract-mean correlations, higher than
 the token-level figures quoted above because averaging tokens to tracts removes noise; the
 comparison here is internal, so the estimator only has to be consistent with itself.)
@@ -974,9 +974,9 @@ report no confidence raster.
 
 What can be attached is an interval. Split conformal calibrated on the validation cities
 and evaluated on the test cities~\cite{vovk2005} gives, at 90\% nominal coverage, a
-half-width of 1.29 grades under the marginal rule with the base backbone (1.30 with the large backbone),
+half-width of 1.29 grades under the marginal rule with DOFA-B (1.30 with DOFA-L),
 and that rule undercovers: 0.869 overall and below nominal in 10 of the 14 test cities,
-worst at La Paz (0.768), with the base backbone; 0.857, 11 cities and Hidalgo (0.718) with the large backbone. Pricing in that cities are not exchangeable with one another, by taking each
+worst at La Paz (0.768), with DOFA-B; 0.857, 11 cities and Hidalgo (0.718) with DOFA-L. Pricing in that cities are not exchangeable with one another, by taking each
 calibration city's own quantile and then the 90th percentile across cities, restores
 coverage to 0.953 and 0.963 with one city below nominal, at the cost of a half-width of
 1.68 and 1.85 grades (Fig.~\ref{fig:incumbents}c, Table~\ref{tab:conformal}). On a five-level scale
@@ -987,25 +987,25 @@ between-city variation will be too narrow.
 \begin{table}[htbp]
 \centering
 \caption{Conformal grade intervals at 90\% nominal coverage, calibrated on the validation
-cities and evaluated on the test cities, for both backbones. The marginal rule assumes all
+cities and evaluated on the test cities, for both feature extractors. The marginal rule assumes all
 tracts exchangeable; the clustered rule takes each calibration city's quantile and then
 the 90th percentile across cities.}
 \small
 \begin{tabular}{llcccc}
 \toprule
-Backbone & Rule & Half-width (grades) & Coverage & Worst city (coverage) & Cities below nominal\\
+Features & Rule & Half-width (grades) & Coverage & Worst city (coverage) & Cities below nominal\\
 \midrule
-Base & marginal & 1.29 & 0.869 & La Paz (0.768) & 10 of 14\\
-Base & clustered by city & 1.68 & 0.953 & Madera (0.870) & 1 of 14\\
-Large & marginal & 1.30 & 0.857 & Hidalgo (0.718) & 11 of 14\\
-Large & clustered by city & 1.85 & 0.963 & La Paz (0.899) & 1 of 14\\
+DOFA-B & marginal & 1.29 & 0.869 & La Paz (0.768) & 10 of 14\\
+DOFA-B & clustered by city & 1.68 & 0.953 & Madera (0.870) & 1 of 14\\
+DOFA-L & marginal & 1.30 & 0.857 & Hidalgo (0.718) & 11 of 14\\
+DOFA-L & clustered by city & 1.85 & 0.963 & La Paz (0.899) & 1 of 14\\
 \bottomrule
 \end{tabular}
 \label{tab:conformal}
 \end{table}
 
 Figure~\ref{fig:calibration} shows what those widths mean. On the test tracts the
-score rises with the true grade for either backbone and the distributions of adjacent
+score rises with the true grade for either feature extractor and the distributions of adjacent
 grades overlap by about half their spread (panel a); inside every test city the median
 score rises with the grade, while the level at which it does so shifts by up to a
 full grade between cities (panel b), which is the between-city variation the marginal
@@ -1017,9 +1017,9 @@ bands that span two to four of the five grades (panel c).
 \centering
 \includegraphics[width=\linewidth]{fig7_calibration.pdf}
 \caption{\textbf{From score to grade.} \textbf{a}, Tract-mean score by true grade on
-the test cities, base backbone solid and large backbone hatched (boxes: quartiles;
+the test cities, DOFA-B solid and DOFA-L hatched (boxes: quartiles;
 whiskers: 5th to 95th percentile; $n$ tracts per grade below). \textbf{b}, Median tract
-score by grade in each of the fourteen test cities (gray, base backbone) and over all
+score by grade in each of the fourteen test cities (gray, base feature extractor) and over all
 test tracts (red): the ordering holds inside cities and the level shifts between them.
 \textbf{c}, The isotonic score-to-grade map fitted on the validation tracts (blue line)
 with the marginal ($\pm 1.29$ grades) and clustered ($\pm 1.68$) conformal half-widths
@@ -1029,8 +1029,8 @@ of Table~\ref{tab:conformal} as bands, over the test tracts (red, jittered).}
 
 The failures are concentrated and can be named (Table~\ref{tab:audit}). Ranking the
 fourteen test cities by the within-municipality correlation their map achieves, the same
-three sit at or below zero with either backbone: Guerrero, Chihuahua ($-0.51$ over 21
-tracts with the base backbone, $-0.07$ with the large backbone), Ciudad del Carmen, Campeche ($-0.27$ and
+three sit at or below zero with either feature extractor: Guerrero, Chihuahua ($-0.51$ over 21
+tracts with DOFA-B, $-0.07$ with DOFA-L), Ciudad del Carmen, Campeche ($-0.27$ and
 $-0.21$ over 54), and Escárcega, Campeche ($-0.00$ and $-0.32$ over 24). All three are
 small, and the top of the ranking is not: Iguala de la Independencia ($+0.64$ and $+0.66$
 over 133 tracts), La Paz ($+0.53$ and $+0.43$ over 276), Irapuato ($+0.47$ and $+0.50$
@@ -1039,18 +1039,18 @@ tract count rather than deprivation share, which is the modifiable-areal-unit ef
 the Limits section arriving as a per-city failure mode: a municipality carved into two
 dozen tracts offers too few ranks for the correlation to stabilize, and the map's
 ordering inside it should not be used. Seed spread does not flag these cities either;
-Guerrero's median spread (0.101 with the base backbone) sits at the middle of the fourteen.
+Guerrero's median spread (0.101 with DOFA-B) sits at the middle of the fourteen.
 
 \begin{table}[htbp]
 \centering
 \caption{The fourteen test cities ranked by the within-municipality correlation their map
-achieves with the base backbone, worst first, with the large backbone value beside it. Tract-mean
+achieves with DOFA-B, worst first, with DOFA-L value beside it. Tract-mean
 scores. Spread is the median across tracts of the standard deviation over three seeds,
 which does not separate the failures from the successes.}
 \small
 \begin{tabular}{lrrrrrr}
 \toprule
- & & & \multicolumn{2}{c}{Base backbone} & \multicolumn{2}{c}{Large backbone}\\
+ & & & \multicolumn{2}{c}{DOFA-B} & \multicolumn{2}{c}{DOFA-L}\\
 \cmidrule(lr){4-5}\cmidrule(lr){6-7}
 City & Municipalities & Tracts & Within-$\rho$ & Seed spread & Within-$\rho$ & Seed spread\\
 \midrule
@@ -1075,9 +1075,9 @@ Iguala de la Independencia & 1 & 133 & $0.639$ & 0.125 & $0.658$ & 0.187\\
 
 Beyond the named failures, three limits bound every claim. The upper bound itself is low: even with full tract labels and neighborhood context,
 160 m tokens support $\rho = 0.251$ within municipalities on validation and $0.233$ on test
-with the base backbone, $0.318$ and $0.295$ with the large backbone: sufficient to order neighborhoods,
+with DOFA-B, $0.318$ and $0.295$ with DOFA-L: sufficient to order neighborhoods,
 too coarse to resolve individual blocks. Agreement depends strongly on tract size with
-either backbone: $\rho = 0.26$ for tracts covered by 1--3 tokens ($0.18$ with the large backbone), rising to $0.43$ at 20--49
+either feature extractor: $\rho = 0.26$ for tracts covered by 1--3 tokens ($0.18$ with DOFA-L), rising to $0.43$ at 20--49
 tokens, and collapsing to $0.13$ in the two municipalities dominated by very large
 tracts; the test split reproduces the pattern noisily, peaking at $0.38$ and collapsing
 in its single large-tract municipality. This is the modifiable areal unit problem,
@@ -1090,10 +1090,10 @@ deprived tracts; deprived individuals themselves are unobserved.
 \centering
 \caption{Agreement by tract size on the validation cities. Within-municipality Spearman
 $\rho$ of tract-mean scores over municipalities with at least ten tracts in the bin, for
-both backbones.}
+both feature extractors.}
 \begin{tabular}{rrrrcc}
 \toprule
-Tokens per tract & Tracts & Median population & Municipalities & Base backbone & Large backbone\\
+Tokens per tract & Tracts & Median population & Municipalities & DOFA-B & DOFA-L\\
 \midrule
 1--3 & 567 & 211 & 15 & 0.257 & 0.183\\
 4--9 & 849 & 1{,}948 & 16 & 0.338 & 0.378\\
@@ -1111,9 +1111,9 @@ Prior applications of this technology predict aggregates across space; the
 supervision-efficiency curve measures how much sub-municipal detail can be recovered from statistics published
 at a given resolution, which is the question a statistics office would ask. In
 operational terms: the national supply of municipal aggregates recovers 84--90\% of
-what the base backbone features support and 76--77\% of what the large backbone features support,
+what DOFA-B features support and 76--77\% of what DOFA-L features support,
 coarser publication reduces recovery in proportion, and sensor content rather than
-resolution is the binding property. A larger backbone raises the fully supervised bound
+resolution is the binding property. A larger feature extractor raises the fully supervised bound
 by $0.06$ and the map by $0.02$ to $0.03$, on both splits and under cross-validation over
 all 138 cities: the representation is one limit on the map and the supply of labels is
 the larger one. The targeting experiment
@@ -1144,7 +1144,7 @@ Brazilian rows test the extrapolation the paper invites: a country that publishe
 municipal aggregates, of a construct and an office of its own, recovers a
 within-municipality ordering from them, at the level the Mexican curve assigns to a
 supply of a few dozen to a few hundred bags, and the Mexican model itself transfers to
-both without adaptation, better with the larger backbone. The two countries hold
+both without adaptation, better with DOFA-L. The two countries hold
 1{,}122 and 5{,}570 labeled municipalities; Colombia's first 153 show that more bags of
 a rural poverty rate do not buy more of one capital's ordering, and walking Brazil's
 curve toward the Mexican supply is the measurement that follows, every number
@@ -1155,7 +1155,7 @@ reproducible from the released frozen features.
 Municipal aggregates, the level at which most countries actually publish social
 statistics, carry most of the neighborhood-scale ordering that frozen satellite features
 support: 84\% of the fully supervised upper bound on unseen test cities and 90\% on
-validation with the base backbone, 77\% and 76\% with the large backbone, whose maps are higher in
+validation with DOFA-B, 77\% and 76\% with DOFA-L, whose maps are higher in
 absolute terms ($\rho = 0.23$ against $0.20$ on test). The upper bound itself is low
 ($\rho = 0.23$ to $0.30$ within municipalities at 160 m), which bounds every claim in
 this paper and, we would argue, every claim in this setting built on free decametric
@@ -1278,7 +1278,7 @@ accessed August 2026).
 \end{thebibliography}
 
 \section*{Data availability}
-The frozen benchmark (DOFA base and DOFA large vectors for every bag, municipal and
+The frozen benchmark (DOFA-B and DOFA-L vectors for every bag, municipal and
 tract labels, splits, and the evaluation protocol) will be deposited on Zenodo with a
 DOI at publication. All source data are public: Copernicus Sentinel via Microsoft Planetary
 Computer, CONEVAL, CONAPO, INEGI, ESA WorldCover, Meta RWI (HDX), the GHSL R2023A grids

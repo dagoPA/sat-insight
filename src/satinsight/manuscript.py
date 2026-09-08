@@ -69,7 +69,7 @@ def agrees(value: float, expected: float, *, name: str, tolerance: float = 1e-3)
     return float(value)
 
 
-BACKBONES = (("", "base backbone"), ("dofal", "large backbone"))
+BACKBONES = (("", "DOFA-B"), ("dofal", "DOFA-L"))
 """The backbones every figure and table reports side by side: tag and printed name.
 
 The empty tag is DOFA base, whose block sits at the root of the canon and whose files

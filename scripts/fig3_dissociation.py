@@ -201,8 +201,8 @@ def _cross_validation(ax, book) -> None:
     ax.scatter(pair.base, pair.large, s=22, color=VALIDATION, alpha=0.8, zorder=3)
     ax.set_xlim(lim)
     ax.set_ylim(lim)
-    ax.set_xlabel(r"within-municipality $\rho$, base backbone")
-    ax.set_ylabel(r"within-municipality $\rho$, large backbone")
+    ax.set_xlabel(r"within-municipality $\rho$, DOFA-B features")
+    ax.set_ylabel(r"within-municipality $\rho$, DOFA-L features")
     ax.set_title("c  Cross-validation over 138 cities, city by city")
     above = int((pair.large > pair.base).sum())
     ax.text(
