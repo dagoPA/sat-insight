@@ -276,8 +276,8 @@ $0.3$) and the head's standardization statistics stay those of the frozen featur
 encoder learning rate is $10^{-5}$, with $10^{-4}$ as a sensitivity run, against
 $2 \times 10^{-4}$ for the head; three seeds each.
 
-\paragraph{Comparing feature extractors} Every experiment is run on the base and the large
-feature extractor with the same head, protocol, seeds and splits; every table reports both and
+\paragraph{Comparing feature extractors} Every experiment is run on DOFA-B and DOFA-L
+with the same head, protocol, seeds and splits; every table reports both and
 every figure draws DOFA-L hatched or with hollow markers. Fourteen cities
 are too few to separate feature extractors, so they are compared by grouped cross-validation
 over all 138 cities of the partition. The cities are dealt into five folds stratified as
@@ -535,7 +535,7 @@ within-municipality Spearman correlation of tract means.}
 \label{fig:gallery}
 \end{figure}
 
-\textbf{Feature extractor} (Table~\ref{tab:feature extractor}). Under grouped cross-validation over the
+\textbf{Feature extractor} (Table~\ref{tab:backbone}). Under grouped cross-validation over the
 138 cities (363 municipalities), DOFA-L reaches a within-municipality $\rho$ of
 $0.230$ [$0.203$, $0.257$] per token and $0.294$ [$0.259$, $0.328$] per AGEB, against
 $0.203$ [$0.170$, $0.234$] and $0.252$ [$0.213$, $0.292$] for DOFA-B; the paired
@@ -572,7 +572,7 @@ DOFA-L minus DOFA-B & +0.027 [+0.007, +0.049] & +0.041 [+0.006, +0.077] & &\\
 Copernicus-FM minus DOFA-B & $-$0.006 [$-$0.029, +0.016] & $-$0.001 [$-$0.028, +0.027] & &\\
 \bottomrule
 \end{tabular}
-\label{tab:feature extractor}
+\label{tab:backbone}
 \end{table}
 
 \textbf{Feature families} (Table~\ref{tab:features}). Under the same head, protocol and
