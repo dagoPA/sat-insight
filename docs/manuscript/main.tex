@@ -588,7 +588,15 @@ the thirteen land-cover columns of WorldCover fractions and NDVI with no learned
 representation ($0.219$, indistinguishable from DOFA-B on test and far below it on
 validation, $0.150$), the optical vectors of either feature extractor alone ($0.179$ and
 $0.207$), the same vectors from imagery degraded to 20 m ($0.129$ and $0.191$), and the
-radar vectors ($0.084$ and $0.016$). Copernicus-FM base reaches $0.212$ on validation,
+radar vectors ($0.084$ and $0.016$). Letting the extractor move does not help either:
+with the last two blocks of DOFA-B trained together with the head, the map reaches
+$0.209$ (s.d. $0.023$ over seeds) on validation and $0.169$ ($0.020$) on test at an
+encoder learning rate of $10^{-5}$, and $0.167$ and $0.151$ at $10^{-4}$, against
+$0.227$ and $0.185$ for the frozen extractor with the same retrained head, while the bag
+error it is trained on improves ($0.091$ against $0.098$ on validation). The aggregates
+carry enough signal to fit the municipal figure better and not enough to teach the
+representation where the deprivation is, the same dissociation that attention pooling
+and the selection sweep show. Copernicus-FM base reaches $0.212$ on validation,
 $0.234$ [$0.13$, $0.31$] on test and $0.197$ [$0.170$, $0.225$] under cross-validation:
 the three feature extractors are within $0.04$ of one another on any one split, and only the
 cross-validation over 138 cities orders them, which is the reason it is the comparison
@@ -604,7 +612,8 @@ $\kappa = 0.54$ with both sensors) without producing a map, so they enter no row
 $\rho$ of token scores against held-out tract grades, mean over three seeds, on the
 validation cities (selection), the held-out test cities (validation-selected models), and
 under grouped five-fold cross-validation over all 138 cities with a 95\% city bootstrap
-where it was run. Dimensions are per token.}
+where it was run. Dimensions are per token. The fine-tuned rows train the last two of
+DOFA-B's twelve blocks with the head (Methods); their s.d. over seeds is $0.02$ or less.}
 \small
 \begin{tabular}{llccc}
 \toprule
@@ -621,6 +630,8 @@ DOFA-B, radar & 768 & 0.006 & 0.084 & \\
 Copernicus-FM base, optical and radar fused & 1536 & 0.212 & 0.234 & 0.197 [0.170, 0.225]\\
 WorldCover fractions and NDVI, no encoder & 13 & 0.150 & 0.219 & \\
 DOFA-B fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
+DOFA-B, last two blocks fine-tuned, encoder lr $10^{-5}$ & 1536 & 0.209 & 0.169 & \\
+DOFA-B, last two blocks fine-tuned, encoder lr $10^{-4}$ & 1536 & 0.167 & 0.151 & \\
 \bottomrule
 \end{tabular}
 \label{tab:features}
@@ -1180,7 +1191,8 @@ what DOFA-B features support and 76--77\% of what DOFA-L features support,
 coarser publication reduces recovery in proportion, and sensor content rather than
 resolution is the binding property. A larger feature extractor raises the fully supervised bound
 by $0.06$ and the map by $0.02$ to $0.03$, on both splits and under cross-validation over
-all 138 cities: the representation is one limit on the map and the supply of labels is
+all 138 cities, while fine-tuning the extractor on the aggregates lowers the bag error
+and not the map: the representation is one limit on the map and the supply of labels is
 the larger one. The targeting experiment
 expresses the result as people reached, including the one budget where the map
 underperforms the aggregate. Three negative results matter for similar efforts:
