@@ -486,6 +486,48 @@ Copernicus-FM minus DOFA base & $-$0.006 [$-$0.029, +0.016] & $-$0.001 [$-$0.028
 \label{tab:backbone}
 \end{table}
 
+\textbf{Feature families} (Table~\ref{tab:features}). Under the same head, protocol and
+metric, the families of input features the paper touches order as follows on the test
+cities: the fused DOFA large vectors ($0.226$), the fused DOFA base vectors ($0.196$),
+the thirteen land-cover columns of WorldCover fractions and NDVI with no learned
+representation ($0.219$, indistinguishable from DOFA base on test and far below it on
+validation, $0.150$), the optical vectors of either backbone alone ($0.179$ and
+$0.207$), the same vectors from imagery degraded to 20 m ($0.129$ and $0.191$), and the
+radar vectors ($0.084$ and $0.016$). Copernicus-FM base sits at DOFA base under
+cross-validation. Offering the four GHSL and nighttime-light columns to the head as
+inputs changes none of this (Table~\ref{tab:inputs}), and the hand-crafted texture
+features of the phase-one baseline predict the municipal label (quadratic-weighted
+$\kappa = 0.54$ with both sensors) without producing a map, so they enter no row.
+
+\begin{table}[htbp]
+\centering
+\caption{Feature families under one head and one metric: within-municipality Spearman
+$\rho$ of token scores against held-out tract grades, mean over three seeds, on the
+validation cities (selection), the held-out test cities (validation-selected models), and
+under grouped five-fold cross-validation over all 138 cities with a 95\% city bootstrap
+where it was run. Dimensions are per token. Copernicus-FM's test column is filled by the
+same validation-selected protocol as the other backbones.}
+\small
+\begin{tabular}{llccc}
+\toprule
+Feature family & Dimensions & Validation & Test & Cross-validation [95\%]\\
+\midrule
+DOFA large, optical and radar fused & 2048 & 0.242 & 0.226 & 0.230 [0.203, 0.257]\\
+DOFA large, optical 10 m & 1024 & 0.235 & 0.207 & \\
+DOFA large, optical degraded to 20 m & 1024 & 0.217 & 0.191 & \\
+DOFA large, radar & 1024 & 0.022 & 0.016 & \\
+DOFA base, optical and radar fused & 1536 & 0.227 & 0.196 & 0.203 [0.170, 0.234]\\
+DOFA base, optical 10 m & 768 & 0.183 & 0.179 & \\
+DOFA base, optical degraded to 20 m & 768 & 0.171 & 0.129 & \\
+DOFA base, radar & 768 & 0.006 & 0.084 & \\
+Copernicus-FM base, optical and radar fused & 1536 & 0.212 & -- & 0.197 [0.170, 0.225]\\
+WorldCover fractions and NDVI, no encoder & 13 & 0.150 & 0.219 & \\
+DOFA base fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
+\bottomrule
+\end{tabular}
+\label{tab:features}
+\end{table}
+
 \subsection{Why attention pooling fails, and what replaces it}
 
 The standard weakly supervised localizer, gated-attention multiple-instance learning
