@@ -19,7 +19,7 @@ from scipy.stats import spearmanr  # noqa: E402
 
 from satinsight.agebs import load_grs  # noqa: E402
 
-SUFFIX = sys.argv[1]
+SUFFIX = sys.argv[1] if len(sys.argv) > 1 else "dofal"
 MIN_TOKENS = 20
 MIN_TRACTS = 5
 

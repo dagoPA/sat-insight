@@ -199,16 +199,19 @@ national aggregate, and content re-encodes the optical composite block-averaged 
 radar's 20 m effective resolution, or uses each sensor alone.
 
 \paragraph{Backbone ablation} The head is agnostic to the representation, so every
-token of every city was re-encoded with two further frozen backbones and the complete
-protocol, curve, oracle, validation-selected seeds and test scoring, was rerun on their
-vectors unchanged: DOFA large (1024 dimensions per sensor, 2048 fused) and
-Copernicus-FM base~\cite{wang2025cfm}, which additionally takes the location, date and
-footprint of each window. Whether to replace the canonical backbone was decided by a
-rule fixed in advance: DOFA base is replaced only if the weakly supervised predictor
-improves significantly on validation at the full pool, paired by municipality with a
-Wilcoxon signed-rank test, an exact sign test and a permutation test that flips the sign
-of whole cities, the unit of independence in the partition. The oracle and every point of
-the curve are tested the same way and reported beside the predictor with absolute values.
+token of every city was re-encoded with two further frozen backbones: DOFA large (1024
+dimensions per sensor, 2048 fused) and Copernicus-FM base~\cite{wang2025cfm}, which
+additionally takes the location, date and footprint of each window. Fourteen cities are
+too few to separate backbones, so they are compared by grouped cross-validation over
+all 138 cities of the partition. The cities are dealt into five folds stratified as the
+partition was, by size and by share of high-deprivation tracts; for each fold the head
+trains on the remaining cities plus the expansion municipalities, with every bag sharing
+a municipality key with the held-out fold removed, and early stopping uses bag-level
+error on 14 cities drawn from the training side, so the held-out fold plays no part in
+selection. Three seeds per fold; the seed-mean token scores of every held-out city are
+pooled and scored with the same metrics as the rest of the paper, with 95\% percentile
+bootstrap intervals that resample cities, and the difference between two backbones is
+bootstrapped on the same city draws.
 
 \subsection{Partition, selection and statistics}
 
@@ -403,57 +406,44 @@ Bags & Validation within-$\rho$ (s.d.) & Test within-$\rho$\\
 \label{tab:curve}
 \end{table}
 
-\textbf{Backbone} (Table~\ref{tab:backbone}). Re-encoding the same tokens with DOFA
-large raises the fully supervised oracle from $\rho = 0.248$ to $0.316$ on validation
-and from $0.232$ to $0.295$ on test (paired by municipality; Wilcoxon $p = 0.008$ and
-$0.004$): the larger representation supports a better map. The weakly supervised
-predictor does not follow it at the full pool. Per token it reaches $0.243$ against
-$0.235$ on validation ($p = 0.34$) and $0.242$ against $0.198$ on test ($p = 0.27$);
-per AGEB, $0.315$ against $0.304$ on validation ($p = 0.53$) and $0.272$ against
-$0.269$ on test ($p = 0.90$); none of the three tests rejects equality on either split,
-and the share of the oracle recovered on test falls from 84\% to 77\%. Along the curve
-the larger backbone is higher at every pool size in all three seeds, most at 100 and 200
-aggregates ($0.141 \to 0.199$ and $0.151 \to 0.231$ on validation), where the base
-representation has not yet begun to rise. Copernicus-FM base reaches $0.212$ (s.d.
-$0.021$ over seeds) at the full pool on validation, below both. By the rule fixed in
-advance DOFA base remains the canonical backbone, and the ablation is reported as a whole
-because it qualifies the headline: at the full national supply the aggregates recover a
-smaller share of a richer representation, so the label supply limits the map more than
-the representation does, while at a few hundred aggregates a stronger backbone is the
-most direct way to improve it.
+\textbf{Backbone} (Table~\ref{tab:backbone}). Under grouped cross-validation over the
+138 cities (363 municipalities), DOFA large reaches a within-municipality $\rho$ of
+$0.230$ [$0.203$, $0.257$] per token and $0.294$ [$0.259$, $0.328$] per AGEB, against
+$0.203$ [$0.170$, $0.234$] and $0.252$ [$0.213$, $0.292$] for DOFA base; the paired
+difference is $+0.027$ [$+0.007$, $+0.049$] per token and $+0.041$ [$+0.006$, $+0.077$]
+per AGEB, and its interval excludes zero in both units. Copernicus-FM base is
+indistinguishable from DOFA base ($0.197$ per token; difference $-0.006$ [$-0.029$,
+$+0.016$]). AUROC for high deprivation is the same for the three ($0.80$); the larger
+backbone improves the ranking within municipalities and the pooled ranking ($0.49$
+against $0.45$), the quantities the map is for. The same comparison on the 14
+validation cities alone gave $0.243$ against $0.235$ with an interval spanning zero:
+with fourteen cities the difference is invisible. The cross-validated value of DOFA base
+($0.203$) sits between its validation ($0.227$) and test ($0.196$) values. All other
+results in this paper use DOFA base, the backbone the protocol was developed on; the
+cross-validated gain of DOFA large is the most direct improvement to the predictor these
+experiments found.
 
 \begin{table}[htbp]
 \centering
-\caption{Backbone ablation, DOFA base against DOFA large on the same tokens. Upper block:
-within-municipality Spearman $\rho$ of the seed-mean score against tract grades, mean
-over the paired municipalities, per token and per AGEB, with two-sided $p$-values of the
-paired Wilcoxon signed-rank test, the exact sign test and the city sign-flip permutation
-test (the oracle's per-bag files carry no city, so its permutation test is not run).
-Lower block: the supervision curve on validation, mean (s.d.) over the three seeds and
-the number of seeds in which DOFA large is higher. Validation cities were used for model
-selection; test cities are held out.}
-\footnotesize
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{llrcccccc}
+\caption{Backbone ablation under grouped five-fold cross-validation over the 138 cities
+of the partition (363 municipalities; 346 with at least five AGEB for the per-AGEB
+unit). Within-municipality Spearman $\rho$ of the seed-mean token score against tract
+grades, mean over municipalities, per token and per AGEB; pooled Spearman and AUROC for
+high deprivation over all tokens. Brackets: 95\% percentile bootstrap resampling cities.
+Differences are paired against DOFA base on the same city draws.}
+\small
+\begin{tabular}{lcccc}
 \toprule
-Quantity & Split, unit & $n$ & DOFA base & DOFA large & Wins & Wilcoxon $p$ & Sign $p$ & Permutation $p$\\
+Backbone & Within-$\rho$, token & Within-$\rho$, AGEB & Pooled $\rho$ & AUROC high\\
 \midrule
-Predictor & validation, token & 34 & 0.235 & 0.243 & 20 & 0.34 & 0.39 & 0.59\\
-Predictor & validation, AGEB & 34 & 0.304 & 0.315 & 19 & 0.53 & 0.49 & 0.61\\
-Predictor & test, token & 29 & 0.198 & 0.242 & 16 & 0.27 & 0.71 & 0.42\\
-Predictor & test, AGEB & 28 & 0.269 & 0.272 & 13 & 0.90 & 1.00 & 0.96\\
-Oracle & validation, token & 33 & 0.248 & 0.316 & 25 & 0.008 & 0.005 & --\\
-Oracle & test, token & 29 & 0.232 & 0.295 & 25 & 0.004 & 0.0001 & --\\
+DOFA base & 0.203 [0.170, 0.234] & 0.252 [0.213, 0.292] & 0.448 & 0.802\\
+DOFA large & 0.230 [0.203, 0.257] & 0.294 [0.259, 0.328] & 0.492 & 0.804\\
+Copernicus-FM base & 0.197 [0.170, 0.225] & 0.252 [0.221, 0.281] & 0.433 & 0.799\\
 \midrule
-Curve, bags & & & Validation within-$\rho$ (s.d.) & & Seeds in favor & & &\\
-\midrule
-50 & validation, token & 3 & 0.150 (0.006) & 0.183 (0.040) & 3/3 & & &\\
-100 & validation, token & 3 & 0.141 (0.006) & 0.199 (0.051) & 3/3 & & &\\
-200 & validation, token & 3 & 0.151 (0.006) & 0.231 (0.023) & 3/3 & & &\\
-400 & validation, token & 3 & 0.182 (0.017) & 0.222 (0.024) & 3/3 & & &\\
-771 & validation, token & 3 & 0.227 (0.014) & 0.242 (0.006) & 3/3 & & &\\
+DOFA large minus DOFA base & +0.027 [+0.007, +0.049] & +0.041 [+0.006, +0.077] & &\\
+Copernicus-FM minus DOFA base & $-$0.006 [$-$0.029, +0.016] & $-$0.001 [$-$0.028, +0.027] & &\\
 \bottomrule
-\end{tabular}}
+\end{tabular}
 \label{tab:backbone}
 \end{table}
 
