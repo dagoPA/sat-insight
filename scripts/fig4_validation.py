@@ -110,9 +110,11 @@ def _incumbent(ax, book) -> None:
         validation[tag] = [val_row.rwi_within, val_row.ours_within]
         test[tag] = [test_row.rwi_within, test_row.ours_within]
         notes.append(
-            f"{name}: val $\\Delta$ {val_row.difference:+.2f} "
-            f"[{val_row.ci_low:+.2f}, {val_row.ci_high:+.2f}], "
-            f"test $\\Delta$ {test_row.difference:+.2f} "
+            f"{name}, val: $\\Delta$ {val_row.difference:+.2f} "
+            f"[{val_row.ci_low:+.2f}, {val_row.ci_high:+.2f}]"
+        )
+        notes.append(
+            f"{name}, test: $\\Delta$ {test_row.difference:+.2f} "
             f"[{test_row.ci_low:+.2f}, {test_row.ci_high:+.2f}]"
         )
     _paired_bars(ax, ["Meta RWI", "this work"], validation, test)
