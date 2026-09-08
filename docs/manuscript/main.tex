@@ -24,32 +24,46 @@ only municipal aggregate labels}}
 \maketitle
 
 \begin{abstract}
-\noindent Most countries publish social statistics as administrative aggregates;
-almost none publish them at neighborhood level. We measure how much neighborhood
-detail aggregates and free satellite imagery jointly recover. Trained only on five-level
-deprivation aggregates of Mexican municipalities, with no spatial annotation, and
-scored against fully held-out census-tract grades, the map reaches a
-within-municipality rank correlation of $\rho = 0.20$ on fourteen held-out test
-cities with a DOFA base backbone and $0.23$ with DOFA large: 84\% and 77\% of what
-the same features attain there under full tract supervision ($0.23$ and $0.30$; 90\%
-and 76\% on the validation cities used for model selection). More aggregates
-keep buying map, state aggregates forfeit part of it, one national figure erases it, and
-optical content matters where resolution does not. The maps close 31--66\% and
-42--64\% of the aggregate-to-census targeting gap on test with the two backbones, replicate against an independent
-institution's index, beat the incumbent wealth index where selection occurred and match
-it on test, and order Bogot\'a's block strata without retraining. Repeating the design
-abroad on each country's own municipal aggregates, Colombia's poverty rate and Brazil's
-mean income, recovers a within-municipality ordering of block strata in Bogot\'a
-($\rho = 0.21$) and of tract income across 47 Brazilian municipalities ($0.12$) from 35
-and 48 bags, the small-supply end of the Mexican curve. Against free global grids the
-margin is resolvable only for population; nighttime lights order tracts inside a
-municipality as well as the maps do, and feeding those grids to the model as inputs lifts
-the fully supervised bound by $0.03$ without lifting the weakly supervised map. Attention-based multiple-instance learning fails here
-for a measurable, structural reason, and ensembling over seeds yields no usable
-uncertainty layer: an honest 90\% grade interval spans 1.7 to 1.9 of the five levels.
-Every result is reported for both backbones; under grouped cross-validation over all
-138 cities the larger one improves the map by $0.03$ [$0.01$, $0.05$].
+\noindent Most countries publish social statistics as administrative aggregates and
+almost none at neighborhood level. We measure how much neighborhood detail such
+aggregates recover when combined with free satellite imagery. A label-proportion head
+is trained on frozen foundation-model features of Sentinel-1 and Sentinel-2 tokens using
+only the five-level Social Deprivation Grade of 771 Mexican municipalities, with no
+spatial annotation, and its maps are scored within municipalities against census-tract
+grades held out entirely, in cities the model never saw. On fourteen held-out test
+cities the map reaches a within-municipality rank correlation of $\rho = 0.20$ with a
+DOFA base backbone and $0.23$ with DOFA large, 84\% and 77\% of what the same features
+attain under full tract supervision ($0.23$ and $0.30$); under grouped cross-validation
+over all 138 cities the larger backbone improves the map by $0.03$ [$0.01$, $0.05$].
+Recovery rises with the number of aggregates, falls with state-level aggregates,
+vanishes with a single national figure, and depends on optical content more than on
+resolution. The maps close 31--66\% and 42--64\% of the aggregate-to-census targeting
+gap on test, replicate against an independent institution's marginalization index, beat
+Meta's Relative Wealth Index on the validation cities and match it on test, and order
+Bogot\'a's block strata without retraining. Repeating the design on Colombia's
+municipal poverty rate and Brazil's municipal mean income recovers a within-municipality
+ordering of block strata in Bogot\'a ($\rho = 0.21$) and of tract income across 47
+Brazilian municipalities ($0.12$) from 35 and 48 bags. Against free global grids the
+margin is resolvable only for population, and feeding those grids to the model as inputs
+lifts the fully supervised bound by $0.03$ without lifting the weakly supervised map.
+Attention-based multiple-instance learning produces chance-level maps for a structural
+reason, seed ensembles yield no usable uncertainty layer, and an honest 90\% grade
+interval spans 1.7 to 1.9 of the five levels. Data, frozen features of both backbones,
+labels, splits and code are released.
 \end{abstract}
+
+\noindent\textbf{Keywords:} weak supervision; label proportions; social deprivation;
+Sentinel-1; Sentinel-2; foundation models; urban poverty mapping; Mexico
+
+\section*{Highlights}
+\begin{itemize}
+\item Municipal aggregates alone train neighborhood deprivation maps scored on held-out tracts
+\item Test maps reach 84\% (DOFA base) and 77\% (DOFA large) of the fully supervised bound
+\item More and finer aggregates buy more map; a national figure erases it; optics beat radar
+\item Attention pooling maps at chance; bag error cannot select for map quality
+\item Colombia and Brazil reproduce the design from their own municipal aggregates
+\end{itemize}
+
 
 \begin{center}
 \includegraphics[width=\linewidth]{graphical_abstract.png}\\[2pt]
@@ -108,10 +122,10 @@ means the representation can be held fixed and the question reduced to what the 
 labels can teach a small head on top of it.
 
 We ask the disaggregation question quantitatively: how much neighborhood detail can be
-recovered from a country's published aggregates combined with free imagery? We frame the
-answer as an exchange rate between the number and granularity of published aggregates
-and the within-municipality detail they recover, and we measure it in a country that
-publishes ground truth at both levels. Mexico publishes its Social Deprivation Grade
+recovered from a country's published aggregates combined with free imagery? We answer
+it with a supervision-efficiency curve, the within-municipality detail recovered as a
+function of the number and granularity of published aggregates, measured in a country
+that publishes ground truth at both levels. Mexico publishes its Social Deprivation Grade
 (GRS) both as municipal aggregates and for 61{,}430 urban census tracts
 (AGEB)~\cite{coneval2020}; we train only on the former and score maps against the
 latter, held out entirely, in cities the model never saw (Fig.~\ref{fig:design}).
@@ -145,7 +159,7 @@ the same operating point). And an oracle trained directly on the held-out tract 
 bounds what the frozen representation supports, so weak supervision is always reported
 as a fraction of a measured upper bound.
 
-The contributions are the following. (1) A measured exchange rate: on fourteen held-out
+The contributions are the following. (1) A measured supervision-efficiency curve: on fourteen held-out
 test cities, the national supply of municipal aggregates recovers 84\% of the fully
 supervised bound within municipalities with a DOFA base backbone and 77\% with DOFA
 large, whose maps are higher in absolute terms, and the curve along the number of
@@ -312,8 +326,9 @@ The same four products, plus the eleven WorldCover class fractions and the NDVI 
 dispersion of the composite, are also tested as inputs. Each is reprojected onto the 10 m
 grid and averaged inside every 160 m token (population and built surface as
 $\log(1 + x)$), giving four GHSL and light columns and thirteen WorldCover columns
-appended to the 1{,}536 encoder dimensions. Two fusions are compared on the full pool,
-three seeds each, against the canonical head: early, the columns enter the projection
+appended to the 1{,}536 dimensions of the DOFA base encoder; this ablation was run on
+DOFA base only. Two fusions are compared on the full pool,
+three seeds each, against the DOFA base head without extras: early, the columns enter the projection
 with the encoder vector; late, they bypass it and enter the scoring layer beside the
 hidden representation, each with a weight of its own per threshold. The oracle is
 re-measured with the same inputs, standardized, since a nighttime-light column near 45
@@ -541,8 +556,9 @@ winning 18). The learned features' advantage within municipalities is
 therefore split-dependent; what holds on both splits is their edge on the bag task (bag
 error 0.095 against 0.110) and, on test, on high-deprivation detection (AUROC 0.821
 against 0.781). Much of the within-municipality ordering is captured by land cover
-alone. This is consistent with the exchange rate, which measures what the published
-supervision recovers for a fixed feature set, whichever encoder produces it. Against an index from an institution whose data never entered training (CONAPO's
+alone. This is consistent with the supervision-efficiency curve, which measures what
+the published supervision recovers for a fixed feature set, whichever encoder produces
+it. Against an index from an institution whose data never entered training (CONAPO's
 continuous urban marginalization index, built from a different indicator set over the
 same census), the map correlates at $\rho = 0.361 \pm 0.073$ within municipalities on
 validation and $0.257 \pm 0.146$ on test with DOFA base, and at $0.341 \pm 0.053$ and
@@ -669,8 +685,8 @@ $\rho = 0.261$ to $0.291$ on validation (paired difference $+0.030$ [$+0.011$,
 $+0.050$] over 36 municipalities); the WorldCover fractions add $+0.014$ [$-0.004$,
 $+0.030$], and both together $+0.030$ [$+0.012$, $+0.046$]. Under municipal
 supervision none of it reaches the map. Early fusion gives $0.225$ with the GHSL and
-light columns, $0.212$ with WorldCover and $0.221$ with both, against the canonical
-$0.227$; late fusion, which hands the columns their own scoring weights, gives $0.210$
+light columns, $0.212$ with WorldCover and $0.221$ with both, against $0.227$ without
+extras; late fusion, which hands the columns their own scoring weights, gives $0.210$
 and $0.226$ (Table~\ref{tab:inputs}). Information that a tract-supervised head
 extracts from four columns is invisible to a gradient carried by a few hundred bag
 labels, and a dedicated pathway makes it worse rather than better, consistent with the
@@ -695,7 +711,7 @@ Oracle & WorldCover & 0.288 / 0.261 / 0.272 & 0.274 & $+0.014$ [$-0.004$, $+0.03
 Oracle & GHSL + lights & 0.293 / 0.281 / 0.298 & 0.291 & $+0.030$ [$+0.011$, $+0.050$]\\
 Oracle & both & 0.291 / 0.278 / 0.300 & 0.289 & $+0.030$ [$+0.012$, $+0.046$]\\
 \midrule
-Map & none (canonical) & 0.242 / 0.224 / 0.215 & 0.227 & \\
+Map & none (reference) & 0.242 / 0.224 / 0.215 & 0.227 & \\
 Map, early & WorldCover & 0.207 / 0.221 / 0.209 & 0.212 & \\
 Map, early & GHSL + lights & 0.226 / 0.236 / 0.214 & 0.225 & \\
 Map, early & both & 0.220 / 0.227 / 0.217 & 0.221 & \\
@@ -896,8 +912,8 @@ $\geq$50 & 79 & 3{,}561 & 2 & 0.127 & 0.094\\
 
 \section{Discussion}
 
-Prior applications of this technology predict aggregates across space; the exchange
-rate measures how much sub-municipal detail can be recovered from statistics published
+Prior applications of this technology predict aggregates across space; the
+supervision-efficiency curve measures how much sub-municipal detail can be recovered from statistics published
 at a given resolution, which is the question a statistics office would ask. In
 operational terms: the national supply of municipal aggregates recovers 84--90\% of
 what DOFA base features support and 76--77\% of what DOFA large features support,
