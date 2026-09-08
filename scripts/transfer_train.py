@@ -33,6 +33,7 @@ Usage: transfer_train.py [epochs] [folds]
 import logging
 import sys
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
@@ -63,13 +64,25 @@ SIZES = (50, 100, 200, 400, None)
 """Bag counts of the transfer curve; None is the whole pool of the country."""
 
 
+KEYS_FILE = sys.argv[3] if len(sys.argv) > 3 else ""
+"""Optional file with one box key per line, so two backbones train on the same boxes."""
+
+
 def country_keys() -> dict[str, list[str]]:
-    """Every box with bags on disk, grouped by country through the catalogue."""
+    """Every box with bags on disk, grouped by country through the catalogue.
+
+    With KEYS_FILE the set is restricted to the keys it lists, which is how a later run
+    on another backbone is held to the boxes an earlier run saw; the keys of every run
+    are written beside its results so the restriction can be reproduced.
+    """
     sys.path.insert(0, "scripts")
     from transfer_bags import COUNTRY
 
+    allowed = set(Path(KEYS_FILE).read_text().split()) if KEYS_FILE else None
     out: dict[str, list[str]] = {"colombia": [], "brazil": []}
     for key, country in COUNTRY.items():
+        if allowed is not None and key not in allowed:
+            continue
         if (DATA_ROOT / "transfer" / f"bags_{key}{backbone.SUFFIX}.parquet").exists():
             out[country].append(key)
     return out
@@ -78,6 +91,9 @@ def country_keys() -> dict[str, list[str]]:
 COUNTRIES = country_keys()
 LABEL = {"colombia": "poor_share", "brazil": "mean_income"}
 OUT = backbone.suffixed("data/transfer_training.csv")
+Path(OUT.replace(".csv", "_keys.txt")).write_text(
+    "\n".join(k for keys in COUNTRIES.values() for k in keys) + "\n"
+)
 log = logging.getLogger("transfer")
 
 
