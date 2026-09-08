@@ -282,7 +282,7 @@ def _transfer(ax, book) -> None:
     ]
     ax.legend(
         handles,
-        ["Mexican, unadapted / fine-tuned", "trained on local aggregates", "oracle", "DOFA large"],
+        ["Mexican, unadapted / fine-tuned", "trained on local aggregates", "oracle", "large backbone"],
         frameon=False,
         fontsize=7,
         loc="upper left",
