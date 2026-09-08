@@ -27,7 +27,13 @@ from satinsight.agebs import load_grs  # noqa: E402
 sys.path.insert(0, "scripts")
 from backbone_paired import within  # noqa: E402
 
-NAMES = {"": "DOFA base", "dofal": "DOFA large", "cfm": "Copernicus-FM base"}
+NAMES = {
+    "": "DOFA base",
+    "dofal": "DOFA large",
+    "cfm": "Copernicus-FM base",
+    "ov": "DOFA base, seam-free",
+    "dofalov": "DOFA large, seam-free",
+}
 RESAMPLES = 2000
 HIGH = 3
 """Grades High and Very high count as high deprivation, as everywhere in the paper."""
