@@ -994,6 +994,30 @@ Brazil & DOFA-L & oracle & 0.285 [0.230, 0.337] & 0.736\\
 \label{tab:transfer}
 \end{table}
 
+Figure~\ref{fig:transfer} shows the two cities that carry fine ground. In Bogot\'a the
+Mexican model, applied unchanged, places the low strata of the south and the periphery
+and the high strata of the north-east where the district stratification does ($\rho =
+0.31$ with DOFA-B, $0.52$ with DOFA-L over the city's tokens). In Rio de Janeiro the
+agreement is weaker ($0.04$ and $0.15$, mean over the box's municipalities): the maps
+put the west and the northern suburbs above the south zone, as the income truth does,
+but the favelas inside the wealthy south are smoothed over at 160 m and the gradient
+inside each municipality is faint, which is the informality result of the zero-shot
+check seen on the map.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\linewidth]{fig8_transfer.pdf}
+\caption{\textbf{The Mexican model abroad, unadapted.} Rows: Bogot\'a and Rio de
+Janeiro; columns: the local fine truth on the 160 m token lattice (Bogot\'a's block
+strata inverted so that higher is poorer; Rio's tract median income of the household
+head as minus its logarithm) and the zero-shot score of the Mexican heads of DOFA-B and
+DOFA-L on the same built tokens, mean over three seeds. Each panel is colored on its own
+2nd to 98th percentile scale, blue low to red high. The annotated $\rho$ is Spearman
+over the tokens with truth: Bogot\'a as one municipality, Rio as the mean over the
+municipalities in the box with at least twenty such tokens.}
+\label{fig:transfer}
+\end{figure}
+
 \subsection{Uncertainty and limits}
 \label{sec:uncertainty}
 
@@ -1330,8 +1354,8 @@ Bogot\'a's open-data portal.
 The full pipeline (MIT licence) is available at the project repository, pinned by
 \texttt{uv.lock}. Each figure maps to one driver script under \texttt{scripts/}:
 \texttt{fig1\_design.py}, \texttt{fig2\_curve.py}, \texttt{fig3\_dissociation.py},
-\texttt{fig4\_validation.py}, \texttt{fig5\_incumbents.py}, \texttt{fig6\_gallery.py}
-and \texttt{fig7\_calibration.py}. Each recomputes the quantities it draws from
+\texttt{fig4\_validation.py}, \texttt{fig5\_incumbents.py}, \texttt{fig6\_gallery.py},
+\texttt{fig7\_calibration.py} and \texttt{fig8\_transfer.py}. Each recomputes the quantities it draws from
 the per-seed artifacts and halts if any of them departs from the canonical results file,
 so a figure and the text cannot disagree silently.
 

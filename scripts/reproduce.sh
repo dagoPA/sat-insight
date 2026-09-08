@@ -70,7 +70,7 @@ uv run python scripts/finetune_cache.py 10 > logs/finetune_cache.log 2>&1
 sh scripts/finetune_queue.sh
 
 # 6. figures and source data, each checked against docs/manuscript/canonical_results.json
-for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents fig6_gallery fig7_calibration; do
+for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents fig6_gallery fig7_calibration fig8_transfer; do
   uv run python scripts/$fig.py > logs/$fig.log 2>&1
 done
 uv run python scripts/source_data.py > logs/source_data.log 2>&1
