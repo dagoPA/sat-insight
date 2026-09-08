@@ -67,3 +67,28 @@ def agrees(value: float, expected: float, *, name: str, tolerance: float = 1e-3)
             f"have diverged; regenerate the canon deliberately or fix the artifact."
         )
     return float(value)
+
+
+BACKBONES = (("", "DOFA base"), ("dofal", "DOFA large"))
+"""The backbones every figure and table reports side by side: tag and printed name.
+
+The empty tag is DOFA base, whose block sits at the root of the canon and whose files
+carry no suffix; every other tag is a block of the canon under its own name and a
+suffix on every artifact.
+"""
+
+LARGE_HATCH = "///"
+"""Bars of the second backbone are hatched so the split colors stay for the split alone."""
+
+
+def block(book: dict, tag: str) -> dict:
+    """The canon block of one backbone: the root for DOFA base, a named block otherwise."""
+    return book if not tag else book[tag]
+
+
+def suffixed(path: str, tag: str) -> str:
+    """An artifact path with the backbone suffix before its extension."""
+    if not tag:
+        return path
+    stem, dot, extension = path.rpartition(".")
+    return f"{stem}_{tag}{dot}{extension}"

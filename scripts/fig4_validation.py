@@ -11,7 +11,8 @@
     model unadapted and fine-tuned and the fully supervised oracle, in purple because
     neither country belongs to a Mexican split.
 
-Every plotted number is recomputed from the committed artifacts and checked against
+Every panel draws both frozen backbones, the second hatched or hollow. Every plotted
+number is recomputed from the committed artifacts and checked against
 `docs/manuscript/canonical_results.json`; a divergence raises rather than redrawing the page.
 
 Usage: fig4_validation.py <destination.pdf>
@@ -32,46 +33,61 @@ import pandas as pd  # noqa: E402
 import seaborn as sns  # noqa: E402
 
 from satinsight.manuscript import (  # noqa: E402
+    BACKBONES,
     INK,
+    LARGE_HATCH,
     MUTED,
     STYLE,
     TEST,
     TRANSFER,
     VALIDATION,
     agrees,
+    block,
     canon,
+    suffixed,
 )
 
 BUDGETS = (0.05, 0.10, 0.20, 0.30)
 CHANCE = 0.5
 
 
-def _paired_bars(ax, labels, validation, test, *, errors=None) -> None:
-    """One group per quantity, validation and test side by side."""
+def _paired_bars(ax, labels, validation: dict, test: dict, *, errors=None) -> None:
+    """One group per quantity, validation and test side by side, one pair per backbone.
+
+    `validation` and `test` map a backbone tag to the values per label; `errors`, when
+    given, maps a tag to a (validation, test) pair of error lists.
+    """
     x = np.arange(len(labels))
-    width = 0.38
-    val_error = None if errors is None else errors[0]
-    test_error = None if errors is None else errors[1]
-    ax.bar(
-        x - width / 2,
-        validation,
-        width,
-        yerr=val_error,
-        capsize=3,
-        color=VALIDATION,
-        ecolor=INK,
-        label="validation",
-    )
-    ax.bar(
-        x + width / 2,
-        test,
-        width,
-        yerr=test_error,
-        capsize=3,
-        color=TEST,
-        ecolor=INK,
-        label="test",
-    )
+    width = 0.19
+    for index, (tag, name) in enumerate(BACKBONES):
+        shift = (index - 0.5) * 2 * width
+        hatch = LARGE_HATCH if tag else None
+        val_error = None if errors is None else errors[tag][0]
+        test_error = None if errors is None else errors[tag][1]
+        ax.bar(
+            x + shift - width / 2,
+            validation[tag],
+            width,
+            yerr=val_error,
+            capsize=2,
+            color=VALIDATION,
+            hatch=hatch,
+            edgecolor="white",
+            ecolor=INK,
+            label=f"validation, {name}",
+        )
+        ax.bar(
+            x + shift + width / 2,
+            test[tag],
+            width,
+            yerr=test_error,
+            capsize=2,
+            color=TEST,
+            hatch=hatch,
+            edgecolor="white",
+            ecolor=INK,
+            label=f"test, {name}",
+        )
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.axhline(0, color=MUTED, lw=0.8)
@@ -79,109 +95,115 @@ def _paired_bars(ax, labels, validation, test, *, errors=None) -> None:
 
 def _incumbent(ax, book) -> None:
     """Panel a: the map and Meta's RWI on the AGEB its grid reaches."""
-    validation = pd.read_csv("data/rwi_paired.csv").iloc[0]
-    test = pd.read_csv("data/rwi_paired_test.csv").iloc[0]
-    for row, key, split in (
-        (validation, book["rwi_paired"], "validation"),
-        (test, book["test"]["rwi_paired"], "test"),
-    ):
-        agrees(row.ours_within, key["ours_within"], name=f"map within on the RWI universe, {split}")
-        agrees(row.rwi_within, key["rwi_within"], name=f"RWI within, {split}")
-        agrees(row.difference, key["difference"], name=f"paired difference, {split}")
-
-    _paired_bars(
-        ax,
-        ["Meta RWI", "this work"],
-        [validation.rwi_within, validation.ours_within],
-        [test.rwi_within, test.ours_within],
-    )
+    validation, test, notes = {}, {}, []
+    for tag, name in BACKBONES:
+        own = block(book, tag)
+        val_row = pd.read_csv(suffixed("data/rwi_paired.csv", tag)).iloc[0]
+        test_row = pd.read_csv(suffixed("data/rwi_paired_test.csv", tag)).iloc[0]
+        for row, key, split in (
+            (val_row, own["rwi_paired"], "validation"),
+            (test_row, own["test"]["rwi_paired"], "test"),
+        ):
+            agrees(row.ours_within, key["ours_within"], name=f"{name} map within on RWI, {split}")
+            agrees(row.rwi_within, key["rwi_within"], name=f"{name} RWI within, {split}")
+            agrees(row.difference, key["difference"], name=f"{name} paired difference, {split}")
+        validation[tag] = [val_row.rwi_within, val_row.ours_within]
+        test[tag] = [test_row.rwi_within, test_row.ours_within]
+        notes.append(
+            f"{name}: val $\\Delta$ {val_row.difference:+.2f} "
+            f"[{val_row.ci_low:+.2f}, {val_row.ci_high:+.2f}], "
+            f"test $\\Delta$ {test_row.difference:+.2f} "
+            f"[{test_row.ci_low:+.2f}, {test_row.ci_high:+.2f}]"
+        )
+    _paired_bars(ax, ["Meta RWI", "this work"], validation, test)
     ax.set_ylabel(r"within-municipality $\rho$")
-    ax.set_ylim(0, 0.45)
+    ax.set_ylim(0, 0.5)
     ax.set_title("a  Incumbent, same AGEB")
     ax.text(
-        0.03,
-        0.97,
-        f"val $\\Delta$ {validation.difference:+.2f} "
-        f"[{validation.ci_low:+.2f}, {validation.ci_high:+.2f}]\n"
-        f"test $\\Delta$ {test.difference:+.2f} "
-        f"[{test.ci_low:+.2f}, {test.ci_high:+.2f}]",
-        transform=ax.transAxes,
-        ha="left",
-        va="top",
-        size=8.5,
-        color=INK,
+        0.03, 0.97, "\n".join(notes), transform=ax.transAxes, ha="left", va="top", size=7, color=INK
     )
-    ax.legend(frameon=False, fontsize=9, loc="upper right")
+    ax.legend(frameon=False, fontsize=7, loc="upper right")
+
+
+def _curve_file(tag: str) -> str:
+    return f"data/supervision_curve_s2_{tag}.csv" if tag else "data/supervision_curve.csv"
 
 
 def _replication(ax, book) -> None:
     """Panel b: an independent institution's index beside the training construct."""
-    own_validation = pd.read_csv("data/supervision_curve.csv").query("bags == 771").spearman_within
-    opening = pd.read_csv("data/test_column.csv")
-    own_test = opening[opening.row == "headline_saved"].spearman_within
-    agrees(
-        own_validation.mean(),
-        book["curve"]["771"]["spearman_within"],
-        name="map against its own construct, validation",
-    )
-    agrees(
-        own_test.mean(),
-        book["test"]["headline_token_within"],
-        name="map against its own construct, test",
-    )
-
-    conapo_validation = pd.read_csv("data/conapo_replication.csv").iloc[0]
-    conapo_test = pd.read_csv("data/conapo_replication_test.csv").iloc[0]
-    agrees(
-        conapo_validation.spearman_within,
-        book["conapo"]["spearman_within"],
-        name="CONAPO replication, validation",
-    )
-    agrees(
-        conapo_test.spearman_within,
-        book["test"]["conapo"]["spearman_within"],
-        name="CONAPO replication, test",
-    )
-
-    _paired_bars(
-        ax,
-        ["CONEVAL\ngrade", "CONAPO\nindex"],
-        [own_validation.mean(), conapo_validation.spearman_within],
-        [own_test.mean(), conapo_test.spearman_within],
-        errors=(
+    validation, test, errors = {}, {}, {}
+    for tag, name in BACKBONES:
+        own = block(book, tag)
+        own_validation = pd.read_csv(_curve_file(tag)).query("bags == 771").spearman_within
+        column = pd.read_csv(suffixed("data/test_column.csv", tag))
+        own_test = column[column.row == "headline_saved"].spearman_within
+        agrees(
+            own_validation.mean(),
+            own["curve"]["771"]["spearman_within"],
+            name=f"{name} map against its own construct, validation",
+        )
+        agrees(
+            own_test.mean(),
+            own["test"]["headline_token_within"],
+            name=f"{name} map against its own construct, test",
+        )
+        conapo_validation = pd.read_csv(suffixed("data/conapo_replication.csv", tag)).iloc[0]
+        conapo_test = pd.read_csv(suffixed("data/conapo_replication_test.csv", tag)).iloc[0]
+        agrees(
+            conapo_validation.spearman_within,
+            own["conapo"]["spearman_within"],
+            name=f"{name} CONAPO replication, validation",
+        )
+        agrees(
+            conapo_test.spearman_within,
+            own["test"]["conapo"]["spearman_within"],
+            name=f"{name} CONAPO replication, test",
+        )
+        validation[tag] = [own_validation.mean(), conapo_validation.spearman_within]
+        test[tag] = [own_test.mean(), conapo_test.spearman_within]
+        errors[tag] = (
             [own_validation.std(), conapo_validation.ci95_half],
             [own_test.std(), conapo_test.ci95_half],
-        ),
-    )
-    ax.set_ylim(0, 0.45)
+        )
+    _paired_bars(ax, ["CONEVAL\ngrade", "CONAPO\nindex"], validation, test, errors=errors)
+    ax.set_ylim(0, 0.5)
     ax.set_title("b  Replication")
 
 
 def _targeting(ax, book) -> None:
     """Panel c: share of the aggregate-to-census gap closed, people pooled per split."""
-    lines = {}
-    for split, path, expected in (
-        ("validation", "data/targeting.csv", book["targeting_pooled"]),
-        ("test", "data/targeting_test.csv", book["test"]["targeting"]),
-    ):
-        table = pd.read_csv(path).groupby("budget")[["aggregate", "map", "oracle"]].sum()
-        pooled = (table["map"] - table["aggregate"]) / (table["oracle"] - table["aggregate"])
-        lines[split] = [
-            agrees(pooled.loc[budget], expected[str(budget)], name=f"targeting {split} at {budget}")
-            for budget in BUDGETS
-        ]
-
     x = [100 * budget for budget in BUDGETS]
-    ax.plot(
-        x, [100 * v for v in lines["validation"]], "o-", color=VALIDATION, lw=2, label="validation"
-    )
-    ax.plot(x, [100 * v for v in lines["test"]], "s--", color=TEST, lw=2, label="test")
+    for tag, name in BACKBONES:
+        own = block(book, tag)
+        for split, path, expected, color, marker in (
+            ("validation", "data/targeting.csv", own["targeting_pooled"], VALIDATION, "o"),
+            ("test", "data/targeting_test.csv", own["test"]["targeting"], TEST, "s"),
+        ):
+            table = (
+                pd.read_csv(suffixed(path, tag))
+                .groupby("budget")[["aggregate", "map", "oracle"]]
+                .sum()
+            )
+            pooled = (table["map"] - table["aggregate"]) / (table["oracle"] - table["aggregate"])
+            line = [
+                agrees(pooled.loc[b], expected[str(b)], name=f"{name} targeting {split} at {b}")
+                for b in BUDGETS
+            ]
+            ax.plot(
+                x,
+                [100 * v for v in line],
+                f"{marker}-" if not tag else f"{marker}--",
+                color=color,
+                markerfacecolor=color if not tag else "white",
+                lw=2 if not tag else 1.4,
+                label=f"{split}, {name}",
+            )
     ax.axhline(0, color=MUTED, lw=0.9)
     ax.set_xticks(x)
     ax.set_xlabel("budget (% population)")
     ax.set_ylabel("gap closed (%)")
     ax.set_title("c  Targeting")
-    ax.legend(frameon=False, fontsize=9, loc="upper left")
+    ax.legend(frameon=False, fontsize=7.5, loc="upper left")
 
 
 METHODS = (
@@ -196,33 +218,47 @@ def _transfer(ax, book) -> None:
     """Panel d: each country trained on its own municipal aggregates, with the references.
 
     Within-municipality Spearman against the fine truth under grouped folds; the oracle
-    is drawn as the same bar family so the recovered fraction reads off the panel.
+    is drawn as the same bar family so the recovered fraction reads off the panel. One
+    bar per method and backbone; a backbone whose transfer run is absent is skipped.
     """
-    table = pd.read_csv("data/transfer_training.csv")
-    stored = book["transfer_training"]
-    width = 0.2
+    available = [
+        (tag, name)
+        for tag, name in BACKBONES
+        if Path(suffixed("data/transfer_training.csv", tag)).exists()
+        and block(book, tag).get("transfer_training")
+    ]
+    width = 0.8 / (len(METHODS) * len(available))
     countries = (("colombia", "Bogot\u00e1 · block strata"), ("brazil", "Brazil · tract income"))
     for index, (country, _label) in enumerate(countries):
-        rows = table[table.country == country]
-        for offset, (method, _) in enumerate(METHODS):
-            seeds = rows[rows.method == method].sort_values("seed").within
-            expected = stored[country]["methods"][method]
-            mean = agrees(seeds.mean(), expected["within"], name=f"transfer {country} {method}")
-            x = index + (offset - 1.5) * width
-            color = MUTED if method == "oracle" else TRANSFER
-            alpha = 1.0 if method in ("aggregates", "oracle") else 0.55
-            ax.bar(
-                x,
-                mean,
-                width * 0.92,
-                yerr=seeds.std() if len(seeds) > 1 else None,
-                capsize=2,
-                color=color,
-                alpha=alpha,
-                ecolor=INK,
-            )
-            top = mean + (seeds.std() if len(seeds) > 1 else 0.0)
-            ax.text(x, top + 0.012, f"{mean:.2f}", ha="center", size=7.5, color=INK)
+        slot = 0
+        for method, _ in METHODS:
+            for tag, name in available:
+                table = pd.read_csv(suffixed("data/transfer_training.csv", tag))
+                stored = block(book, tag)["transfer_training"]
+                rows = table[table.country == country]
+                seeds = rows[rows.method == method].sort_values("seed").within
+                expected = stored[country]["methods"][method]
+                mean = agrees(
+                    seeds.mean(), expected["within"], name=f"{name} transfer {country} {method}"
+                )
+                x = index - 0.4 + (slot + 0.5) * width
+                slot += 1
+                color = MUTED if method == "oracle" else TRANSFER
+                alpha = 1.0 if method in ("aggregates", "oracle") else 0.55
+                ax.bar(
+                    x,
+                    mean,
+                    width * 0.92,
+                    yerr=seeds.std() if len(seeds) > 1 else None,
+                    capsize=2,
+                    color=color,
+                    alpha=alpha,
+                    hatch=LARGE_HATCH if tag else None,
+                    edgecolor="white",
+                    ecolor=INK,
+                )
+                top = mean + (seeds.std() if len(seeds) > 1 else 0.0)
+                ax.text(x, top + 0.012, f"{mean:.2f}", ha="center", size=6, color=INK)
     ax.set_xticks(range(len(countries)))
     ax.set_xticklabels([label for _, label in countries])
     ax.set_ylabel(r"within-municipality $\rho$")
@@ -233,12 +269,13 @@ def _transfer(ax, book) -> None:
         plt.Rectangle((0, 0), 1, 1, color=TRANSFER, alpha=0.55),
         plt.Rectangle((0, 0), 1, 1, color=TRANSFER),
         plt.Rectangle((0, 0), 1, 1, color=MUTED),
+        plt.Rectangle((0, 0), 1, 1, facecolor=TRANSFER, edgecolor="white", hatch=LARGE_HATCH),
     ]
     ax.legend(
         handles,
-        ["Mexican, unadapted / fine-tuned", "trained on local aggregates", "oracle"],
+        ["Mexican, unadapted / fine-tuned", "trained on local aggregates", "oracle", "DOFA large"],
         frameon=False,
-        fontsize=7.5,
+        fontsize=7,
         loc="upper left",
     )
 
