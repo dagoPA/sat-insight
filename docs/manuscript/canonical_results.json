@@ -328,15 +328,15 @@
  },
  "fraction_ci": {
   "val": {
-   "fraction": 0.956,
-   "ci_low": 0.636,
-   "ci_high": 1.292,
+   "fraction": 0.958,
+   "ci_low": 0.642,
+   "ci_high": 1.263,
    "municipalities": 33
   },
   "test": {
    "fraction": 0.85,
-   "ci_low": 0.304,
-   "ci_high": 1.857,
+   "ci_low": 0.291,
+   "ci_high": 1.831,
    "municipalities": 29
   }
  },

@@ -227,7 +227,7 @@ def conformal(calibration: pd.DataFrame, evaluation: pd.DataFrame, isotonic) -> 
             rows[-1]["cities"],
         )
     pd.concat(city_rows, ignore_index=True).to_csv(
-        "data/uncertainty_coverage_city.csv", index=False
+        backbone.suffixed("data/uncertainty_coverage_city.csv"), index=False
     )
     return pd.DataFrame(rows)
 

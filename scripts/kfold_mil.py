@@ -105,7 +105,7 @@ print(r.round(4).to_string(index=False), flush=True)
 print(
     f"\nkappa {r.kappa.mean():.3f} ± {r.kappa.std():.3f} · "
     f"auroc {r.auroc.mean():.3f} · "
-    f"spearman del mapa {r.spearman_mean.mean():.3f} · "
-    f"auroc del mapa {r.auroc_high.mean():.3f}",
+    f"map spearman {r.spearman_mean.mean():.3f} · "
+    f"map auroc {r.auroc_high.mean():.3f}",
     flush=True,
 )
