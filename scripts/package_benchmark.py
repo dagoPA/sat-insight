@@ -53,16 +53,28 @@ def main() -> None:
 
     partition = pd.read_csv(DATA_ROOT / "partition.csv")
     manifest["cities"] = {
-        split: sorted(partition[partition.split == split].city) for split in ("train", "val")
+        split: sorted(partition[partition.split == split].city)
+        for split in ("train", "val", "test")
+    }
+    manifest["sensors"] = {
+        "s2, s1": "DOFA base (768 dims per sensor), the reference backbone",
+        "s2_dofal, s1_dofal": "DOFA large (1024 dims per sensor)",
+        "s2_cfm, s1_cfm": "Copernicus-FM base, used in the backbone comparison only",
+        "s2deg, s2deg_dofal": "optical block-averaged to 20 m before encoding",
+        "wc, aux": "WorldCover fractions plus NDVI, and GHSL plus nightlights, per token",
     }
     manifest["protocol"] = {
-        "evaluation": "held-out cities only; the test split stays closed until final",
+        "evaluation": "select on the validation cities, report on the held-out test cities",
         "map_metrics": [
             "Spearman within municipality, averaged over bags with >=20 instances and >1 grade",
-            "AUROC for grade >= 3, pooled per city then averaged",
+            "Spearman within municipality per AGEB, tract-mean scores",
+            "AUROC for grade >= 3, pooled",
         ],
-        "ceiling": "instance-supervised oracle on the same vectors; report recovery fraction",
-        "comparisons": "paired by municipality across configurations, 3 seeds minimum",
+        "upper_bound": "instance-supervised oracle on the same vectors; report the fraction",
+        "comparisons": (
+            "paired by municipality across configurations, 3 seeds, city-clustered bootstrap; "
+            "backbones compared by grouped 5-fold cross-validation over all 138 cities"
+        ),
     }
     (DESTINATION / "manifest.json").write_text(json.dumps(manifest, indent=2))
     total = sum(f.stat().st_size for f in DESTINATION.rglob("*") if f.is_file()) / 1024**3
