@@ -26,6 +26,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
 from satinsight.llp import build, instance_scores  # noqa: E402
@@ -40,7 +41,7 @@ def main() -> None:
 
     partition = pd.read_csv("data/partition.csv")
     val_cities = sorted(cities_of(partition, "val"))
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    val_bags = load_split(val_cities, backbone.sensor("s2"), fuse=True)
 
     device = (
         "cuda"
@@ -58,7 +59,9 @@ def main() -> None:
     dim = val_bags[0].instances.shape[1]
     for seed in SEEDS:
         model = build(dim, radius=RADIUS, standardize=True).to(device)
-        model.load_state_dict(torch.load(f"data/weights/llp_final_s{seed}.pt", map_location=device))
+        model.load_state_dict(
+            torch.load(f"data/weights/llp_final{backbone.SUFFIX}_s{seed}.pt", map_location=device)
+        )
         model.eval()
         models.append(model)
 
@@ -94,7 +97,7 @@ def main() -> None:
         logging.info("%s: %d tokens rescored city-wide", city, len(mean_score))
 
     pd.DataFrame(pd.concat(rows, ignore_index=True)).to_parquet(
-        "data/predictions_val_city.parquet", index=False
+        backbone.suffixed("data/predictions_val_city.parquet"), index=False
     )
     print("DONE", flush=True)
 

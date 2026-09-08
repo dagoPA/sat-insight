@@ -29,7 +29,11 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from satinsight import encoders, tiling  # noqa: E402
+from satinsight import (  # noqa: E402
+    backbone,
+    encoders,
+    tiling,
+)
 from satinsight.dataset import CHANNELS, load, paths  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 
@@ -55,8 +59,8 @@ def degrade(band: np.ndarray, factor: int = FACTOR) -> np.ndarray:
 
 def one_city(city: str) -> None:
     where = paths(DATA_ROOT)
-    out_vectors = where["vectors"] / f"{city}_s2deg.npz"
-    out_instances = where["instances"] / f"{city}_s2deg.parquet"
+    out_vectors = where["vectors"] / f"{city}_{backbone.sensor('s2deg')}.npz"
+    out_instances = where["instances"] / f"{city}_{backbone.sensor('s2deg')}.parquet"
     if out_vectors.exists() and out_instances.exists():
         print(f"SKIP {city}", flush=True)
         return
@@ -88,15 +92,13 @@ def one_city(city: str) -> None:
 
 
 def main() -> int:
-    from satinsight.encoders import DofaEncoder
-
     partition = pd.read_csv("data/partition.csv")
     keys = sorted(partition.city)
     argumentos = sys.argv[1:]
     if len(argumentos) >= 2 and argumentos[0].isdigit():
         keys = keys[int(argumentos[0]) :: int(argumentos[1])]
 
-    one_city.encoder = DofaEncoder()
+    one_city.encoder = backbone.encoder()
     failed = []
     for n, city in enumerate(keys, start=1):
         try:

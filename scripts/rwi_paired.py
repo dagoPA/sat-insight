@@ -25,6 +25,7 @@ import pandas as pd  # noqa: E402
 from scipy.spatial import cKDTree  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
@@ -97,7 +98,11 @@ def main() -> None:
         "wins": int(sum(d > 0 for d in diff.values())),
     }
     pd.DataFrame([result]).to_csv(
-        "data/rwi_paired" + ("_test.csv" if split == "test" else ".csv"), index=False
+        "data/rwi_paired"
+        + ("_test" if split == "test" else "")
+        + backbone.suffix_of(source)
+        + ".csv",
+        index=False,
     )
     print(
         f"ours {result['ours_within']:+.3f} · RWI {result['rwi_within']:+.3f} · "

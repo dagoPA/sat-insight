@@ -26,6 +26,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import load_grs  # noqa: E402
 
 BUDGETS = (0.05, 0.10, 0.20, 0.30)
@@ -94,7 +95,13 @@ def main() -> None:
                 }
             )
     result = pd.DataFrame(rows)
-    result.to_csv("data/targeting" + ("_test.csv" if split == "test" else ".csv"), index=False)
+    result.to_csv(
+        "data/targeting"
+        + ("_test" if split == "test" else "")
+        + backbone.suffix_of(source)
+        + ".csv",
+        index=False,
+    )
     print("===== TARGETING =====", flush=True)
     # per-city ratios explode when a city's gap is near zero; the honest figure pools
     # people first, reached people are additive, ratios of averages are not

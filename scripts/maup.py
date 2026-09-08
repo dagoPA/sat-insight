@@ -24,6 +24,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size, load_grs  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
@@ -73,7 +74,10 @@ def main() -> None:
             }
         )
     result = pd.DataFrame(rows)
-    result.to_csv("data/maup" + ("_test.csv" if split == "test" else ".csv"), index=False)
+    result.to_csv(
+        "data/maup" + ("_test" if split == "test" else "") + backbone.suffix_of(source) + ".csv",
+        index=False,
+    )
     print(result.round(3).to_string(index=False), flush=True)
 
 

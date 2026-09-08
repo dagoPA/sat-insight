@@ -24,6 +24,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra, load_grs  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
@@ -37,7 +38,8 @@ from supervision_curve import grades_of, links_of, nested_sample, train_once  # 
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 SEEDS = (0, 1, 2)
 SIZES = (50, 100, 200, 400, None)
-OUT = "data/test_column.csv"
+SENSOR = backbone.sensor("s2")
+OUT = backbone.suffixed("data/test_column.csv")
 
 
 def score_test(model, test_bags, test_links, grades, torch, device):
@@ -63,9 +65,9 @@ def main() -> None:
         else "cpu"
     )
 
-    pool = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
-    test_bags = load_split(test_cities, "s2", fuse=True)
+    pool = load_split(train_cities, SENSOR, fuse=True)
+    val_bags = load_split(val_cities, SENSOR, fuse=True)
+    test_bags = load_split(test_cities, SENSOR, fuse=True)
     val_grades = grades_of(val_cities, catalogue)
     test_grades = grades_of(test_cities, catalogue)
     val_links = links_of(val_bags, torch, device)
@@ -103,9 +105,9 @@ def main() -> None:
 
     # 3 · single sensors
     for modality, (sensor, fuse) in {
-        "optical": ("s2", False),
-        "degraded": ("s2deg", False),
-        "radar": ("s1", False),
+        "optical": (backbone.sensor("s2"), False),
+        "degraded": (backbone.sensor("s2deg"), False),
+        "radar": (backbone.sensor("s1"), False),
         "worldcover": ("wc", False),
     }.items():
         m_pool = load_split(train_cities, sensor, fuse=fuse)
@@ -143,7 +145,9 @@ def main() -> None:
     frames = []
     for seed in SEEDS:
         model = build(dim, radius=1, standardize=True).to(device)
-        model.load_state_dict(torch.load(f"data/weights/llp_final_s{seed}.pt", map_location=device))
+        model.load_state_dict(
+            torch.load(f"data/weights/llp_final{backbone.SUFFIX}_s{seed}.pt", map_location=device)
+        )
         model.eval()
         scored = score_test(model, test_bags, test_links, test_grades, torch, device)
         record({"row": "headline_saved", "detail": "bag_adjacency", "seed": seed, **scored})
@@ -171,7 +175,9 @@ def main() -> None:
                     }
                 )
             )
-    pd.concat(frames, ignore_index=True).to_parquet("data/predictions_test.parquet", index=False)
+    pd.concat(frames, ignore_index=True).to_parquet(
+        backbone.suffixed("data/predictions_test.parquet"), index=False
+    )
     print("DONE: test column scored; per-token scores persisted", flush=True)
 
 

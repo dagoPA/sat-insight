@@ -44,6 +44,7 @@ import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 from satinsight.encoders import load  # noqa: E402
@@ -69,14 +70,14 @@ def country_keys() -> dict[str, list[str]]:
 
     out: dict[str, list[str]] = {"colombia": [], "brazil": []}
     for key, country in COUNTRY.items():
-        if (DATA_ROOT / "transfer" / f"bags_{key}.parquet").exists():
+        if (DATA_ROOT / "transfer" / f"bags_{key}{backbone.SUFFIX}.parquet").exists():
             out[country].append(key)
     return out
 
 
 COUNTRIES = country_keys()
 LABEL = {"colombia": "poor_share", "brazil": "mean_income"}
-OUT = "data/transfer_training.csv"
+OUT = backbone.suffixed("data/transfer_training.csv")
 log = logging.getLogger("transfer")
 
 
@@ -95,8 +96,8 @@ def scaled_share(values: pd.Series) -> pd.Series:
 def country_tokens(country: str) -> tuple[pd.DataFrame, np.ndarray]:
     parts, vectors = [], []
     for key in COUNTRIES[country]:
-        table = pd.read_parquet(DATA_ROOT / "transfer" / f"bags_{key}.parquet")
-        matrix, _ = load(DATA_ROOT / "transfer" / f"vectors_{key}.npz")
+        table = pd.read_parquet(DATA_ROOT / "transfer" / f"bags_{key}{backbone.SUFFIX}.parquet")
+        matrix, _ = load(DATA_ROOT / "transfer" / f"vectors_{key}{backbone.SUFFIX}.npz")
         table["key"] = key
         parts.append(table)
         vectors.append(matrix[table.row.to_numpy()])
@@ -180,7 +181,7 @@ def mexican_start(model, seed: int, torch, device) -> None:
     the new scoring row starts as the mean of the four and learns from there. The scaler
     stays Mexican so the projection sees inputs on the scale it was trained on.
     """
-    state = torch.load(f"data/weights/llp_final_s{seed}.pt", map_location=device)
+    state = torch.load(f"data/weights/llp_final{backbone.SUFFIX}_s{seed}.pt", map_location=device)
     own = model.state_dict()
     for key, value in state.items():
         if key.startswith("score."):
@@ -266,7 +267,9 @@ def zero_shot(bags: Bags) -> dict[str, np.ndarray]:
     scores = {name: [] for name in bags.names}
     for seed in SEEDS:
         model = build(bags.x.shape[1], radius=RADIUS, standardize=True).to(bags.device)
-        state = torch.load(f"data/weights/llp_final_s{seed}.pt", map_location=bags.device)
+        state = torch.load(
+            f"data/weights/llp_final{backbone.SUFFIX}_s{seed}.pt", map_location=bags.device
+        )
         model.load_state_dict(state)
         for name, s in score(model, bags, bags.names).items():
             scores[name].append(s)

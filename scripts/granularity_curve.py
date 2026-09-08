@@ -27,6 +27,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra, load_grs  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
@@ -37,7 +38,8 @@ from supervision_curve import grades_of, links_of, train_once  # noqa: E402
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 SEEDS = (0, 1, 2)
 LEVELS = ("municipality", "state", "national")
-OUT = "data/granularity_curve.csv"
+SENSOR = backbone.sensor("s2")
+OUT = backbone.suffixed("data/granularity_curve.csv")
 
 log = logging.getLogger("granularity")
 
@@ -87,8 +89,8 @@ def main() -> None:
     val_cities = sorted(cities_of(partition, "val"))
     table = load_grs()
 
-    pool = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    pool = load_split(train_cities, SENSOR, fuse=True)
+    val_bags = load_split(val_cities, SENSOR, fuse=True)
     grades = grades_of(val_cities, catalogue)
     print(f"pool of {len(pool)} bags · levels {LEVELS}", flush=True)
 

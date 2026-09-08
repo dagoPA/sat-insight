@@ -26,6 +26,7 @@ import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.llp import bootstrap_within  # noqa: E402
 
 CONAPO_HIGH_GRADES = ("Alto", "Muy alto")
@@ -77,7 +78,11 @@ def main() -> None:
         "auroc_high": auroc,
     }
     pd.DataFrame([result]).to_csv(
-        "data/conapo_replication" + ("_test.csv" if split == "test" else ".csv"), index=False
+        "data/conapo_replication"
+        + ("_test" if split == "test" else "")
+        + backbone.suffix_of(source)
+        + ".csv",
+        index=False,
     )
     print("\n===== CONAPO REPLICATION =====", flush=True)
     print(

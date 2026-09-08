@@ -20,6 +20,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
@@ -31,7 +32,7 @@ EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 30
 OBJECTIVE = sys.argv[3] if len(sys.argv) > 3 else "classes"
 ENTROPY = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0
 CLUSTER = float(sys.argv[5]) if len(sys.argv) > 5 else 0.0
-SENSOR = "s2"
+SENSOR = backbone.sensor("s2")
 FUSE = True
 
 partition = pd.read_csv("data/partition.csv")
@@ -92,9 +93,11 @@ for k, held_out in enumerate(folds):
     )
     print(json.dumps(results[-1], default=float), flush=True)
     pd.concat(histories, ignore_index=True).to_csv(
-        f"data/mil_history_{OBJECTIVE}_{ENTROPY}_{CLUSTER}.csv", index=False
+        backbone.suffixed(f"data/mil_history_{OBJECTIVE}_{ENTROPY}_{CLUSTER}.csv"), index=False
     )
-    pd.DataFrame(results).to_csv(f"data/mil_kfold_{OBJECTIVE}_{ENTROPY}_{CLUSTER}.csv", index=False)
+    pd.DataFrame(results).to_csv(
+        backbone.suffixed(f"data/mil_kfold_{OBJECTIVE}_{ENTROPY}_{CLUSTER}.csv"), index=False
+    )
 
 r = pd.DataFrame(results)
 print("\n===== SUMMARY =====", flush=True)

@@ -29,7 +29,7 @@ import geopandas as gpd  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from satinsight import landcover  # noqa: E402
+from satinsight import backbone, landcover  # noqa: E402
 from satinsight.cache import load  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 from satinsight.tiling import TOKEN_SIZE  # noqa: E402
@@ -134,7 +134,7 @@ def brazil_truth(key: str, points: gpd.GeoDataFrame, bbox) -> tuple[pd.Series, p
 
 def build(key: str) -> pd.DataFrame:
     country = COUNTRY[key]
-    tokens = pd.read_parquet(DATA_ROOT / "transfer" / f"tokens_{key}.parquet")
+    tokens = pd.read_parquet(DATA_ROOT / "transfer" / f"tokens_{key}{backbone.SUFFIX}.parquet")
     # row indexes the vector matrix, which the filtering below must not disturb
     tokens["row"] = np.arange(len(tokens))
     tokens["built"] = built_fraction(key, tokens)
@@ -177,15 +177,21 @@ def build(key: str) -> pd.DataFrame:
 
 def main() -> int:
     keys = sys.argv[1:] or [
-        k for k in COUNTRY if (DATA_ROOT / "transfer" / f"vectors_{k}.npz").exists()
+        k
+        for k in COUNTRY
+        if (DATA_ROOT / "transfer" / f"vectors_{k}{backbone.SUFFIX}.npz").exists()
     ]
     failed = []
     for key in keys:
-        if (DATA_ROOT / "transfer" / f"bags_{key}.parquet").exists() and not sys.argv[1:]:
+        if (
+            DATA_ROOT / "transfer" / f"bags_{key}{backbone.SUFFIX}.parquet"
+        ).exists() and not sys.argv[1:]:
             continue
         try:
             table = build(key)
-            table.to_parquet(DATA_ROOT / "transfer" / f"bags_{key}.parquet", index=False)
+            table.to_parquet(
+                DATA_ROOT / "transfer" / f"bags_{key}{backbone.SUFFIX}.parquet", index=False
+            )
             print(
                 f"OK {key} · {len(table)} built tokens · {table.municipality.nunique()} bags",
                 flush=True,

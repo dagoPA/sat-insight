@@ -24,6 +24,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
@@ -37,14 +38,13 @@ SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 TUNED = bool(int(sys.argv[4])) if len(sys.argv) > 4 else False
 MODALITY = sys.argv[5] if len(sys.argv) > 5 else "fused"
 PATIENCE = 8
-SENSOR = {
-    "fused": "s2",
-    "optical": "s2",
-    "radar": "s1",
-    "degraded": "s2deg",
-    "worldcover": "wc",
-}[MODALITY]
+SENSOR = backbone.sensor(
+    {"fused": "s2", "optical": "s2", "radar": "s1", "degraded": "s2deg", "worldcover": "wc"}[
+        MODALITY
+    ]
+)
 FUSE = MODALITY == "fused"
+STEM = f"r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}{backbone.SUFFIX}"
 
 log = logging.getLogger("llp-val")
 
@@ -152,12 +152,13 @@ def main() -> None:
         flush=True,
     )
     pd.DataFrame([final]).to_csv(
-        f"data/llp_val_{MODALITY}_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv", index=False
+        f"data/llp_val_{MODALITY}_{STEM}.csv",
+        index=False,
     )
     pd.DataFrame(per_bag, columns=["municipality", "rho"]).assign(
         modality=MODALITY, radius=RADIUS, seed=SEED, tuned=TUNED
     ).to_csv(
-        f"data/llp_val_bags_{MODALITY}_r{RADIUS}_s{SEED}{'_tuned' if TUNED else ''}.csv",
+        f"data/llp_val_bags_{MODALITY}_{STEM}.csv",
         index=False,
     )
 

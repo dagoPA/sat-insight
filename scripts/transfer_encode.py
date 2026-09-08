@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
 )
 
-from satinsight import encoders  # noqa: E402
+from satinsight import backbone, encoders  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 
 sys.path.insert(0, "scripts")
@@ -38,11 +38,14 @@ def composited_keys() -> list[str]:
 
 def main() -> int:
     keys = sys.argv[1:] or composited_keys()
-    encoder = encoders.DofaEncoder()
+    encoder = backbone.encoder()
     out = DATA_ROOT / "transfer"
     failed = []
     for key in keys:
-        tokens_path, vectors_path = out / f"tokens_{key}.parquet", out / f"vectors_{key}.npz"
+        tokens_path, vectors_path = (
+            out / f"tokens_{key}{backbone.SUFFIX}.parquet",
+            out / f"vectors_{key}{backbone.SUFFIX}.npz",
+        )
         if tokens_path.exists() and vectors_path.exists():
             print(f"SKIP {key}", flush=True)
             continue

@@ -19,6 +19,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
@@ -30,7 +31,8 @@ FOLDS = int(sys.argv[1]) if len(sys.argv) > 1 else 5
 EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 30
 RADIUS = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 SEED, PATIENCE = 0, 8
-OUT = f"data/llp_kfold_r{RADIUS}.csv" if RADIUS else "data/llp_kfold.csv"
+SENSOR = backbone.sensor("s2")
+OUT = backbone.suffixed(f"data/llp_kfold_r{RADIUS}.csv" if RADIUS else "data/llp_kfold.csv")
 
 
 def grades_of(cities, catalogue):
@@ -88,8 +90,8 @@ def main() -> None:
     results = []
     for k, held in enumerate(folds):
         rest = [c for c in cities if c not in held]
-        train_bags = load_split(rest, "s2", fuse=True)
-        val_bags = load_split(held, "s2", fuse=True)
+        train_bags = load_split(rest, SENSOR, fuse=True)
+        val_bags = load_split(held, SENSOR, fuse=True)
         grades = grades_of(held, catalogue)
         train_links = neighbours(train_bags, torch, device)
         val_links = neighbours(val_bags, torch, device)

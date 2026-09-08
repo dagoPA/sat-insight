@@ -24,6 +24,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.llp import evaluate_map  # noqa: E402
@@ -34,6 +35,7 @@ from supervision_curve import grades_of, links_of, train_once  # noqa: E402
 
 SEEDS = (0, 1, 2)
 RESAMPLES = 2000
+OURS = backbone.sensor("s2")
 
 
 def per_bag_of(arm, train_cities, val_pack, test_pack, torch, device):
@@ -70,7 +72,7 @@ def main() -> None:
     val_grades = grades_of(val_cities, catalogue)
     test_grades = grades_of(test_cities, catalogue)
 
-    arms = {("s2", True): None, ("wc", False): None}
+    arms = {(OURS, True): None, ("wc", False): None}
     val_pack, test_pack = {}, {}
     city_of = {}
     for key in arms:
@@ -82,7 +84,7 @@ def main() -> None:
         for b in tb:
             city_of[b.municipality] = b.city
 
-    ours = per_bag_of(("s2", True), train_cities, val_pack, test_pack, torch, device)
+    ours = per_bag_of((OURS, True), train_cities, val_pack, test_pack, torch, device)
     wc = per_bag_of(("wc", False), train_cities, val_pack, test_pack, torch, device)
 
     shared = sorted(set(ours) & set(wc))
@@ -107,7 +109,7 @@ def main() -> None:
         "ci_high": float(high),
         "wins": int(sum(d > 0 for d in diff.values())),
     }
-    pd.DataFrame([result]).to_csv("data/wc_paired_test.csv", index=False)
+    pd.DataFrame([result]).to_csv(backbone.suffixed("data/wc_paired_test.csv"), index=False)
     print(
         f"ours {result['ours_within']:+.3f} · worldcover {result['wc_within']:+.3f} · "
         f"paired {result['difference']:+.3f} [{low:+.3f}, {high:+.3f}] · "

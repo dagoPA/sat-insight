@@ -33,6 +33,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import cities_by_size  # noqa: E402
 from satinsight.context import STRIDE  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
@@ -137,6 +138,8 @@ def main() -> None:
         if "city" in source
         else "data/border_discontinuity.csv"
     )
+    if backbone.suffix_of(source):
+        out = backbone.suffixed(out)
     pd.DataFrame(rows).to_csv(out, index=False)
 
 

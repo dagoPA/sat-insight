@@ -34,6 +34,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
@@ -44,7 +45,7 @@ from satinsight.splits import cities_of  # noqa: E402
 # the argument parsing tolerates importers that pass their own, differently shaped argv
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 30
 RADIUS = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 1
-SENSOR = sys.argv[4] if len(sys.argv) > 4 else "s2"
+SENSOR = sys.argv[4] if len(sys.argv) > 4 else backbone.sensor("s2")
 FUSE = SENSOR.startswith("s2")
 SIZES = (None,) if len(sys.argv) > 3 and sys.argv[3] == "full" else (50, 100, 200, 400, None)
 EXTRAS = tuple(e for e in (sys.argv[5] if len(sys.argv) > 5 else "").split(",") if e)
@@ -53,7 +54,7 @@ TAG = "".join(f"_{e}" for e in EXTRAS) + ("_late" if LATE else "")
 SEEDS = (0, 1, 2)
 PATIENCE = 8
 OUT = (
-    f"data/supervision_curve_{SENSOR}{TAG}.csv"
+    f"data/supervision_curve_{SENSOR}{'' if RADIUS == 1 else f'_r{RADIUS}'}{TAG}.csv"
     if SENSOR != "s2"
     else f"data/supervision_curve_r{RADIUS}{TAG}.csv"
     if RADIUS != 1 or TAG

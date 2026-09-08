@@ -32,6 +32,7 @@ import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra  # noqa: E402
 from satinsight.incumbents import (  # noqa: E402
     DEPRIVATION_SIGN,
@@ -189,7 +190,7 @@ def main() -> None:
             flush=True,
         )
 
-    output = Path(f"data/global_products{suffix}.csv")
+    output = Path(f"data/global_products{suffix}{backbone.suffix_of(source)}.csv")
     pd.DataFrame(rows).to_csv(output, index=False)
     logging.info("wrote %s", output)
 

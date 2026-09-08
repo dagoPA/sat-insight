@@ -30,6 +30,7 @@ logging.basicConfig(
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra, load_grs  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
@@ -42,7 +43,8 @@ from supervision_curve import grades_of  # noqa: E402
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 SEEDS = (0, 1, 2)
 RADIUS, PATIENCE = 1, 8
-OUT = "data/a5_aggregation.csv"
+SENSOR = backbone.sensor("s2")
+OUT = backbone.suffixed("data/a5_aggregation.csv")
 
 log = logging.getLogger("a5")
 
@@ -121,8 +123,8 @@ def main() -> None:
     train_cities = sorted(cities_of(partition, "train")) + sorted(cities_extra())
     val_cities = sorted(cities_of(partition, "val"))
 
-    pool = load_split(train_cities, "s2", fuse=True)
-    val_bags = load_split(val_cities, "s2", fuse=True)
+    pool = load_split(train_cities, SENSOR, fuse=True)
+    val_bags = load_split(val_cities, SENSOR, fuse=True)
     grades = grades_of(val_cities, catalogue)
     weights = population_weights(pool)
     print(f"pool of {len(pool)} bags · weighted aggregation", flush=True)
@@ -154,7 +156,9 @@ def main() -> None:
             scored["bag_mae"],
         )
         pd.DataFrame(results).to_csv(OUT, index=False)
-        pd.DataFrame(bags_rows).to_csv("data/a5_aggregation_bags.csv", index=False)
+        pd.DataFrame(bags_rows).to_csv(
+            backbone.suffixed("data/a5_aggregation_bags.csv"), index=False
+        )
 
     r = pd.DataFrame(results)
     print("\n===== WEIGHTED AGGREGATION =====", flush=True)

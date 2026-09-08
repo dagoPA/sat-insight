@@ -36,6 +36,8 @@ import pandas as pd  # noqa: E402
 from scipy.stats import spearmanr  # noqa: E402
 from sklearn.isotonic import IsotonicRegression  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
+
 RESAMPLES = 2000
 MIN_AGEB = 20
 """A municipality needs this many tracts for a within correlation to mean anything."""
@@ -257,8 +259,8 @@ def _within_of(frame: pd.DataFrame):
 
 
 def main() -> None:
-    validation = with_truth(per_ageb("data/predictions_val.parquet"))
-    test = with_truth(per_ageb("data/predictions_test.parquet"))
+    validation = with_truth(per_ageb(backbone.suffixed("data/predictions_val.parquet")))
+    test = with_truth(per_ageb(backbone.suffixed("data/predictions_test.parquet")))
 
     isotonic = IsotonicRegression(out_of_bounds="clip").fit(validation.score, validation.ordinal)
 
@@ -275,7 +277,7 @@ def main() -> None:
             result["ci_high"],
             result["municipalities"],
         )
-    pd.DataFrame(rows).to_csv("data/uncertainty_spread.csv", index=False)
+    pd.DataFrame(rows).to_csv(backbone.suffixed("data/uncertainty_spread.csv"), index=False)
 
     curves = []
     for split, frame in (("val", validation), ("test", test)):
@@ -283,12 +285,16 @@ def main() -> None:
         curve = selective_curve(frame)
         curve.insert(0, "split", split)
         curves.append(curve)
-    pd.concat(curves, ignore_index=True).to_csv("data/uncertainty_selective.csv", index=False)
+    pd.concat(curves, ignore_index=True).to_csv(
+        backbone.suffixed("data/uncertainty_selective.csv"), index=False
+    )
 
-    conformal(validation, test, isotonic).to_csv("data/uncertainty_conformal.csv", index=False)
+    conformal(validation, test, isotonic).to_csv(
+        backbone.suffixed("data/uncertainty_conformal.csv"), index=False
+    )
 
     ranking = audit(test)
-    ranking.to_csv("data/city_audit_test.csv", index=False)
+    ranking.to_csv(backbone.suffixed("data/city_audit_test.csv"), index=False)
     print(ranking.to_string(index=False), flush=True)
 
 
