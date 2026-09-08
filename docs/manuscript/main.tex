@@ -41,8 +41,9 @@ gap on test, replicate against an independent institution's marginalization inde
 Meta's Relative Wealth Index on the validation cities and match it on test, and order
 Bogot\'a's block strata without retraining. Repeating the design on Colombia's
 municipal poverty rate and Brazil's municipal mean income recovers a within-municipality
-ordering of block strata in Bogot\'a ($\rho = 0.21$) and of tract income across 47
-Brazilian municipalities ($0.12$) from 35 and 48 bags. Against free global grids the
+ordering of block strata in Bogot\'a ($\rho = 0.25$ and $0.17$ from 153 bags) and of
+tract income across 47 Brazilian municipalities ($0.12$ and $0.16$ from 48 bags), with
+the base and the large backbone. Against free global grids the
 margin is resolvable only for population, and feeding those grids to the model as inputs
 lifts the fully supervised bound by $0.03$ without lifting the weakly supervised map.
 Attention-based multiple-instance learning produces chance-level maps for a structural
@@ -383,11 +384,17 @@ Zero-shot: Bogot\'a and Rio get the same 2020 composite protocol; tokens are sco
 the three final seeds with Mexican standardization statistics, deliberately unadapted.
 Rio's evaluation is restricted to tokens with WorldCover built fraction $\geq 0.10$.
 
-Training on local aggregates: six composited boxes (Bogot\'a, the Aburr\'a valley,
-Cali; Rio, S\~ao Paulo, Belo Horizonte) are cut into 160 m tokens, encoded by the same
-frozen model, and kept where the WorldCover built fraction is $\geq 0.10$. A bag is a
+Training on local aggregates: the composited boxes of both countries, six metropolitan
+boxes drawn by hand (Bogot\'a, the Aburr\'a valley, Cali; Rio, S\~ao Paulo, Belo
+Horizonte) plus a catalogue of municipal seats with an urban footprint of at least
+1.5 km$^2$ in Colombia and at least 50{,}000 urban inhabitants in Brazil, composited in
+that order and used as far as compositing has reached (220 Colombian seats at the time
+of writing, none yet in Brazil), are cut into 160 m tokens, encoded by both frozen
+backbones, and kept where the WorldCover built fraction is $\geq 0.10$. A bag is a
 municipality with at least 5\% of its area inside a box and at least 32 built tokens,
-assigned from each country's official boundaries: 35 bags in Colombia, 48 in Brazil.
+assigned from each country's official boundaries: 153 bags in Colombia, 48 in Brazil,
+the same for both backbones. Nested subsets of 50 and 100 Colombian bags give the
+supply axis abroad.
 The label is what each office publishes at municipal level and nothing finer: Colombia's
 multidimensional poverty rate, a share that enters the one-output label-proportion head
 unchanged; Brazil's mean monthly income of the household head, mapped to a deprivation
@@ -678,8 +685,9 @@ half-widths on the CONAPO bars).
 \textbf{c}, Share of the aggregate-to-census targeting gap closed at each budget,
 people pooled per split; validation loses at the tightest budget, test does not.
 \textbf{d}, Transfer under each country's own aggregates: within-municipality $\rho$
-against Bogot\'a's block strata (35 bags; $n = 12{,}738$ built tokens) and against
-tract median income across 47 Brazilian municipalities (48 bags; $n = 110{,}728$), for
+against Bogot\'a's block strata (153 bags; $n = 12{,}738$ built tokens with truth) and
+against tract median income across 47 Brazilian municipalities (48 bags; $n =
+110{,}728$), for
 the Mexican model unadapted, the head trained from scratch on the local municipal
 aggregates, the Mexican heads fine-tuned on them, and the fully supervised oracle; bars
 are means over three seeds with their s.d. where seeds apply, under grouped folds by
@@ -821,47 +829,71 @@ detection does not follow from it.
 
 Repeating the design on each country's own aggregates asks whether the Mexican result is
 a property of the method or of Mexico (Fig.~\ref{fig:validation}d,
-Table~\ref{tab:transfer}). Trained from scratch on Colombia's municipal poverty rate over 35 bags, the
-head orders Bogot\'a's block strata at $\rho = 0.21$ (seeds $0.22$, $0.18$, $0.24$;
-AUROC 0.63 for the most deprived quartile), against $0.31$ for the Mexican model applied
-unchanged to the same built tokens and $0.25$ for the Mexican heads fine-tuned on the
-Colombian aggregates ($0.29$, $0.14$, $0.31$, the least stable row). Trained on
-Brazil's municipal mean income over 48 bags, it orders tract median income within
-municipalities at $\rho = 0.12$ [$0.07$, $0.17$] over 47 municipalities ($0.11$,
-$0.12$, $0.13$; pooled $0.33$; AUROC 0.64), against $0.10$ [$0.05$, $0.15$] zero-shot
-and $0.08$ for the fine-tuned Mexican heads. The fully supervised references are
-$0.75$ in Bogot\'a under spatial folds (AUROC 0.91) and $0.25$ [$0.20$, $0.30$] in
-Brazil under municipal folds. Both countries land where the Mexican curve places a
-supply of a few dozen bags ($\rho \approx 0.15$ at fifty), and Brazil's aggregate
-is a mean income rather than a graded deprivation share, a weaker match to the head. The
-method replicates on labels of a different construct from a different office; what the
-two countries lack at this stage is the supply of aggregates, which is the axis the
-curve measures.
+Table~\ref{tab:transfer}). Trained from scratch on Colombia's municipal poverty rate over
+153 bags, the head orders Bogot\'a's block strata at $\rho = 0.25$ with the base
+backbone (seeds $0.23$, $0.28$, $0.24$; AUROC 0.66 for the most deprived quartile) and
+$0.17$ with the large one ($0.21$, $0.16$, $0.14$), against $0.31$ and $0.52$ for the
+Mexican model applied unchanged to the same built tokens and $0.32$ and $0.41$ for the
+Mexican heads fine-tuned on the Colombian aggregates. Nested subsets of 50 and 100 bags
+give $0.33$ and $0.24$ with the base backbone and $0.18$ and $0.19$ with the large one:
+more Colombian aggregates do not buy more of Bogot\'a's ordering, and the label, a
+multidimensional poverty rate dominated by rural municipalities, is a weaker match to a
+map of one capital than the Mexican grade is to Mexican cities. Trained on Brazil's
+municipal mean income over 48 bags, the head orders tract median income within
+municipalities at $\rho = 0.12$ [$0.08$, $0.17$] over 47 municipalities with the base
+backbone ($0.12$, $0.13$, $0.13$; pooled $0.34$; AUROC 0.64) and $0.16$ [$0.10$, $0.21$]
+with the large one, against $0.10$ [$0.05$, $0.15$] and $0.17$ [$0.12$, $0.22$]
+zero-shot and $0.08$ and $0.19$ for the fine-tuned Mexican heads. The fully supervised
+references are $0.75$ and $0.79$ in Bogot\'a under spatial folds (AUROC 0.90 and 0.92)
+and $0.24$ [$0.19$, $0.29$] and $0.29$ [$0.23$, $0.34$] in Brazil under municipal folds.
+The Mexican model transfers better with the larger backbone in both countries without
+any local training, and in Colombia it stays ahead of every head trained on the local
+aggregates. Both countries land where the Mexican curve places a supply of a few dozen to
+a few hundred bags, and Brazil's aggregate is a mean income rather than a graded
+deprivation share, a weaker match to the head. The method replicates on labels of a
+different construct from a different office; what the two countries lack at this stage
+is the Brazilian supply of aggregates, which the catalogue will provide as compositing
+proceeds.
 
 \begin{table}[htbp]
 \centering
-\caption{Transfer under each country's own municipal aggregates (Fig.~\ref{fig:validation}d).
-Within-municipality Spearman against the fine truth, grouped five-fold by municipality,
-per seed; Bogot\'a's oracle folds over 3.2 km spatial cells. Colombia: 35 bags, the
-Bogot\'a block strata as truth over 12{,}738 built tokens. Brazil: 48 bags, tract median
-income of the household head as truth over 110{,}728 tokens in 47 municipalities, with
-the municipality-bootstrap interval of the mean. AUROC is for the most deprived quartile
-of the truth, pooled. The earlier zero-shot protocol, without the built-token filter,
+\caption{Transfer under each country's own municipal aggregates (Fig.~\ref{fig:validation}d),
+for both backbones on the same bags. Within-municipality Spearman against the fine truth,
+grouped five-fold by municipality, per seed; Bogot\'a's oracle folds over 3.2 km spatial
+cells. Colombia: 153 bags, 89{,}064 built tokens, the Bogot\'a block strata as truth
+over 12{,}738 of them, so the within and pooled values coincide and no interval is
+formed. Brazil: 48 bags, 121{,}647 built tokens, tract median income of the household
+head as truth over 110{,}728 tokens in 47 municipalities, with the municipality-bootstrap
+interval of the mean. AUROC is for the most deprived quartile of the truth, pooled. The
+earlier zero-shot protocol, without the built-token filter and with the base backbone,
 gave $\rho = 0.318$ and AUROC 0.716 (strata 1--2) in Bogot\'a over 14{,}132 tokens and
 AUROC 0.557 for Rio's mapped informal settlements over 34{,}331 built tokens.}
-\begin{tabular}{llcccc}
+\small
+\begin{tabular}{lllcccc}
 \toprule
-Country & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
+Country & Backbone & Method & Seeds & Mean [95\%] & Pooled $\rho$ & AUROC\\
 \midrule
-Colombia & Mexican, unadapted & 0.311 & 0.311 & 0.311 & 0.705\\
-Colombia & local aggregates & 0.223 / 0.178 / 0.238 & 0.213 & 0.213 & 0.630\\
-Colombia & Mexican, fine-tuned & 0.294 / 0.138 / 0.305 & 0.246 & 0.246 & 0.660\\
-Colombia & oracle & 0.741 / 0.758 / 0.749 & 0.749 & 0.749 & 0.906\\
+Colombia & Base & Mexican, unadapted & 0.311 & 0.311 & 0.311 & 0.705\\
+Colombia & Base & local aggregates, 50 bags & 0.388 / 0.257 / 0.343 & 0.329 & 0.329 & 0.701\\
+Colombia & Base & local aggregates, 100 bags & 0.277 / 0.202 / 0.246 & 0.242 & 0.242 & 0.655\\
+Colombia & Base & local aggregates, 153 bags & 0.233 / 0.284 / 0.244 & 0.254 & 0.254 & 0.657\\
+Colombia & Base & Mexican, fine-tuned & 0.367 / 0.306 / 0.271 & 0.315 & 0.315 & 0.696\\
+Colombia & Base & oracle & 0.737 / 0.757 / 0.745 & 0.747 & 0.747 & 0.903\\
+Colombia & Large & Mexican, unadapted & 0.520 & 0.520 & 0.520 & 0.806\\
+Colombia & Large & local aggregates, 50 bags & 0.202 / 0.210 / 0.139 & 0.183 & 0.183 & 0.610\\
+Colombia & Large & local aggregates, 100 bags & 0.235 / 0.144 / 0.187 & 0.189 & 0.189 & 0.615\\
+Colombia & Large & local aggregates, 153 bags & 0.209 / 0.160 / 0.136 & 0.168 & 0.168 & 0.602\\
+Colombia & Large & Mexican, fine-tuned & 0.432 / 0.415 / 0.395 & 0.414 & 0.414 & 0.748\\
+Colombia & Large & oracle & 0.789 / 0.791 / 0.798 & 0.793 & 0.793 & 0.918\\
 \midrule
-Brazil & Mexican, unadapted & 0.099 & 0.099 [0.048, 0.148] & 0.283 & 0.648\\
-Brazil & local aggregates & 0.115 / 0.119 / 0.130 & 0.121 [0.074, 0.171] & 0.332 & 0.636\\
-Brazil & Mexican, fine-tuned & 0.074 / 0.077 / 0.084 & 0.078 [0.026, 0.129] & 0.337 & 0.633\\
-Brazil & oracle & 0.239 / 0.269 / 0.234 & 0.247 [0.197, 0.297] & 0.472 & 0.704\\
+Brazil & Base & Mexican, unadapted & 0.099 & 0.099 [0.048, 0.148] & 0.283 & 0.648\\
+Brazil & Base & local aggregates, 48 bags & 0.118 / 0.125 / 0.126 & 0.123 [0.075, 0.171] & 0.340 & 0.640\\
+Brazil & Base & Mexican, fine-tuned & 0.073 / 0.077 / 0.085 & 0.078 [0.026, 0.129] & 0.337 & 0.633\\
+Brazil & Base & oracle & 0.250 / 0.243 / 0.232 & 0.242 [0.193, 0.290] & 0.464 & 0.704\\
+Brazil & Large & Mexican, unadapted & 0.171 & 0.171 [0.120, 0.223] & 0.411 & 0.689\\
+Brazil & Large & local aggregates, 48 bags & 0.150 / 0.159 / 0.157 & 0.155 [0.103, 0.210] & 0.452 & 0.694\\
+Brazil & Large & Mexican, fine-tuned & 0.177 / 0.190 / 0.190 & 0.185 [0.136, 0.236] & 0.460 & 0.689\\
+Brazil & Large & oracle & 0.283 / 0.277 / 0.294 & 0.285 [0.230, 0.337] & 0.539 & 0.736\\
 \bottomrule
 \end{tabular}
 \label{tab:transfer}
@@ -1031,9 +1063,12 @@ Mexico's dual-level publication made the calibration possible, and the Colombian
 Brazilian rows test the extrapolation the paper invites: a country that publishes only
 municipal aggregates, of a construct and an office of its own, recovers a
 within-municipality ordering from them, at the level the Mexican curve assigns to a
-supply of a few dozen bags. The two countries hold 1{,}122 and 5{,}570 labelled
-municipalities; walking their curves toward the Mexican supply is the measurement that
-follows, and every number here is reproducible from the released frozen features.
+supply of a few dozen to a few hundred bags, and the Mexican model itself transfers to
+both without adaptation, better with the larger backbone. The two countries hold
+1{,}122 and 5{,}570 labeled municipalities; Colombia's first 153 show that more bags of
+a rural poverty rate do not buy more of one capital's ordering, and walking Brazil's
+curve toward the Mexican supply is the measurement that follows, every number
+reproducible from the released frozen features.
 
 \section{Conclusions}
 
