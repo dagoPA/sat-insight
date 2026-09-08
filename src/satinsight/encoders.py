@@ -347,17 +347,30 @@ def extract(
             output = encoder.embed_tokens(batch_in, wavelengths_list)
         vectors.append(output.reshape(-1, output.shape[-1]))
     matrix = np.concatenate(vectors)[indices]
-    matrix, tokens = average_overlaps(matrix, tokens)
+    matrix, tokens = average_overlaps(matrix, tokens, windows[0].size // token_size)
     log.info("%d instances encoded into %d dimensions", *matrix.shape)
     return matrix, tokens
 
 
-def average_overlaps(matrix: np.ndarray, tokens: list) -> tuple[np.ndarray, list]:
-    """One vector per token position, the mean over the windows that produced it.
+def edge_weights(side: int, floor: float = 0.05) -> np.ndarray:
+    """Hann weight of each token row or column inside a window of `side` tokens.
+
+    Tokens at the window's edge have seen context on one side only, so when several
+    overlapping windows cover a position, the window where the token sits near the
+    center should count most. A Hann profile is the standard choice for sliding-window
+    inference; the floor keeps a position covered by edge tokens alone from vanishing.
+    """
+    positions = (np.arange(side) + 0.5) / side
+    return np.maximum(np.sin(np.pi * positions) ** 2, floor)
+
+
+def average_overlaps(matrix: np.ndarray, tokens: list, side: int) -> tuple[np.ndarray, list]:
+    """One vector per token position, the weighted mean over the windows that produced it.
 
     With non-overlapping windows every position appears once and this is the identity.
     With overlapping windows a token near a window edge has been encoded with context on
-    each side of that edge, and the mean of those encodings is what removes the seam.
+    each side of that edge; the Hann-weighted mean of those encodings favors the windows
+    where the token was central and is what removes the seam between windows.
     """
     if not tokens:
         return matrix, tokens
@@ -366,9 +379,11 @@ def average_overlaps(matrix: np.ndarray, tokens: list) -> tuple[np.ndarray, list
     inverse = inverse.reshape(-1)
     if len(unique) == len(tokens):
         return matrix, tokens
+    profile = edge_weights(side)
+    weights = np.array([profile[t.row] * profile[t.col] for t in tokens], dtype="float64")
     sums = np.zeros((len(unique), matrix.shape[1]), dtype="float64")
-    np.add.at(sums, inverse, matrix.astype("float64"))
-    counts = np.bincount(inverse, minlength=len(unique)).astype("float64")
+    np.add.at(sums, inverse, matrix.astype("float64") * weights[:, None])
+    counts = np.bincount(inverse, weights=weights, minlength=len(unique))
     averaged = (sums / counts[:, None]).astype(matrix.dtype)
     order = np.argsort(first)
     log.info(

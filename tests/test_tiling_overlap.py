@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from satinsight.encoders import average_overlaps
+from satinsight.encoders import average_overlaps, edge_weights
 from satinsight.tiling import TOKEN_SIZE, Tile, grid
 
 
@@ -33,18 +33,30 @@ def test_average_overlaps_means_repeated_positions_and_keeps_first_order():
     tokens = [
         Tile(0, 0, 0, 0, 16),
         Tile(0, 1, 0, 16, 16),
-        Tile(0, 0, 0, 16, 16),  # the second window sees the token at (0, 16) again
-        Tile(0, 1, 0, 32, 16),
+        Tile(0, 1, 0, 16, 16),  # the second window sees the token at (0, 16) again
+        Tile(0, 2, 0, 32, 16),
     ]
     matrix = np.array([[1.0, 1.0], [2.0, 2.0], [4.0, 4.0], [8.0, 8.0]], dtype="float32")
-    averaged, kept = average_overlaps(matrix, tokens)
+    averaged, kept = average_overlaps(matrix, tokens, side=4)
     assert [(t.y0, t.x0) for t in kept] == [(0, 0), (0, 16), (0, 32)]
+    # equal in-window positions carry equal weights, so the repeat is a plain mean
     np.testing.assert_allclose(averaged, [[1.0, 1.0], [3.0, 3.0], [8.0, 8.0]])
+
+
+def test_average_overlaps_favors_the_window_where_the_token_is_central():
+    edge = Tile(0, 0, 0, 0, 16)  # at the edge of its window
+    center = Tile(2, 2, 0, 0, 16)  # the same position, central in another window
+    matrix = np.array([[0.0], [10.0]], dtype="float32")
+    averaged, _ = average_overlaps(matrix, [edge, center], side=4)
+    w = edge_weights(4)
+    expected = (0.0 * w[0] * w[0] + 10.0 * w[2] * w[2]) / (w[0] * w[0] + w[2] * w[2])
+    np.testing.assert_allclose(averaged, [[expected]], rtol=1e-5)
+    assert averaged[0, 0] > 9.0
 
 
 def test_average_overlaps_is_identity_without_repeats():
     tokens = [Tile(0, 0, 0, 0, 16), Tile(0, 1, 0, 16, 16)]
     matrix = np.arange(4, dtype="float32").reshape(2, 2)
-    averaged, kept = average_overlaps(matrix, tokens)
+    averaged, kept = average_overlaps(matrix, tokens, side=14)
     assert kept == tokens
     np.testing.assert_array_equal(averaged, matrix)
