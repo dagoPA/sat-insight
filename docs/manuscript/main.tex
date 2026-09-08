@@ -506,9 +506,10 @@ solid and DOFA large hatched; the first three families are measured on the natio
 pool, the swept head on the expanded pool of Fig.~2. Attention pooling solves the bag task from the feature mean and receives no
 localization gradient; predicting instances and averaging predictions makes the map the
 mechanism. \textbf{b}, Across the fourteen sweep configurations (grouped training
-folds of the national set), the only criterion weak supervision may monitor is nearly
-uncorrelated with within-municipality map quality, and positively correlated
-($+0.62$) with the pooled AUROC it would seem to proxy.}
+folds of the national set), filled DOFA base and hollow DOFA large, the only criterion
+weak supervision may monitor is nearly uncorrelated with within-municipality map quality
+($-0.14$ and $+0.25$), and positively correlated ($+0.62$ and $+0.59$) with the pooled
+AUROC it would seem to proxy.}
 \label{fig:dissociation}
 \end{figure}
 
@@ -528,11 +529,14 @@ DOFA base; $0.242$ against $0.242$ and $0.253$ against $0.226$ with DOFA large).
 The sweep also quantified a limitation of model selection under weak supervision.
 Across the fourteen configurations, bag-level error, the only selection signal weak
 supervision may legitimately use, has a rank correlation of $-0.14$ with
-within-municipality map quality and $+0.62$ with the map's pooled AUROC, the wrong sign
-for a selection criterion (Fig.~\ref{fig:dissociation}b). Fourteen configurations give
-these correlations a standard error near $0.27$, so the estimate is coarse; what it
-supports is that selection on bag error is close to uninformative about the quantity
-that matters. Whether this extends beyond settings where the bag label is an average of
+within-municipality map quality on DOFA base and $+0.25$ on DOFA large, and $+0.62$ and
+$+0.59$ with the map's pooled AUROC, the wrong sign for a selection criterion
+(Fig.~\ref{fig:dissociation}b). Fourteen configurations give these correlations a
+standard error near $0.27$, so the estimates are coarse and the two backbones' values
+of the first correlation are within one standard error of each other and of zero; what
+they support is that selection on bag error is close to uninformative about the
+quantity that matters, and that the whole sweep spans $0.04$ of within-municipality
+$\rho$ on either backbone ($0.15$ to $0.19$ and $0.18$ to $0.21$). Whether this extends beyond settings where the bag label is an average of
 instance states is open, but any pipeline whose product is the map is affected,
 computational pathology included, which is why the benchmark includes held-out instance
 labels.

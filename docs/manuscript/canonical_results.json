@@ -842,7 +842,11 @@
    "llp_kfold_auroc": 0.782,
    "llp_kfold_within": 0.19
   },
-  "sweep_blindness": {},
+  "sweep_blindness": {
+   "rank_corr_mae_vs_within": 0.247,
+   "rank_corr_mae_vs_auroc": 0.59,
+   "configs": 14
+  },
   "test": {
    "headline_token_within": 0.2261,
    "headline_token_within_ensemble": 0.2418,

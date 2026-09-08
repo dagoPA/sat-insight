@@ -162,7 +162,7 @@ def _blindness(ax, book) -> None:
     ax.set_xlabel("bag error (the only signal weak supervision may use)")
     ax.set_ylabel(r"map quality (within-municipality $\rho$)")
     ax.set_title("b  Aggregate validation cannot see map quality")
-    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.legend(frameon=False, fontsize=8, loc="center right")
 
 
 def draw(destination: str) -> None:
