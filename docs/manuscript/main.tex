@@ -626,6 +626,41 @@ DOFA-B fused plus GHSL and lights, early fusion & 1540 & 0.225 & -- & \\
 \label{tab:features}
 \end{table}
 
+\textbf{Classification view} (Table~\ref{tab:classification}). Readers of the
+tract-classification literature measure agreement in grades rather than ranks. Turning
+the tract-mean score into a grade with the isotonic map fitted on the validation tracts,
+the map reaches a quadratic-weighted Cohen's $\kappa$ of $0.39$ on the 2{,}811 test
+tracts with either feature extractor ($0.42$ and $0.45$ on validation) and an accuracy
+of $0.40$ and $0.43$ over five grades; the AUROC of the four cumulative thresholds
+averages $0.79$ pooled over the split and $0.64$ inside municipalities. The pooled
+figures are higher than the within-municipality ones for the reason that runs through
+the paper: they include the between-city gradient, the half of the problem the municipal
+aggregate already answers. For reference, the phase-one classifier trained on the tract
+labels themselves reached $\kappa = 0.54$ on the same task; the map reaches $0.39$
+having never seen one.
+
+\begin{table}[htbp]
+\centering
+\caption{The map read as a five-grade classifier. Tract-mean scores of the seed
+ensemble; the grade is assigned by the isotonic score-to-grade map fitted on the
+validation tracts. $\kappa$ is quadratic-weighted Cohen's kappa and accuracy is over the
+five grades, both pooled over the split's tracts; AUROC is the mean over the four
+cumulative thresholds (grade at least $k$), pooled over the split and averaged over the
+22 municipalities with at least twenty tracts.}
+\small
+\begin{tabular}{llrcccc}
+\toprule
+Features & Split & Tracts & Quadratic $\kappa$ & Accuracy & AUROC, pooled & AUROC, within\\
+\midrule
+DOFA-B & validation & 2{,}958 & 0.424 & 0.489 & 0.797 & 0.709\\
+DOFA-B & test & 2{,}811 & 0.385 & 0.403 & 0.791 & 0.643\\
+DOFA-L & validation & 2{,}958 & 0.454 & 0.503 & 0.806 & 0.700\\
+DOFA-L & test & 2{,}811 & 0.389 & 0.432 & 0.787 & 0.642\\
+\bottomrule
+\end{tabular}
+\label{tab:classification}
+\end{table}
+
 \subsection{Why attention pooling fails, and what replaces it}
 
 The standard weakly supervised localizer, gated-attention multiple-instance learning
