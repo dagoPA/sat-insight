@@ -808,46 +808,55 @@ Map, late & both & 0.226 (0.013) & \\
 \subsection{Transfer to Colombia and Brazil}
 
 Applied unchanged to Bogot\'a, the model orders Colombia's block-level socioeconomic
-strata at $\rho = 0.32$ with DOFA-B (AUROC 0.71 for the most deprived quartile over
-12{,}738 built tokens joined to blocks; Fig.~\ref{fig:validation}d and
-Fig.~\ref{fig:transfer}); DOFA-L PENDING. Applied to Rio de Janeiro, it detects IBGE's
-mapped informal settlements barely above chance (AUROC 0.557 among built-up tokens in
-the non-overlapping run where it was measured). The two targets differ in construct:
-Colombian strata measure the same graded deprivation ordering as the GRS over the whole
-urban fabric, while the AGSN mask delimits informality, a partly orthogonal notion. The
-model learned a deprivation gradient from the aggregates, and that gradient transfers
-across countries; informality detection does not follow from it.
+strata at $\rho = 0.32$ with DOFA-B and $0.52$ with DOFA-L (AUROC 0.69 and 0.78 for
+the most deprived quartile over 12{,}738 built tokens joined to blocks;
+Fig.~\ref{fig:validation}d and Fig.~\ref{fig:transfer}). Applied to Rio de Janeiro, it
+detects IBGE's mapped informal settlements barely above chance (AUROC 0.557 among
+built-up tokens in the non-overlapping run where it was measured). The two targets
+differ in construct: Colombian strata measure the same graded deprivation ordering as
+the GRS over the whole urban fabric, while the AGSN mask delimits informality, a partly
+orthogonal notion. The model learned a deprivation gradient from the aggregates, and
+that gradient transfers across countries; informality detection does not follow from
+it.
 
 Repeating the design on each country's own aggregates asks whether the Mexican result is
 a property of the method or of Mexico (Fig.~\ref{fig:validation}d,
 Table~\ref{tab:transfer}). Trained from scratch on Colombia's municipal poverty rate over
-221 bags, the head orders Bogot\'a's block strata at $\rho = 0.23$ (s.d. $0.05$ over
-seeds) with DOFA-B, against $0.32$ for the Mexican model applied unchanged to the same
-built tokens and $0.26$ for the Mexican heads fine-tuned on the Colombian aggregates;
-nested subsets of 50, 100 and 200 bags give $0.18$, $0.28$ and $0.23$, so more Colombian
-aggregates do not buy more of Bogot\'a's ordering, and the label, a multidimensional
-poverty rate dominated by rural municipalities, is a weaker match to a map of one
-capital than the Mexican grade is to Mexican cities. Trained on Brazil's municipal mean
-income over 58 bags, the head orders tract median income within municipalities at
-$\rho = 0.15$ [$0.10$, $0.20$] with DOFA-B (AUROC 0.67), against $0.07$ [$0.01$, $0.12$]
-zero-shot and $0.07$ for the fine-tuned Mexican heads; the fully supervised references
-are $0.75$ in Bogot\'a under spatial folds and $0.25$ [$0.20$, $0.29$] in Brazil under
-municipal folds. DOFA-L PENDING. Both countries land where the Mexican curve places any
-supply of aggregates, and Brazil's aggregate is a mean income rather than a graded
-deprivation share, a weaker match to the head. The method replicates on labels of a
-different construct from a different office; what the two countries lack at this stage
-is the Brazilian supply of aggregates, which the catalogue will provide as compositing
-proceeds.
+221 bags, the head orders Bogot\'a's block strata at $\rho = 0.22$ (s.d. $0.01$ over
+seeds) with DOFA-B and $0.13$ ($0.02$) with DOFA-L, against $0.32$ and $0.52$ for the
+Mexican model applied unchanged to the same built tokens and $0.26$ and $0.31$ for the
+Mexican heads fine-tuned on the Colombian aggregates; nested subsets of 50, 100 and 200
+bags give $0.18$, $0.29$ and $0.23$ with DOFA-B and $0.11$, $0.14$ and $0.14$ with
+DOFA-L, so more Colombian aggregates do not buy more of Bogot\'a's ordering, and the
+label, a multidimensional poverty rate dominated by rural municipalities, is a weaker
+match to a map of one capital than the Mexican grade is to Mexican cities: the head
+that learned it from scratch orders Bogot\'a worse than the Mexican head does without
+ever seeing Colombia. Trained on Brazil's municipal mean income over 76 bags, the head
+orders tract median income within municipalities at $\rho = 0.13$ [$0.09$, $0.17$]
+with DOFA-B and $0.16$ [$0.12$, $0.21$] with DOFA-L over 75 municipalities (AUROC 0.65
+and 0.69 for the most deprived quartile), against $0.09$ [$0.04$, $0.13$] and $0.17$
+[$0.12$, $0.21$] zero-shot and $0.09$ and $0.17$ for the fine-tuned Mexican heads; fifty
+bags give $0.12$ and $0.16$. The fully supervised references are $0.75$ and $0.79$ in
+Bogot\'a under spatial folds and $0.24$ [$0.19$, $0.28$] and $0.30$ [$0.25$, $0.34$] in
+Brazil under municipal folds. The Mexican model transfers better with the larger
+extractor in both countries without any local training, and in Colombia it stays ahead
+of every head trained on the local aggregates. Both countries land where the Mexican
+curve places any supply of aggregates, and Brazil's aggregate is a mean income rather
+than a graded deprivation share, a weaker match to the head. The method replicates on
+labels of a different construct from a different office; the supply of Brazilian
+aggregates, 76 of 5{,}570 municipalities at the time of writing, is what the catalogue
+will extend as compositing proceeds.
 
 \input{tables/transfer}
 
 Figure~\ref{fig:transfer} shows the two cities that carry fine ground. In Bogot\'a the
 Mexican model, applied unchanged, places the low strata of the south and the periphery
-and the high strata of the north-east where the district stratification does. In Rio de
-Janeiro the agreement is weaker: the maps put the west and the northern suburbs above
-the south zone, as the income truth does, but the favelas inside the wealthy south are
-smoothed over at 160 m and the gradient inside each municipality is faint, which is the
-informality result of the zero-shot check seen on the map.
+and the high strata of the north-east where the district stratification does ($\rho =
+0.32$ and $0.52$ over the city's tokens). In Rio de Janeiro the agreement is weaker
+($0.01$ and $0.12$, mean over the box's municipalities): the maps put the west and the
+northern suburbs above the south zone, as the income truth does, but the favelas inside
+the wealthy south are smoothed over at 160 m and the gradient inside each municipality
+is faint, which is the informality result of the zero-shot check seen on the map.
 
 \begin{figure}[htbp]
 \centering

@@ -1702,67 +1702,67 @@
   },
   "transfer_training": {
    "brazil": {
-    "bags": 58,
-    "municipalities_scored": 57,
-    "tokens_scored": 126730,
+    "bags": 76,
+    "municipalities_scored": 75,
+    "tokens_scored": 146599,
     "methods": {
      "aggregates": {
       "within_seeds": [
-       0.1442,
-       0.1517,
-       0.1551
+       0.122,
+       0.137,
+       0.1301
       ],
-      "within": 0.1504,
-      "within_ci_low": 0.1017,
-      "within_ci_high": 0.1964,
-      "pooled": 0.3574,
-      "auroc_top_quartile": 0.6578
+      "within": 0.1297,
+      "within_ci_low": 0.0875,
+      "within_ci_high": 0.1701,
+      "pooled": 0.3456,
+      "auroc_top_quartile": 0.6514
      },
      "aggregates@50": {
       "within_seeds": [
-       0.1443,
-       0.152,
-       0.1551
+       0.1221,
+       0.1183,
+       0.1248
       ],
-      "within": 0.1504,
-      "within_ci_low": 0.1018,
-      "within_ci_high": 0.1964,
-      "pooled": 0.3575,
-      "auroc_top_quartile": 0.6578
+      "within": 0.1217,
+      "within_ci_low": 0.0776,
+      "within_ci_high": 0.1621,
+      "pooled": 0.3336,
+      "auroc_top_quartile": 0.6488
      },
      "mexico-init": {
       "within_seeds": [
-       0.0641,
-       0.0711,
-       0.0863
+       0.0853,
+       0.0955,
+       0.1003
       ],
-      "within": 0.0739,
-      "within_ci_low": 0.0172,
-      "within_ci_high": 0.125,
-      "pooled": 0.3395,
-      "auroc_top_quartile": 0.6398
+      "within": 0.0937,
+      "within_ci_low": 0.0452,
+      "within_ci_high": 0.1399,
+      "pooled": 0.3296,
+      "auroc_top_quartile": 0.6351
      },
      "oracle": {
       "within_seeds": [
-       0.256,
-       0.2374,
-       0.2471
+       0.2325,
+       0.2414,
+       0.232
       ],
-      "within": 0.2468,
-      "within_ci_low": 0.1993,
-      "within_ci_high": 0.2925,
-      "pooled": 0.4688,
-      "auroc_top_quartile": 0.7008
+      "within": 0.2353,
+      "within_ci_low": 0.1924,
+      "within_ci_high": 0.2765,
+      "pooled": 0.4604,
+      "auroc_top_quartile": 0.6981
      },
      "zero-shot": {
       "within_seeds": [
-       0.0664
+       0.0904
       ],
-      "within": 0.0664,
-      "within_ci_low": 0.0116,
-      "within_ci_high": 0.1188,
-      "pooled": 0.3116,
-      "auroc_top_quartile": 0.6584
+      "within": 0.0904,
+      "within_ci_low": 0.0424,
+      "within_ci_high": 0.1341,
+      "pooled": 0.2985,
+      "auroc_top_quartile": 0.6476
      }
     }
    },
@@ -1773,45 +1773,45 @@
     "methods": {
      "aggregates": {
       "within_seeds": [
-       0.2389,
-       0.2242,
-       0.212
+       0.233,
+       0.2278,
+       0.2112
       ],
-      "within": 0.2251,
-      "within_ci_low": 0.2251,
-      "within_ci_high": 0.2251,
-      "pooled": 0.2251,
-      "auroc_top_quartile": 0.6356
+      "within": 0.224,
+      "within_ci_low": 0.224,
+      "within_ci_high": 0.224,
+      "pooled": 0.224,
+      "auroc_top_quartile": 0.6349
      },
      "aggregates@100": {
       "within_seeds": [
        0.3357,
-       0.2775,
-       0.2411
+       0.2809,
+       0.2416
       ],
-      "within": 0.2848,
-      "within_ci_low": 0.2848,
-      "within_ci_high": 0.2848,
-      "pooled": 0.2848,
-      "auroc_top_quartile": 0.6598
+      "within": 0.2861,
+      "within_ci_low": 0.2861,
+      "within_ci_high": 0.2861,
+      "pooled": 0.2861,
+      "auroc_top_quartile": 0.6606
      },
      "aggregates@200": {
       "within_seeds": [
-       0.237,
-       0.2279,
-       0.2129
+       0.2412,
+       0.2253,
+       0.2123
       ],
-      "within": 0.2259,
-      "within_ci_low": 0.2259,
-      "within_ci_high": 0.2259,
-      "pooled": 0.2259,
-      "auroc_top_quartile": 0.6359
+      "within": 0.2263,
+      "within_ci_low": 0.2263,
+      "within_ci_high": 0.2263,
+      "pooled": 0.2263,
+      "auroc_top_quartile": 0.6362
      },
      "aggregates@50": {
       "within_seeds": [
-       0.2139,
-       0.1937,
-       0.1322
+       0.2147,
+       0.1934,
+       0.1318
       ],
       "within": 0.1799,
       "within_ci_low": 0.1799,
@@ -1821,14 +1821,14 @@
      },
      "mexico-init": {
       "within_seeds": [
-       0.222,
-       0.2613,
-       0.282
+       0.2217,
+       0.2614,
+       0.2819
       ],
-      "within": 0.2551,
-      "within_ci_low": 0.2551,
-      "within_ci_high": 0.2551,
-      "pooled": 0.2551,
+      "within": 0.255,
+      "within_ci_low": 0.255,
+      "within_ci_high": 0.255,
+      "pooled": 0.255,
       "auroc_top_quartile": 0.6357
      },
      "oracle": {
@@ -2157,6 +2157,161 @@
     "municipalities": 29
    }
   },
-  "transfer_training": {}
+  "transfer_training": {
+   "brazil": {
+    "bags": 76,
+    "municipalities_scored": 75,
+    "tokens_scored": 146599,
+    "methods": {
+     "aggregates": {
+      "within_seeds": [
+       0.1651,
+       0.1572,
+       0.1709
+      ],
+      "within": 0.1644,
+      "within_ci_low": 0.1175,
+      "within_ci_high": 0.2081,
+      "pooled": 0.4384,
+      "auroc_top_quartile": 0.6901
+     },
+     "aggregates@50": {
+      "within_seeds": [
+       0.1531,
+       0.1449,
+       0.1782
+      ],
+      "within": 0.1587,
+      "within_ci_low": 0.113,
+      "within_ci_high": 0.2015,
+      "pooled": 0.4325,
+      "auroc_top_quartile": 0.6894
+     },
+     "mexico-init": {
+      "within_seeds": [
+       0.1699,
+       0.1696,
+       0.1707
+      ],
+      "within": 0.1701,
+      "within_ci_low": 0.1212,
+      "within_ci_high": 0.2153,
+      "pooled": 0.4221,
+      "auroc_top_quartile": 0.6796
+     },
+     "oracle": {
+      "within_seeds": [
+       0.2887,
+       0.3084,
+       0.2973
+      ],
+      "within": 0.2982,
+      "within_ci_low": 0.2508,
+      "within_ci_high": 0.3418,
+      "pooled": 0.537,
+      "auroc_top_quartile": 0.7351
+     },
+     "zero-shot": {
+      "within_seeds": [
+       0.1676
+      ],
+      "within": 0.1676,
+      "within_ci_low": 0.1207,
+      "within_ci_high": 0.2142,
+      "pooled": 0.3864,
+      "auroc_top_quartile": 0.6767
+     }
+    }
+   },
+   "colombia": {
+    "bags": 221,
+    "municipalities_scored": 1,
+    "tokens_scored": 12738,
+    "methods": {
+     "aggregates": {
+      "within_seeds": [
+       0.1485,
+       0.1261,
+       0.1081
+      ],
+      "within": 0.1276,
+      "within_ci_low": 0.1276,
+      "within_ci_high": 0.1276,
+      "pooled": 0.1276,
+      "auroc_top_quartile": 0.601
+     },
+     "aggregates@100": {
+      "within_seeds": [
+       0.198,
+       0.1471,
+       0.0738
+      ],
+      "within": 0.1396,
+      "within_ci_low": 0.1396,
+      "within_ci_high": 0.1396,
+      "pooled": 0.1396,
+      "auroc_top_quartile": 0.6064
+     },
+     "aggregates@200": {
+      "within_seeds": [
+       0.1564,
+       0.1383,
+       0.1121
+      ],
+      "within": 0.1356,
+      "within_ci_low": 0.1356,
+      "within_ci_high": 0.1356,
+      "pooled": 0.1356,
+      "auroc_top_quartile": 0.6061
+     },
+     "aggregates@50": {
+      "within_seeds": [
+       0.052,
+       0.1942,
+       0.0749
+      ],
+      "within": 0.107,
+      "within_ci_low": 0.107,
+      "within_ci_high": 0.107,
+      "pooled": 0.107,
+      "auroc_top_quartile": 0.572
+     },
+     "mexico-init": {
+      "within_seeds": [
+       0.294,
+       0.3406,
+       0.291
+      ],
+      "within": 0.3085,
+      "within_ci_low": 0.3085,
+      "within_ci_high": 0.3085,
+      "pooled": 0.3085,
+      "auroc_top_quartile": 0.6869
+     },
+     "oracle": {
+      "within_seeds": [
+       0.7891,
+       0.7976,
+       0.7964
+      ],
+      "within": 0.7944,
+      "within_ci_low": 0.7944,
+      "within_ci_high": 0.7944,
+      "pooled": 0.7944,
+      "auroc_top_quartile": 0.9143
+     },
+     "zero-shot": {
+      "within_seeds": [
+       0.5155
+      ],
+      "within": 0.5155,
+      "within_ci_low": 0.5155,
+      "within_ci_high": 0.5155,
+      "pooled": 0.5155,
+      "auroc_top_quartile": 0.781
+     }
+    }
+   }
+  }
  }
 }
