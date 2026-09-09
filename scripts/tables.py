@@ -83,9 +83,45 @@ def blocks(book: dict) -> dict:
 
 
 def curve(book: dict) -> None:
-    own = blocks(book)
+    curve_table(
+        book,
+        BACKBONES,
+        "curve",
+        "The supervision-efficiency curve (Fig.~\\ref{fig:curve}a) for both feature extractors. "
+        "Within-municipality Spearman $\\rho$ against held-out tract grades, mean over three seeds "
+        "(s.d. over seeds on validation); validation cities were used for model selection, test "
+        "cities are held out. The 771 row gives the test value of the retrained models and, after "
+        "the semicolon, of the validation-selected saved weights that every downstream analysis "
+        "scores; the last row gives those saved weights' values with a 95\\% percentile bootstrap "
+        "that resamples cities (34 validation and 29 test municipalities).",
+        "tab:curve",
+        bootstrap=True,
+    )
+
+
+def supp_curve(book: dict) -> None:
+    curve_table(
+        book,
+        (("", "DOFA-B"), ("dofal", "DOFA-L")),
+        "supp_curve",
+        "The supervision-efficiency curve of the main text repeated on the non-overlapping "
+        "extraction of both feature extractors. Within-municipality Spearman $\\rho$ against "
+        "held-out tract grades, mean over three seeds (s.d. over seeds on validation); validation "
+        "cities were used for model selection, test cities are held out. The 771 row gives the "
+        "test value of the retrained models and, after the semicolon, of the validation-selected "
+        "saved weights. The rise with the supply of aggregates that DOFA-B shows here on "
+        "validation is absent from the sliding-window extraction.",
+        "tab:supp_curve",
+        bootstrap=False,
+    )
+
+
+def curve_table(
+    book: dict, pairs: tuple, name: str, caption: str, label: str, *, bootstrap: bool
+) -> None:
+    own = {tag: (book.get(tag) if tag else book) for tag, _ in pairs}
     sd = {}
-    for tag, _ in BACKBONES:
+    for tag, _ in pairs:
         path = f"data/supervision_curve_s2_{tag}.csv" if tag else "data/supervision_curve.csv"
         frame = read(path)
         sd[tag] = frame.groupby("bags").spearman_within.std().to_dict() if frame is not None else {}
@@ -93,7 +129,7 @@ def curve(book: dict) -> None:
     rows = []
     for bags in (50, 100, 200, 400, 771):
         cells = []
-        for tag, _name in BACKBONES:
+        for tag, _name in pairs:
             b = own[tag]
             if not b:
                 cells += [DASH, DASH]
@@ -107,12 +143,12 @@ def curve(book: dict) -> None:
             cells += [val, test]
         rows.append(f"{bags} & " + " & ".join(cells) + "\\\\")
     boot = []
-    for _tag, name in BACKBONES:
+    for _tag, extractor in pairs:
         if intervals is None:
             boot += [DASH, DASH]
             continue
         sub = intervals[
-            (intervals.backbone == name)
+            (intervals.backbone == extractor)
             & (intervals.estimator == "seed mean")
             & (intervals.unit == "token")
         ]
@@ -123,32 +159,20 @@ def curve(book: dict) -> None:
                 if len(r)
                 else DASH
             )
-    rows.append("\\midrule")
-    rows.append("771, saved weights [95\\% CI] & " + " & ".join(boot) + "\\\\")
+    if bootstrap:
+        rows.append("\\midrule")
+        rows.append("771, saved weights [95\\% CI] & " + " & ".join(boot) + "\\\\")
     header = (
         " & ".join(
             [
                 "",
-                f"\\multicolumn{{2}}{{c}}{{{BACKBONES[0][1]}}}",
-                f"\\multicolumn{{2}}{{c}}{{{BACKBONES[1][1]}}}",
+                f"\\multicolumn{{2}}{{c}}{{{pairs[0][1]}}}",
+                f"\\multicolumn{{2}}{{c}}{{{pairs[1][1]}}}",
             ]
         )
         + "\\\\\n\\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\nBags & Validation (s.d.) & Test & Validation (s.d.) & Test"
     )
-    table(
-        "curve",
-        "The supervision-efficiency curve (Fig.~\\ref{fig:curve}a) for both feature extractors. "
-        "Within-municipality Spearman $\\rho$ against held-out tract grades, mean over three seeds "
-        "(s.d. over seeds on validation); validation cities were used for model selection, test "
-        "cities are held out. The 771 row gives the test value of the retrained models and, after "
-        "the semicolon, of the validation-selected saved weights that every downstream analysis "
-        "scores; the last row gives those saved weights' values with a 95\\% percentile bootstrap "
-        "that resamples cities (34 validation and 29 test municipalities).",
-        "lcccc",
-        header,
-        rows,
-        label="tab:curve",
-    )
+    table(name, caption, "lcccc", header, rows, label=label)
 
 
 def backbone_cv(book: dict) -> None:
@@ -657,6 +681,7 @@ def main() -> None:
         supp_backbone_cv,
         supp_inputs,
         supp_finetune,
+        supp_curve,
     ):
         build(book)
     print(f"tables written to {OUT}", flush=True)

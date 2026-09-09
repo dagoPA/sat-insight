@@ -23,13 +23,14 @@ Sentinel imagery using only municipal aggregate labels}}
 
 The tables of the main text report the sliding-window extraction of DOFA-B and DOFA-L,
 in which each 16 px token keeps the vector from the 224 px window where it sits nearest
-the center. Three experiments were run on the earlier extraction with non-overlapping
+the center. Four results were obtained on the earlier extraction with non-overlapping
 windows, the one that leaves a discontinuity in the token score at every window border,
 and their rows are collected here rather than mixed with the main tables: the
 cross-validated comparison of every feature extraction, including Copernicus-FM
 (Table~\ref{tab:supp_cv}); the free global grids offered to the model as input columns
-(Table~\ref{tab:inputs}); and the partial fine-tuning of DOFA-B on the municipal
-aggregates (Table~\ref{tab:finetune}). Protocol, head, metric and partitions are those
+(Table~\ref{tab:inputs}); the partial fine-tuning of DOFA-B on the municipal
+aggregates (Table~\ref{tab:finetune}); and the supervision-efficiency curve of both
+extractors (Table~\ref{tab:supp_curve}). Protocol, head, metric and partitions are those
 of the main text, and every table is generated from the released results by the same
 script as the main tables (\texttt{scripts/tables.py}).
 
@@ -38,5 +39,7 @@ script as the main tables (\texttt{scripts/tables.py}).
 \input{tables/supp_inputs}
 
 \input{tables/supp_finetune}
+
+\input{tables/supp_curve}
 
 \end{document}
