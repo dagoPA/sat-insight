@@ -61,10 +61,10 @@ def _distributions(ax, frames: dict) -> None:
             patch.set_facecolor(TEST)
             patch.set_edgecolor("white")
             patch.set_alpha(0.85)
-            if tag:
+            if tag != BACKBONES[0][0]:
                 patch.set_hatch(LARGE_HATCH)
         counts = [len(d) for d in data]
-        if not tag:
+        if tag == BACKBONES[0][0]:
             for g, n in enumerate(counts):
                 ax.text(
                     g,
@@ -117,7 +117,7 @@ def _per_city(ax, frame: pd.DataFrame, names: dict) -> None:
     ax.legend(frameon=False, fontsize=8, loc="upper left")
 
 
-def _isotonic(ax, frames: dict, tag: str = "") -> None:
+def _isotonic(ax, frames: dict, tag: str = BACKBONES[0][0]) -> None:
     calibration = frames[("val", tag)]
     isotonic = IsotonicRegression(out_of_bounds="clip").fit(calibration.score, calibration.ordinal)
     grid = np.linspace(calibration.score.min(), calibration.score.max(), 300)
@@ -174,7 +174,7 @@ def draw(destination: str) -> None:
     names = dict(pd.read_csv("data/cities_national.csv")[["key", "name"]].to_numpy())
     figure, axes = plt.subplots(1, 3, figsize=(19, 5.2))
     _distributions(axes[0], frames)
-    _per_city(axes[1], frames[("test", "")], names)
+    _per_city(axes[1], frames[("test", BACKBONES[0][0])], names)
     _isotonic(axes[2], frames)
     figure.tight_layout()
     Path(destination).parent.mkdir(parents=True, exist_ok=True)

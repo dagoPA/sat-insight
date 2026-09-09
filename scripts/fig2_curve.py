@@ -96,7 +96,7 @@ def _quantity(ax, book) -> None:
             )
             for bags in BAG_SIZES
         ]
-        solid = not tag
+        solid = tag == BACKBONES[0][0]
         ax.axhline(
             own["ceiling"]["1"],
             color=ORACLE,
@@ -137,7 +137,7 @@ def _quantity(ax, book) -> None:
     ax.set_xticklabels([str(b) for b in BAG_SIZES])
     ax.set_xlabel("municipal aggregates (bags)")
     ax.set_ylabel(r"within-municipality $\rho$")
-    ax.set_ylim(0, 0.34)
+    ax.set_ylim(0, 0.36)
     ax.set_title("a  Number of aggregates")
     ax.legend(frameon=False, fontsize=7.5, loc="lower right", ncol=2)
 
@@ -205,7 +205,7 @@ def _paired_bars(ax, labels, validation: dict, test: dict) -> None:
     width = 0.19
     for index, (tag, name) in enumerate(BACKBONES):
         shift = (index - 0.5) * 2 * width
-        hatch = LARGE_HATCH if tag else None
+        hatch = None if tag == BACKBONES[0][0] else LARGE_HATCH
         ax.bar(
             x + shift - width / 2,
             validation[tag]["mean"].to_numpy(),
@@ -230,7 +230,7 @@ def _paired_bars(ax, labels, validation: dict, test: dict) -> None:
     ax.axhline(0, color=MUTED, lw=0.8)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.set_ylim(0, 0.34)
+    ax.set_ylim(0, 0.36)
     ax.set_ylabel("")
     ax.legend(frameon=False, fontsize=7.5, loc="upper right", ncol=2)
 

@@ -115,7 +115,7 @@ def _families(ax, book) -> None:
             values,
             width,
             color=[color for _, color in STEPS],
-            hatch=LARGE_HATCH if tag else None,
+            hatch=None if tag == BACKBONES[0][0] else LARGE_HATCH,
             edgecolor="white",
             label=name,
         )
@@ -158,7 +158,7 @@ def _blindness(ax, book) -> None:
             per_config.bag_mae,
             per_config.spearman_within,
             s=48,
-            facecolor=VALIDATION if not tag else "white",
+            facecolor=VALIDATION if tag == BACKBONES[0][0] else "white",
             edgecolor=VALIDATION,
             linewidth=1.4,
             zorder=3,

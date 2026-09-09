@@ -61,7 +61,7 @@ def _paired_bars(ax, labels, validation: dict, test: dict, *, errors=None) -> No
     width = 0.19
     for index, (tag, name) in enumerate(BACKBONES):
         shift = (index - 0.5) * 2 * width
-        hatch = LARGE_HATCH if tag else None
+        hatch = None if tag == BACKBONES[0][0] else LARGE_HATCH
         val_error = None if errors is None else errors[tag][0]
         test_error = None if errors is None else errors[tag][1]
         ax.bar(
@@ -201,10 +201,10 @@ def _targeting(ax, book) -> None:
             ax.plot(
                 x,
                 [100 * v for v in line],
-                f"{marker}-" if not tag else f"{marker}--",
+                f"{marker}-" if tag == BACKBONES[0][0] else f"{marker}--",
                 color=color,
-                markerfacecolor=color if not tag else "white",
-                lw=2 if not tag else 1.4,
+                markerfacecolor=color if tag == BACKBONES[0][0] else "white",
+                lw=2 if tag == BACKBONES[0][0] else 1.4,
                 label=f"{split}, {name}",
             )
     ax.axhline(0, color=MUTED, lw=0.9)
@@ -262,7 +262,7 @@ def _transfer(ax, book) -> None:
                     capsize=2,
                     color=color,
                     alpha=alpha,
-                    hatch=LARGE_HATCH if tag else None,
+                    hatch=None if tag == BACKBONES[0][0] else LARGE_HATCH,
                     edgecolor="white",
                     ecolor=INK,
                 )

@@ -3,7 +3,8 @@
 One row per city, three panels: the tract truth as AGEB polygons, and the prediction of
 each backbone averaged to the tract, the unit every evaluation scores. Two validation
 cities and four held-out test cities: the best and the median of validation, and on test
-the two highest and the two lowest within-municipality correlations of the audit table,
+the two highest and the two lowest within-municipality correlations of the audit table
+(read from the audit of the first feature extractor),
 so the reader sees the map where it works and where it does not. The per-tract
 correlation of each panel is annotated, recomputed from the persisted scores.
 
@@ -34,7 +35,6 @@ from backbone_paired import within  # noqa: E402
 from fig1_design import CMAP, rgb_of  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "docs/manuscript/figures/fig6_gallery"
-TEST_CITIES = ("igualadelaindependencia", "lapaz", "guerrero", "escarcega")
 
 plt.rcParams.update({"font.size": 8, "font.family": "Helvetica Neue", "figure.dpi": 300})
 
@@ -93,8 +93,12 @@ def main() -> None:
         (split, tag): tract_scores(split, tag) for split in ("val", "test") for tag, _ in BACKBONES
     }
     rhos = {key: city_rho(table, grades) for key, table in tables.items()}
-    cities = [(c, "val") for c in validation_pick(rhos[("val", "")])] + [
-        (c, "test") for c in TEST_CITIES
+    audit = pd.read_csv(suffixed("data/city_audit_test.csv", BACKBONES[0][0])).sort_values(
+        "rho_within"
+    )
+    test_cities = list(audit.city.iloc[-2:][::-1]) + list(audit.city.iloc[:2])
+    cities = [(c, "val") for c in validation_pick(rhos[("val", BACKBONES[0][0])])] + [
+        (c, "test") for c in test_cities
     ]
     norm = colors.Normalize(vmin=0, vmax=4)
 

@@ -52,11 +52,12 @@ NOMINAL = 0.90
 def _differences(ax) -> None:
     """Paired within-municipality difference against each product, both splits."""
     order = list(SHORT)
+    first, second = BACKBONES[0][0], BACKBONES[1][0]
     offsets = {
-        ("val", ""): -0.27,
-        ("test", ""): -0.09,
-        ("val", "dofal"): 0.09,
-        ("test", "dofal"): 0.27,
+        ("val", first): -0.27,
+        ("test", first): -0.09,
+        ("val", second): 0.09,
+        ("test", second): 0.27,
     }
     for tag, name in BACKBONES:
         for split, path in (
@@ -72,8 +73,8 @@ def _differences(ax) -> None:
                 fmt="o",
                 color=SPLIT_COLOR[split],
                 ecolor=SPLIT_COLOR[split],
-                markerfacecolor=SPLIT_COLOR[split] if not tag else "white",
-                elinewidth=1.6 if not tag else 1.1,
+                markerfacecolor=SPLIT_COLOR[split] if tag == BACKBONES[0][0] else "white",
+                elinewidth=1.6 if tag == BACKBONES[0][0] else 1.1,
                 capsize=3,
                 markersize=6,
                 label=f"{'validation' if split == 'val' else 'test'}, {name}",
@@ -99,7 +100,7 @@ def _detection(ax) -> None:
         names.append(f"map, {name}")
         values.append(float(own.ours_auc_high.iloc[0]))
         colors.append(TEST)
-        hatches.append(LARGE_HATCH if tag else None)
+        hatches.append(None if tag == BACKBONES[0][0] else LARGE_HATCH)
     order = sorted(range(len(values)), key=lambda i: values[i])
     bars = ax.barh(
         [names[i] for i in order],
@@ -139,10 +140,10 @@ def _coverage(ax) -> None:
             ax.plot(
                 range(len(order)),
                 rows.coverage,
-                "o-" if not tag else "o--",
+                "o-" if tag == BACKBONES[0][0] else "o--",
                 color=color,
-                markerfacecolor=color if not tag else "white",
-                lw=1.8 if not tag else 1.2,
+                markerfacecolor=color if tag == BACKBONES[0][0] else "white",
+                lw=1.8 if tag == BACKBONES[0][0] else 1.2,
                 markersize=5,
                 label=f"{label}, {name} ($\\pm${width:.2f} grades)",
             )
