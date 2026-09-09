@@ -74,4 +74,5 @@ for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbe
   uv run python scripts/$fig.py > logs/$fig.log 2>&1
 done
 uv run python scripts/source_data.py > logs/source_data.log 2>&1
+uv run python scripts/tables.py > logs/tables.log 2>&1  # main-text and supplementary tables
 echo "REPRODUCTION DONE" > logs/reproduce_done.log

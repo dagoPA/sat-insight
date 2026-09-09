@@ -1,0 +1,42 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{authblk}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\onehalfspacing
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+\title{\textbf{Supplementary material for: Mapping intra-urban social deprivation from
+Sentinel imagery using only municipal aggregate labels}}
+\author[1]{Dagoberto Pulido Arias}
+\affil[1]{Independent researcher, Mexico. Correspondence: dagopa.1010@gmail.com}
+\date{}
+
+\begin{document}
+\maketitle
+
+The tables of the main text report the sliding-window extraction of DOFA-B and DOFA-L,
+in which each 16 px token keeps the vector from the 224 px window where it sits nearest
+the center. Three experiments were run on the earlier extraction with non-overlapping
+windows, the one that leaves a discontinuity in the token score at every window border,
+and their rows are collected here rather than mixed with the main tables: the
+cross-validated comparison of every feature extraction, including Copernicus-FM
+(Table~\ref{tab:supp_cv}); the free global grids offered to the model as input columns
+(Table~\ref{tab:inputs}); and the partial fine-tuning of DOFA-B on the municipal
+aggregates (Table~\ref{tab:finetune}). Protocol, head, metric and partitions are those
+of the main text, and every table is generated from the released results by the same
+script as the main tables (\texttt{scripts/tables.py}).
+
+\input{tables/supp_backbone_cv}
+
+\input{tables/supp_inputs}
+
+\input{tables/supp_finetune}
+
+\end{document}

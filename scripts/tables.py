@@ -157,10 +157,26 @@ def backbone_cv(book: dict) -> None:
     listed = [
         (CV_NAMES[BACKBONES[0][0]], BACKBONES[0][1]),
         (CV_NAMES[BACKBONES[1][0]], BACKBONES[1][1]),
-        ("Copernicus-FM base", "Copernicus-FM, non-overlapping windows"),
-        ("DOFA base", f"{BACKBONES[0][1]}, non-overlapping windows"),
-        ("DOFA large", f"{BACKBONES[1][1]}, non-overlapping windows"),
     ]
+    rows = cv_rows(cv, listed, reference)
+    table(
+        "backbone_cv",
+        "Feature-extractor comparison under grouped five-fold cross-validation over the 138 "
+        "cities of the partition (363 municipalities; 346 with at least five AGEB for the per-AGEB "
+        "unit). Within-municipality Spearman $\\rho$ of the seed-mean token score against tract "
+        "grades, mean over municipalities, per token and per AGEB, and AUROC for high deprivation "
+        "over all tokens. Brackets: 95\\% percentile bootstrap resampling cities. The difference is "
+        f"paired against {BACKBONES[0][1]} on the same city draws. Copernicus-FM and the "
+        "non-overlapping extraction of both DOFA models are compared in Supplementary "
+        "Table~S1.",
+        "lccc",
+        "Features & Within-$\\rho$, token & Within-$\\rho$, AGEB & AUROC high",
+        rows,
+        label="tab:backbone",
+    )
+
+
+def cv_rows(cv: dict, listed: list, reference: str) -> list[str]:
     rows = []
     for key, name in listed:
         b = cv["backbones"].get(key)
@@ -176,27 +192,44 @@ def backbone_cv(book: dict) -> None:
     for d in cv["differences"]:
         if not d["comparison"].endswith(f"minus {reference}"):
             continue
-        other = short.get(d["comparison"].split(" minus ")[0], d["comparison"].split(" minus ")[0])
+        key = d["comparison"].split(" minus ")[0]
+        if key not in short:
+            continue
         if d["unit"] == "token":
             rows.append(
-                f"{other} minus {BACKBONES[0][1]} & {signed(d['difference'], d['ci_low'], d['ci_high'])} & "
+                f"{short[key]} minus {BACKBONES[0][1]} & {signed(d['difference'], d['ci_low'], d['ci_high'])} & "
             )
         else:
             rows[-1] += f"{signed(d['difference'], d['ci_low'], d['ci_high'])} & \\\\"
+    return rows
+
+
+def supp_backbone_cv(book: dict) -> None:
+    cv = book["backbone_cv"]
+    reference = CV_NAMES[BACKBONES[0][0]]
+    listed = [
+        (CV_NAMES[BACKBONES[0][0]], BACKBONES[0][1]),
+        (CV_NAMES[BACKBONES[1][0]], BACKBONES[1][1]),
+        ("DOFA base", f"{BACKBONES[0][1]}, non-overlapping windows"),
+        ("DOFA large", f"{BACKBONES[1][1]}, non-overlapping windows"),
+        ("Copernicus-FM base", "Copernicus-FM, non-overlapping windows"),
+    ]
     table(
-        "backbone_cv",
-        "Feature-extractor comparison under grouped five-fold cross-validation over the 138 "
+        "supp_backbone_cv",
+        "Every feature extraction under grouped five-fold cross-validation over the 138 "
         "cities of the partition (363 municipalities; 346 with at least five AGEB for the per-AGEB "
-        "unit). Within-municipality Spearman $\\rho$ of the seed-mean token score against tract "
-        "grades, mean over municipalities, per token and per AGEB, and AUROC for high deprivation "
-        "over all tokens. Brackets: 95\\% percentile bootstrap resampling cities. Differences are "
-        f"paired against {BACKBONES[0][1]} on the same city draws. The non-overlapping rows are the "
-        "same weights extracted without overlap, the extraction whose window-border "
-        "discontinuities the sliding window of Section~\\ref{sec:features} removes.",
+        "unit), the protocol of the feature-extractor comparison of the main text. Within-municipality Spearman $\\rho$ "
+        "of the seed-mean token score against tract grades, mean over municipalities, per token "
+        "and per AGEB, and AUROC for high deprivation over all tokens. Brackets: 95\\% "
+        f"percentile bootstrap resampling cities; differences are paired against {BACKBONES[0][1]} "
+        "on the same city draws. The non-overlapping rows are the same weights extracted with "
+        "224 px windows and no overlap, the extraction whose window-border discontinuities the "
+        "sliding window of the main text removes; Copernicus-FM was extracted the same way.",
         "lccc",
         "Features & Within-$\\rho$, token & Within-$\\rho$, AGEB & AUROC high",
-        rows,
-        label="tab:backbone",
+        cv_rows(cv, listed, reference),
+        label="tab:supp_cv",
+        resize=True,
     )
 
 
@@ -228,44 +261,112 @@ def features(book: dict) -> None:
             rows.append(
                 f"{name}, {label} & {dims[1]} & {fmt(m.get('within'))} & {fmt(b['test']['modality'].get(arm))} & \\\\"
             )
-    c = cv.get("Copernicus-FM base")
-    if c:
-        cfm_val = read("data/supervision_curve_s2_cfm.csv")
-        cfm_val = cfm_val[cfm_val.bags == 771] if cfm_val is not None else None
-        cfm_test = read("data/backbone_test_cfm.csv")
-        rows.append(
-            f"Copernicus-FM, optical and radar fused (non-overlapping windows) & 1536 & {fmt(cfm_val.spearman_within.mean() if cfm_val is not None else None)} & {fmt(cfm_test.spearman_within.mean() if cfm_test is not None else None)} & {ci(c['within_token'], c['within_token_low'], c['within_token_high'])}\\\\"
-        )
     wc = own[BACKBONES[0][0]] or {}
     rows.append(
         f"WorldCover fractions and NDVI, no encoder & 13 & {fmt(book['modality_worldcover']['within'])} & {fmt(wc.get('test', {}).get('modality', {}).get('worldcover'))} & \\\\"
     )
-    fusion = book["fusion"]["llp"]
-    rows.append(
-        f"DOFA-B fused plus GHSL and lights, early fusion (reference extraction) & 1540 & {fusion['aux_early']['mean']:.3f} & {DASH} & \\\\"
-    )
-    ft = book.get("finetune", {}).get("by_encoder_lr", {})
-    for lr, label in (("1e-5", "$10^{-5}$"), ("1e-4", "$10^{-4}$")):
-        f = ft.get(lr)
-        if f:
-            rows.append(
-                f"DOFA-B, last two blocks fine-tuned, encoder lr {label} (reference extraction) & 1536 & {f['val']['within']:.3f} & {f['test']['within']:.3f} & \\\\"
-            )
     table(
         "features",
         "Feature families under one head and one metric: within-municipality Spearman $\\rho$ of "
         "token scores against held-out tract grades, mean over three seeds, on the validation cities "
         "(selection), the held-out test cities (validation-selected models), and under grouped "
         "five-fold cross-validation over all 138 cities with a 95\\% city bootstrap where it was "
-        "run. Dimensions are per token. Rows marked reference extraction were run on the "
-        "non-overlapping extraction of Section~\\ref{sec:features} and are quoted for the ablation "
-        "they report; the fine-tuned rows train the last two of DOFA-B's twelve blocks with the "
-        "head, s.d. over seeds $0.02$ or less.",
+        "run. Dimensions are per token. Copernicus-FM, the global grids offered as inputs and the "
+        "partially fine-tuned extractor, all run on the non-overlapping extraction, are in "
+        "Supplementary Tables~S1 to S3.",
         "llccc",
         "Feature family & Dimensions & Validation & Test & Cross-validation [95\\%]",
         rows,
         label="tab:features",
         resize=True,
+    )
+
+
+def supp_inputs(book: dict) -> None:
+    fusion = book["fusion"]
+    oracle, delta, llp = (
+        fusion["oracle_standardised"],
+        fusion["oracle_standardised_delta"],
+        fusion["llp"],
+    )
+
+    def cell(entry: dict) -> str:
+        seeds = entry["seeds"]
+        sd = (sum((x - entry["mean"]) ** 2 for x in seeds) / (len(seeds) - 1)) ** 0.5
+        return f"{entry['mean']:.3f} ({sd:.3f})"
+
+    rows = [f"Oracle & none (reference) & {cell(oracle['none'])} & \\\\"]
+    for key, name in (("wc", "WorldCover"), ("aux", "GHSL + lights"), ("wc_aux", "both")):
+        d = delta[key]
+        rows.append(
+            f"Oracle & {name} & {cell(oracle[key])} & {signed(d['mean'], d['ci_low'], d['ci_high'])}\\\\"
+        )
+    rows.append("\\midrule")
+    rows.append(f"Map & none (reference) & {cell(llp['none'])} & \\\\")
+    for key, name in (
+        ("wc_early", "Map, early & WorldCover"),
+        ("aux_early", "Map, early & GHSL + lights"),
+        ("wc_aux_early", "Map, early & both"),
+        ("aux_late", "Map, late & GHSL + lights"),
+        ("wc_aux_late", "Map, late & both"),
+    ):
+        rows.append(f"{name} & {cell(llp[key])} & \\\\")
+    table(
+        "supp_inputs",
+        "Global products offered to the model as input features, validation cities, "
+        "within-municipality Spearman $\\rho$, mean and s.d. over three seeds, on the "
+        "non-overlapping extraction of DOFA-B. GHSL built-up surface, building height, population "
+        "and nighttime lights as four token columns; WorldCover as its eleven class fractions plus "
+        "NDVI mean and dispersion. The oracle rows are standardized, with their own no-extras "
+        "reference; the paired difference is per municipality, seed-averaged, with a city-clustered "
+        f"bootstrap over {delta['aux']['municipalities']} municipalities. The map rows fuse the "
+        "columns either into the projection (early) or straight into the scoring layer (late).",
+        "llcc",
+        "Head & Extra inputs & Within-$\\rho$, mean (s.d.) & Paired difference [95\\%]",
+        rows,
+        label="tab:inputs",
+    )
+
+
+def supp_finetune(book: dict) -> None:
+    ft = book.get("finetune", {})
+    by_lr = ft.get("by_encoder_lr", {})
+    val = read("data/supervision_curve.csv")
+    val = val[val.bags == 771] if val is not None else None
+    test = read("data/test_column.csv")
+    test = (
+        test[(test.row == "curve") & (test.detail.astype(str) == "771")]
+        if test is not None
+        else None
+    )
+    rows = []
+    if val is not None and test is not None:
+        rows.append(
+            f"Frozen (reference) & {val.spearman_within.mean():.3f} ({val.spearman_within.std():.3f}) & "
+            f"{val.bag_mae.mean():.3f} & {test.spearman_within.mean():.3f} ({test.spearman_within.std():.3f}) & "
+            f"{test.bag_mae.mean():.3f}\\\\"
+        )
+    for lr, label in (("1e-5", "$10^{-5}$"), ("1e-4", "$10^{-4}$")):
+        f = by_lr.get(lr)
+        if f:
+            rows.append(
+                f"Last two blocks trained, lr {label} & {f['val']['within']:.3f} ({f['val']['sd']:.3f}) & "
+                f"{f['val']['bag_mae']:.3f} & {f['test']['within']:.3f} ({f['test']['sd']:.3f}) & {f['test']['bag_mae']:.3f}\\\\"
+            )
+    table(
+        "supp_finetune",
+        "Partial fine-tuning of DOFA-B on the municipal aggregates, non-overlapping extraction. "
+        f"The last two of the twelve transformer blocks (from block {ft.get('split_at', 10)} on) and "
+        "the final normalization are trained together with the head at the stated encoder learning "
+        "rate, early-stopped on validation bag error like the frozen runs; the frozen row is the "
+        "same head retrained on the frozen vectors. Within-municipality Spearman $\\rho$ of token "
+        f"scores against tract grades, mean (s.d.) over {ft.get('seeds', 3)} seeds, and the bag "
+        "error (mean absolute error of the predicted deprivation share) the training minimizes, on "
+        "the validation and the held-out test cities.",
+        "lcccc",
+        "Extractor & Validation $\\rho$ & Val.\\ bag error & Test $\\rho$ & Test bag error",
+        rows,
+        label="tab:finetune",
     )
 
 
@@ -553,6 +654,9 @@ def main() -> None:
         audit,
         maup,
         transfer,
+        supp_backbone_cv,
+        supp_inputs,
+        supp_finetune,
     ):
         build(book)
     print(f"tables written to {OUT}", flush=True)

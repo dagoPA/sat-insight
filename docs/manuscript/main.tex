@@ -238,9 +238,8 @@ its own window, its vector depends on where the window falls; each token keeps t
 vector from the window in which it sits nearest the center, which gives it at least
 three tokens of context on every side and no dependence on the window grid. Encoding
 with non-overlapping windows instead leaves a discontinuity at every window border, a
-jump in the score between adjacent tokens 1.6 times the jump inside a window, and the
-comparison of the two extractions is reported with the feature extractors
-(Section~4.1). The two sensors are encoded separately and their vectors are
+jump in the score between adjacent tokens 1.6 times the jump inside a window; the
+comparison of the two extractions is in Supplementary Table~S1. The two sensors are encoded separately and their vectors are
 concatenated token by token at the same grid position; a token missing in one sensor is
 dropped.
 
@@ -304,8 +303,8 @@ bag-level error on 14 cities drawn from the training side, so the held-out fold 
 part in selection. Three seeds per fold; the seed-mean token scores of every held-out
 city are pooled and scored with the same metrics as the rest of the paper, with 95\%
 percentile bootstrap intervals that resample cities, and the difference between two
-feature extractors is bootstrapped on the same city draws. Copernicus-FM enters that comparison
-and the feature-family table only.
+feature extractors is bootstrapped on the same city draws. Copernicus-FM enters that
+comparison only (Supplementary Table~S1).
 
 \subsection{Partition, selection and statistics}
 
@@ -536,13 +535,13 @@ over the 138 cities (363 municipalities), DOFA-L reaches a within-municipality $
 $0.238$ [$0.210$, $0.264$] per token and $0.281$ [$0.245$, $0.315$] per AGEB, against
 $0.186$ [$0.152$, $0.221$] and $0.223$ [$0.182$, $0.262$] for DOFA-B; the paired
 difference is $+0.052$ [$+0.028$, $+0.075$] per token and $+0.059$ [$+0.024$, $+0.092$]
-per AGEB. Copernicus-FM, extracted without overlap, sits at $0.197$ [$0.170$, $0.225$],
-indistinguishable from DOFA-B ($+0.011$ [$-0.018$, $+0.038$]). The same table carries
-the non-overlapping extraction of both DOFA models, whose window-border
-discontinuities the sliding window removes: it scores $0.203$ [$0.170$, $0.234$] with DOFA-B and $0.230$ [$0.203$,
-$0.257$] with DOFA-L, so removing the discontinuities costs DOFA-B $0.016$ [$-0.001$, $+0.033$]
-per token and $0.030$ [$+0.001$, $+0.058$] per AGEB and costs DOFA-L nothing per token
-($-0.008$). AUROC for high deprivation is the same for every extraction ($0.80$). The
+per AGEB. AUROC for high deprivation is the same for both ($0.80$). Supplementary
+Table~S1 repeats the comparison for Copernicus-FM and for the non-overlapping
+extraction of both DOFA models: Copernicus-FM sits at $0.197$ [$0.170$, $0.225$],
+indistinguishable from DOFA-B ($+0.011$ [$-0.018$, $+0.038$]), and the extraction with
+window-border discontinuities scores $0.203$ [$0.170$, $0.234$] with DOFA-B and $0.230$
+[$0.203$, $0.257$] with DOFA-L, so removing the discontinuities costs DOFA-B $0.016$
+[$-0.001$, $+0.033$] per token and costs DOFA-L nothing ($-0.008$). The
 same comparison on the 14 validation cities alone gave intervals spanning zero, which
 is why both extractors are carried through every experiment rather than one being
 chosen on them.
@@ -557,12 +556,13 @@ indistinguishable from either on test and far below both on validation, $0.150$)
 optical vectors alone ($0.166$ and $0.213$), the same vectors from imagery degraded to
 20 m ($0.113$ and $0.239$), and the radar vectors ($0.049$ and $0.046$). Offering the
 four GHSL and nighttime-light columns to the head as inputs, and letting the extractor
-move, were both tested on the non-overlapping extraction of DOFA-B and neither helped:
-early fusion gave $0.225$ against $0.227$ on validation, and training the last two
-blocks with the head gave $0.209$ (s.d. $0.023$ over seeds) on validation and $0.169$
-($0.020$) on test at an encoder learning rate of $10^{-5}$, and $0.167$ and $0.151$ at
-$10^{-4}$, against $0.227$ and $0.185$ for the frozen extractor with the same retrained
-head, while the bag error it is trained on improved ($0.091$ against $0.098$). The
+move, were both tested on the non-overlapping extraction of DOFA-B and neither helped
+(Supplementary Tables~S2 and S3): early fusion gave $0.225$ against $0.227$ on
+validation, and training the last two blocks with the head gave $0.209$ (s.d. $0.023$
+over seeds) on validation and $0.169$ ($0.020$) on test at an encoder learning rate of
+$10^{-5}$, and $0.167$ and $0.151$ at $10^{-4}$, against $0.227$ and $0.185$ for the
+frozen extractor with the same retrained head, while the validation bag error it is
+trained on improved ($0.091$ against $0.097$). The
 aggregates carry enough signal to fit the municipal figure better and not enough to
 teach the representation where the deprivation is, the same dissociation that attention
 pooling and the selection sweep show below. The hand-crafted texture features of the
@@ -761,7 +761,7 @@ the supervision buys, where it buys anything, is the ordering inside a municipal
 half a targeting decision needs and the half no global product was built to deliver.
 
 The products that match the map as competitors were also offered to it as inputs, on
-the non-overlapping extraction of DOFA-B (Table~\ref{tab:inputs}). With full tract
+the non-overlapping extraction of DOFA-B (Supplementary Table~S2). With full tract
 supervision the four GHSL and light columns lift the standardized oracle from
 $\rho = 0.261$ to $0.291$ on validation (paired difference $+0.030$ [$+0.011$,
 $+0.050$] over 36 municipalities); the WorldCover fractions add $+0.014$ [$-0.004$,
@@ -774,36 +774,6 @@ gradient carried by a few hundred bag labels, and a dedicated pathway makes it w
 rather than better, consistent with the rurality shortcut: built surface and
 population explain the municipal label well, the head leans on them, and the ordering
 inside the municipality degrades.
-
-\begin{table}[htbp]
-\centering
-\caption{Global products offered to the model as input features, validation cities,
-within-municipality Spearman, mean and s.d. over three seeds, on the non-overlapping
-extraction of DOFA-B. GHSL built-up surface, building height, population and nighttime
-lights as four token columns; WorldCover as its eleven class fractions plus NDVI mean
-and dispersion. The oracle rows are standardized, with their own no-extras reference;
-the paired difference is per municipality, seed-averaged, with a city-clustered
-bootstrap. The map rows fuse the columns either into the projection (early) or straight
-into the scoring layer (late).}
-\begin{tabular}{llcc}
-\toprule
-Head & Extra inputs & Within-$\rho$, mean (s.d.) & Paired difference [95\%]\\
-\midrule
-Oracle & none (reference) & 0.261 (0.025) & \\
-Oracle & WorldCover & 0.274 (0.013) & $+0.014$ [$-0.004$, $+0.030$]\\
-Oracle & GHSL + lights & 0.291 (0.009) & $+0.030$ [$+0.011$, $+0.050$]\\
-Oracle & both & 0.289 (0.011) & $+0.030$ [$+0.012$, $+0.046$]\\
-\midrule
-Map & none (reference) & 0.227 (0.014) & \\
-Map, early & WorldCover & 0.212 (0.008) & \\
-Map, early & GHSL + lights & 0.225 (0.011) & \\
-Map, early & both & 0.221 (0.005) & \\
-Map, late & GHSL + lights & 0.210 (0.010) & \\
-Map, late & both & 0.226 (0.013) & \\
-\bottomrule
-\end{tabular}
-\label{tab:inputs}
-\end{table}
 
 \subsection{Transfer to Colombia and Brazil}
 
@@ -1143,6 +1113,12 @@ socioecon\'omica urbana de Bogot\'a D.C. Datos Abiertos Bogot\'a
 \url{https://datosabiertos.bogota.gov.co/dataset/estratificacion-para-bogota} (2024;
 accessed August 2026).
 \end{thebibliography}
+
+\section*{Supplementary material}
+Supplementary Tables S1 to S3, the cross-validated comparison of every feature extraction
+including Copernicus-FM and the non-overlapping windows, the global grids offered to the
+model as inputs, and the partially fine-tuned extractor, are provided in a separate file
+generated by the same script as the tables of the main text.
 
 \section*{Data availability}
 The frozen benchmark (DOFA-B and DOFA-L vectors for every bag, municipal and
