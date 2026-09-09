@@ -191,8 +191,8 @@ def backbone_cv(book: dict) -> None:
         "grades, mean over municipalities, per token and per AGEB, and AUROC for high deprivation "
         "over all tokens. Brackets: 95\\% percentile bootstrap resampling cities. Differences are "
         f"paired against {BACKBONES[0][1]} on the same city draws. The non-overlapping rows are the "
-        "same weights extracted without overlap, the extraction whose window seams the sliding "
-        "window of Section~\\ref{sec:features} removes.",
+        "same weights extracted without overlap, the extraction whose window-border "
+        "discontinuities the sliding window of Section~\\ref{sec:features} removes.",
         "lccc",
         "Features & Within-$\\rho$, token & Within-$\\rho$, AGEB & AUROC high",
         rows,

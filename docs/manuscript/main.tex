@@ -237,7 +237,7 @@ its final normalization with no pooling. Because a token attends only to the tok
 its own window, its vector depends on where the window falls; each token keeps the
 vector from the window in which it sits nearest the center, which gives it at least
 three tokens of context on every side and no dependence on the window grid. Encoding
-with non-overlapping windows instead leaves a visible seam at every window border, a
+with non-overlapping windows instead leaves a discontinuity at every window border, a
 jump in the score between adjacent tokens 1.6 times the jump inside a window, and the
 comparison of the two extractions is reported with the feature extractors
 (Section~4.1). The two sensors are encoded separately and their vectors are
@@ -470,7 +470,7 @@ $0.277$, a gain that the test cities do not reproduce. Under the sliding-window
 extraction the supply of aggregates is therefore a weak axis: a few dozen municipal
 figures recover most of what the national supply does, and the rise with supply that
 the non-overlapping extraction showed for DOFA-B ($0.150$ to $0.227$ on validation) is
-absent from the seam-free vectors. \textbf{Granularity} (Fig.~\ref{fig:curve}b): the
+absent from the sliding-window vectors. \textbf{Granularity} (Fig.~\ref{fig:curve}b): the
 level at which the aggregate is published is the strong axis. Relabeling the same bags
 with state-level aggregates cuts the map from $0.213$ to $0.149$ on validation and
 from $0.167$ to $0.125$ on test with DOFA-B, and from $0.287$ to $0.136$ and from
@@ -538,9 +538,9 @@ $0.186$ [$0.152$, $0.221$] and $0.223$ [$0.182$, $0.262$] for DOFA-B; the paired
 difference is $+0.052$ [$+0.028$, $+0.075$] per token and $+0.059$ [$+0.024$, $+0.092$]
 per AGEB. Copernicus-FM, extracted without overlap, sits at $0.197$ [$0.170$, $0.225$],
 indistinguishable from DOFA-B ($+0.011$ [$-0.018$, $+0.038$]). The same table carries
-the non-overlapping extraction of both DOFA models, whose window seams the sliding
-window removes: it scores $0.203$ [$0.170$, $0.234$] with DOFA-B and $0.230$ [$0.203$,
-$0.257$] with DOFA-L, so removing the seams costs DOFA-B $0.016$ [$-0.001$, $+0.033$]
+the non-overlapping extraction of both DOFA models, whose window-border
+discontinuities the sliding window removes: it scores $0.203$ [$0.170$, $0.234$] with DOFA-B and $0.230$ [$0.203$,
+$0.257$] with DOFA-L, so removing the discontinuities costs DOFA-B $0.016$ [$-0.001$, $+0.033$]
 per token and $0.030$ [$+0.001$, $+0.058$] per AGEB and costs DOFA-L nothing per token
 ($-0.008$). AUROC for high deprivation is the same for every extraction ($0.80$). The
 same comparison on the 14 validation cities alone gave intervals spanning zero, which
@@ -986,7 +986,8 @@ structural reason, selection on aggregate error is close to uninformative about 
 quality, and informality detection does not follow from a deprivation gradient. All
 three will recur in other weakly supervised mapping work. A fourth is methodological
 and cost us a full rerun: token vectors extracted with non-overlapping windows carry
-the window grid into the map as a visible seam, which inflated the within-municipality
+the window grid into the map as a visible discontinuity at every window border, which
+inflated the within-municipality
 correlation of DOFA-B by $0.016$ and the apparent gain from more aggregates; sliding
 windows with a central-window rule remove it, and any map built from patch tokens
 should be checked for it.
