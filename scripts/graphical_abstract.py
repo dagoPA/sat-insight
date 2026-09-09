@@ -42,7 +42,7 @@ from PIL import Image  # noqa: E402
 from satinsight import agebs  # noqa: E402
 from satinsight.cache import load  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
-from satinsight.manuscript import canon  # noqa: E402
+from satinsight.manuscript import BACKBONES, block, canon, suffixed  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.raster import stretch, to_db  # noqa: E402
 from satinsight.tiling import TOKEN_SIZE  # noqa: E402
@@ -110,7 +110,7 @@ def city_panels(norm) -> dict[str, str]:
     bounds = layer.to_crs(grid.crs)
     inverse = ~grid.transform
     height, width = rgb.shape[:2]
-    scores = pd.read_parquet("data/predictions_val.parquet")
+    scores = pd.read_parquet(suffixed("data/predictions_val.parquet", BACKBONES[0][0]))
     tokens = (
         scores[scores.city == CITY]
         .groupby(["cvegeo", "y0", "x0"], observed=True)
@@ -199,6 +199,7 @@ def rasterize(page: Path, destination: Path) -> bool:
 
 def main() -> None:
     book = canon()
+    first, second = block(book, BACKBONES[0][0]), block(book, BACKBONES[1][0])
     norm = colors.Normalize(vmin=0, vmax=4)
     page = TEMPLATE.read_text()
     images = {"map.jpg": national_map(norm), "ramp.png": ramp(), **city_panels(norm)}
@@ -206,15 +207,15 @@ def main() -> None:
         assert page.count(f'src="{name}"') == 1, name
         page = page.replace(f'src="{name}"', f'src="{uri}"')
     numbers = {
-        "[[RECOVERED]]": f"{book['test']['fraction']:.0%}",
+        "[[RECOVERED]]": f"{first['test']['fraction']:.0%}",
         "[[BAGS]]": str(book["pool"]["bags_clean"]),
-        "[[ABMIL_AUROC]]": f"{book['abmil']['map_auroc']:.2f}",
-        "[[LLP_TEST]]": f"{book['test']['headline_token_within']:.2f}",
-        "[[ORACLE_TEST]]": f"{book['test']['ceiling_r1']:.2f}",
-        "[[RECOVERED_LARGE]]": f"{book['dofal']['test']['fraction']:.0%}",
-        "[[ABMIL_AUROC_LARGE]]": f"{book['dofal']['abmil']['map_auroc']:.2f}",
-        "[[LLP_TEST_LARGE]]": f"{book['dofal']['test']['headline_token_within']:.2f}",
-        "[[ORACLE_TEST_LARGE]]": f"{book['dofal']['test']['ceiling_r1']:.2f}",
+        "[[ABMIL_AUROC]]": f"{first['abmil']['map_auroc']:.2f}",
+        "[[LLP_TEST]]": f"{first['test']['headline_token_within']:.2f}",
+        "[[ORACLE_TEST]]": f"{first['test']['ceiling_r1']:.2f}",
+        "[[RECOVERED_LARGE]]": f"{second['test']['fraction']:.0%}",
+        "[[ABMIL_AUROC_LARGE]]": f"{second['abmil']['map_auroc']:.2f}",
+        "[[LLP_TEST_LARGE]]": f"{second['test']['headline_token_within']:.2f}",
+        "[[ORACLE_TEST_LARGE]]": f"{second['test']['ceiling_r1']:.2f}",
         "[[CITY]]": agebs.cities_by_size(stratify=True)[CITY].name,
     }
     for key, value in numbers.items():

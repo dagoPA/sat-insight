@@ -35,6 +35,7 @@ from matplotlib.patches import Rectangle  # noqa: E402
 from satinsight import agebs  # noqa: E402
 from satinsight.cache import load  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
+from satinsight.manuscript import BACKBONES, suffixed  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.tiling import TOKEN_SIZE  # noqa: E402
 
@@ -178,7 +179,7 @@ def main() -> None:
     ax.set_title(f"b  Composite, {catalogue[CITY].name}", loc="left", fontsize=9, fontweight="bold")
 
     # c and d, truth and prediction as one lattice on one scale
-    scores = pd.read_parquet("data/predictions_val.parquet")
+    scores = pd.read_parquet(suffixed("data/predictions_val.parquet", BACKBONES[0][0]))
     tokens = (
         scores[scores.city == CITY]
         .groupby(["cvegeo", "y0", "x0"], observed=True)
