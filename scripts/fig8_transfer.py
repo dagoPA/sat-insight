@@ -98,14 +98,22 @@ def main() -> None:
         len(CITIES), 3, figsize=(6.6, 2.4 * len(CITIES)), constrained_layout=True
     )
     for row, (key, name, truth_label) in enumerate(CITIES):
-        tokens = pd.read_parquet(DATA_ROOT / "transfer" / f"bags_{key}.parquet")
         rgb, _ = rgb_of(key)
         single = key == "bogota"
-        if single:
-            tokens = tokens[tokens.municipality == "11001"].reset_index(drop=True)
-        truth = tokens.truth.to_numpy(dtype=float)
-        paint(axes[row, 0], rgb, tokens, truth, f"{name}\ntruth: {truth_label}")
+        tables = {}
+        for tag, _label in BACKBONES:
+            # each extraction orders its tokens its own way, so every extractor reads the
+            # bag table written beside its own vectors
+            suffix = f"_{tag}" if tag else ""
+            table = pd.read_parquet(DATA_ROOT / "transfer" / f"bags_{key}{suffix}.parquet")
+            if single:
+                table = table[table.municipality == "11001"].reset_index(drop=True)
+            tables[tag] = table
+        first = tables[BACKBONES[0][0]]
+        truth = first.truth.to_numpy(dtype=float)
+        paint(axes[row, 0], rgb, first, truth, f"{name}\ntruth: {truth_label}")
         for column, (tag, label) in enumerate(BACKBONES, start=1):
+            tokens = tables[tag]
             score = zero_shot(key, tag, tokens)
             rho = correlation(tokens, score, single)
             paint(
