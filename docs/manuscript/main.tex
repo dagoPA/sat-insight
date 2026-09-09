@@ -226,12 +226,20 @@ RTC median composite in VV and VH backscatter. Each channel is mapped to $[0, 1]
 fixed physical range rather than per-image percentiles, since the phase-one baseline
 measured that stretching each image by its own percentiles costs $0.25$ of
 quadratic-weighted $\kappa$ on radar and $0.21$ on optical; unobserved pixels take the
-middle of the range. A city box is tiled into 224-pixel windows (2.24 km), kept when at
-least 90\% of their pixels are observed, and each window yields a 14 by 14 grid of
-16-pixel patch tokens (160 m), taken from the encoder's last block after its final
-normalization with no pooling. The two sensors are encoded separately and their vectors
-are concatenated token by token at the same grid position; a token missing in one
-sensor is dropped.
+middle of the range. A city box is covered by 224-pixel windows (2.24 km) in a sliding
+grid with a stride of 112 pixels, so that every token lies inside up to four windows;
+windows are kept when at least 90\% of their pixels are observed, and each yields a 14
+by 14 grid of 16-pixel patch tokens (160 m), taken from the encoder's last block after
+its final normalization with no pooling. Because a token attends only to the tokens of
+its own window, its vector depends on where the window falls; each token keeps the
+vector from the window in which it sits nearest the center, which gives it at least
+three tokens of context on every side and no dependence on the window grid. Encoding
+with non-overlapping windows instead leaves a visible seam at every window border, a
+jump in the score between adjacent tokens 1.6 times the jump inside a window, and the
+comparison of the two extractions is reported with the feature extractors
+(Section~4.1). The two sensors are encoded separately and their vectors are
+concatenated token by token at the same grid position; a token missing in one sensor is
+dropped.
 
 The feature extractors are Earth-observation foundation models: vision transformers
 pretrained without labels on millions of satellite images, by reconstructing masked

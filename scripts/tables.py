@@ -157,7 +157,7 @@ def backbone_cv(book: dict) -> None:
     listed = [
         (CV_NAMES[BACKBONES[0][0]], BACKBONES[0][1]),
         (CV_NAMES[BACKBONES[1][0]], BACKBONES[1][1]),
-        ("Copernicus-FM base", "Copernicus-FM"),
+        ("Copernicus-FM base", "Copernicus-FM, non-overlapping windows"),
         ("DOFA base", f"{BACKBONES[0][1]}, non-overlapping windows"),
         ("DOFA large", f"{BACKBONES[1][1]}, non-overlapping windows"),
     ]
@@ -234,7 +234,7 @@ def features(book: dict) -> None:
         cfm_val = cfm_val[cfm_val.bags == 771] if cfm_val is not None else None
         cfm_test = read("data/backbone_test_cfm.csv")
         rows.append(
-            f"Copernicus-FM, optical and radar fused & 1536 & {fmt(cfm_val.spearman_within.mean() if cfm_val is not None else None)} & {fmt(cfm_test.spearman_within.mean() if cfm_test is not None else None)} & {ci(c['within_token'], c['within_token_low'], c['within_token_high'])}\\\\"
+            f"Copernicus-FM, optical and radar fused (non-overlapping windows) & 1536 & {fmt(cfm_val.spearman_within.mean() if cfm_val is not None else None)} & {fmt(cfm_test.spearman_within.mean() if cfm_test is not None else None)} & {ci(c['within_token'], c['within_token_low'], c['within_token_high'])}\\\\"
         )
     wc = own[BACKBONES[0][0]] or {}
     rows.append(
