@@ -608,9 +608,10 @@ swept head on the expanded pool of Fig.~2. Attention pooling solves the bag task
 the feature mean and receives no localization gradient; predicting instances and
 averaging predictions makes the map the mechanism. \textbf{b}, Across the fourteen
 sweep configurations (grouped training folds of the national set), filled DOFA-B and
-hollow DOFA-L, the only criterion weak supervision may monitor is nearly uncorrelated
-with within-municipality map quality, and positively correlated with the pooled AUROC
-it would seem to proxy. \textbf{c}, The feature-extractor comparison of
+hollow DOFA-L, the only criterion weak supervision may monitor is uncorrelated or
+wrongly correlated with within-municipality map quality ($-0.19$ and $+0.42$), and
+positively correlated ($+0.34$ and $+0.51$) with the pooled AUROC it would seem to
+proxy. \textbf{c}, The feature-extractor comparison of
 Table~\ref{tab:backbone} city by city: under grouped cross-validation over the 138
 cities, the mean within-municipality $\rho$ each city obtains with DOFA-L against
 DOFA-B; 85 of 138 cities lie above the diagonal and the pooled means are $0.186$ and
@@ -632,13 +633,14 @@ that performs equivalently (Section~4.1).
 The sweep also quantified a limitation of model selection under weak supervision.
 Across the fourteen configurations, bag-level error, the only selection signal weak
 supervision may legitimately use, has a rank correlation of $-0.19$ with
-within-municipality map quality on DOFA-B and $+0.34$ with the map's pooled AUROC, the
-wrong sign for a selection criterion (Fig.~\ref{fig:dissociation}b); the DOFA-L sweep
-is reported in the same panel. Fourteen configurations give these correlations a
-standard error near $0.27$, so the estimates are coarse; what they support is that
-selection on bag error is close to uninformative about the quantity that matters, and
-that the whole sweep spans $0.07$ of within-municipality $\rho$ ($0.18$ to $0.25$ on
-DOFA-B). Whether this extends beyond settings where the bag label is an average of
+within-municipality map quality on DOFA-B and $+0.42$ on DOFA-L, and $+0.34$ and
+$+0.51$ with the map's pooled AUROC: a lower bag error goes with a higher pooled AUROC
+and, on DOFA-L, with a lower within-municipality map, the wrong sign for a selection
+criterion (Fig.~\ref{fig:dissociation}b). Fourteen configurations give these
+correlations a standard error near $0.27$, so the estimates are coarse; what they
+support is that selection on bag error is close to uninformative about the quantity
+that matters, and that the whole sweep spans $0.07$ and $0.04$ of within-municipality
+$\rho$ ($0.18$ to $0.25$ on DOFA-B, $0.19$ to $0.23$ on DOFA-L). Whether this extends beyond settings where the bag label is an average of
 instance states is open, but any pipeline whose product is the map is affected,
 computational pathology included, which is why the benchmark includes held-out instance
 labels.
