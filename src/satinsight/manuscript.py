@@ -69,7 +69,7 @@ def agrees(value: float, expected: float, *, name: str, tolerance: float = 1e-3)
     return float(value)
 
 
-BACKBONES = (("", "DOFA-B"), ("dofal", "DOFA-L"))
+BACKBONES = (("ov", "DOFA-B"), ("dofalov", "DOFA-L"))
 """The backbones every figure and table reports side by side: tag and printed name.
 
 The empty tag is DOFA base, whose block sits at the root of the canon and whose files
@@ -81,8 +81,19 @@ LARGE_HATCH = "///"
 """Bars of the second backbone are hatched so the split colors stay for the split alone."""
 
 
+CV_NAMES = {
+    "": "DOFA base",
+    "dofal": "DOFA large",
+    "cfm": "Copernicus-FM base",
+    "ov": "DOFA base, seam-free",
+    "dofalov": "DOFA large, seam-free",
+}
+"""How the cross-validation comparison names each tag."""
+
+
 def block(book: dict, tag: str) -> dict:
-    """The canon block of one backbone: the root for DOFA base, a named block otherwise."""
+    """The canon block of one feature extractor: the root for the non-overlapping DOFA base
+    reference, a named block otherwise."""
     return book if not tag else book[tag]
 
 
