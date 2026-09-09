@@ -39,6 +39,7 @@ from scipy.stats import spearmanr  # noqa: E402
 
 from satinsight.manuscript import (  # noqa: E402
     BACKBONES,
+    CV_NAMES,
     INK,
     LARGE_HATCH,
     MUTED,
@@ -194,7 +195,8 @@ def _cross_validation(ax, book) -> None:
         )
         per_city[tag] = municipalities.groupby("city").token.mean()
     pair = pd.concat(
-        [per_city[""].rename("base"), per_city["dofal"].rename("large")], axis=1
+        [per_city[BACKBONES[0][0]].rename("base"), per_city[BACKBONES[1][0]].rename("large")],
+        axis=1,
     ).dropna()
     lim = (min(pair.min()) - 0.05, max(pair.max()) + 0.05)
     ax.plot(lim, lim, color=MUTED, lw=1, ls="--")
@@ -205,12 +207,14 @@ def _cross_validation(ax, book) -> None:
     ax.set_ylabel(r"within-municipality $\rho$, DOFA-L features")
     ax.set_title("c  Cross-validation over 138 cities, city by city")
     above = int((pair.large > pair.base).sum())
+    pooled = [
+        book["backbone_cv"]["backbones"][_cv_name(tag)]["within_token"] for tag, _ in BACKBONES
+    ]
     ax.text(
         0.03,
         0.97,
         f"{above} of {len(pair)} cities above the diagonal\n"
-        f"pooled means {book['backbone_cv']['backbones']['DOFA base']['within_token']:.3f} "
-        f"and {book['backbone_cv']['backbones']['DOFA large']['within_token']:.3f}",
+        f"pooled means {pooled[0]:.3f} and {pooled[1]:.3f}",
         transform=ax.transAxes,
         ha="left",
         va="top",
@@ -220,7 +224,7 @@ def _cross_validation(ax, book) -> None:
 
 
 def _cv_name(tag: str) -> str:
-    return {"": "DOFA base", "dofal": "DOFA large"}[tag]
+    return CV_NAMES[tag]
 
 
 def draw(destination: str) -> None:

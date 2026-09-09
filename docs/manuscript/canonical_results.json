@@ -621,8 +621,32 @@
   }
  },
  "backbone_cv": {
-  "protocol": "grouped 5-fold cross-validation over the 138 partition cities, 3 seeds, seed-mean token scores pooled, 95% bootstrap over cities",
+  "protocol": "grouped 5-fold cross-validation over the 138 partition cities, 3 seeds, seed-mean token scores pooled, 95% bootstrap over cities; differences paired against DOFA base, seam-free",
   "backbones": {
+   "DOFA base, seam-free": {
+    "cities": 138.0,
+    "municipalities": 363.0,
+    "within_token": 0.1864,
+    "within_token_low": 0.152,
+    "within_token_high": 0.2205,
+    "within_ageb": 0.2225,
+    "within_ageb_low": 0.1818,
+    "within_ageb_high": 0.2624,
+    "spearman_pooled": 0.4563,
+    "auroc_high": 0.803
+   },
+   "DOFA large, seam-free": {
+    "cities": 138.0,
+    "municipalities": 363.0,
+    "within_token": 0.2384,
+    "within_token_low": 0.2099,
+    "within_token_high": 0.2644,
+    "within_ageb": 0.2811,
+    "within_ageb_low": 0.2452,
+    "within_ageb_high": 0.3147,
+    "spearman_pooled": 0.5033,
+    "auroc_high": 0.8052
+   },
    "DOFA base": {
     "cities": 138.0,
     "municipalities": 363.0,
@@ -662,44 +686,84 @@
   },
   "differences": [
    {
-    "comparison": "DOFA large minus DOFA base",
+    "comparison": "DOFA large, seam-free minus DOFA base, seam-free",
     "unit": "token",
     "municipalities": 363,
-    "base": 0.2025,
+    "base": 0.1864,
+    "other": 0.2384,
+    "difference": 0.052,
+    "ci_low": 0.0282,
+    "ci_high": 0.0752
+   },
+   {
+    "comparison": "DOFA large, seam-free minus DOFA base, seam-free",
+    "unit": "ageb",
+    "municipalities": 346,
+    "base": 0.2225,
+    "other": 0.2811,
+    "difference": 0.0586,
+    "ci_low": 0.0238,
+    "ci_high": 0.0922
+   },
+   {
+    "comparison": "DOFA base minus DOFA base, seam-free",
+    "unit": "token",
+    "municipalities": 363,
+    "base": 0.1864,
+    "other": 0.2025,
+    "difference": 0.016,
+    "ci_low": -0.0014,
+    "ci_high": 0.0325
+   },
+   {
+    "comparison": "DOFA base minus DOFA base, seam-free",
+    "unit": "ageb",
+    "municipalities": 346,
+    "base": 0.2225,
+    "other": 0.2524,
+    "difference": 0.0299,
+    "ci_low": 0.0012,
+    "ci_high": 0.0581
+   },
+   {
+    "comparison": "DOFA large minus DOFA base, seam-free",
+    "unit": "token",
+    "municipalities": 363,
+    "base": 0.1864,
     "other": 0.2296,
-    "difference": 0.0271,
-    "ci_low": 0.0066,
-    "ci_high": 0.0487
+    "difference": 0.0431,
+    "ci_low": 0.018,
+    "ci_high": 0.0682
    },
    {
-    "comparison": "DOFA large minus DOFA base",
+    "comparison": "DOFA large minus DOFA base, seam-free",
     "unit": "ageb",
     "municipalities": 346,
-    "base": 0.2524,
+    "base": 0.2225,
     "other": 0.2938,
-    "difference": 0.0413,
-    "ci_low": 0.0064,
-    "ci_high": 0.0769
+    "difference": 0.0713,
+    "ci_low": 0.0342,
+    "ci_high": 0.1087
    },
    {
-    "comparison": "Copernicus-FM base minus DOFA base",
+    "comparison": "Copernicus-FM base minus DOFA base, seam-free",
     "unit": "token",
     "municipalities": 363,
-    "base": 0.2025,
+    "base": 0.1864,
     "other": 0.197,
-    "difference": -0.0055,
-    "ci_low": -0.0286,
-    "ci_high": 0.0161
+    "difference": 0.0106,
+    "ci_low": -0.0185,
+    "ci_high": 0.0377
    },
    {
-    "comparison": "Copernicus-FM base minus DOFA base",
+    "comparison": "Copernicus-FM base minus DOFA base, seam-free",
     "unit": "ageb",
     "municipalities": 346,
-    "base": 0.2524,
+    "base": 0.2225,
     "other": 0.2519,
-    "difference": -0.0006,
-    "ci_low": -0.0278,
-    "ci_high": 0.0267
+    "difference": 0.0293,
+    "ci_low": -0.0027,
+    "ci_high": 0.0619
    }
   ]
  },
@@ -1332,6 +1396,463 @@
      "ageb": 0.2229,
      "auroc": 0.7731,
      "bag_mae": 0.0922
+    }
+   }
+  }
+ },
+ "ov": {
+  "curve": {
+   "50": {
+    "auroc_high": 0.8009,
+    "spearman_within": 0.1991,
+    "spearman_pooled": 0.4414,
+    "bag_mae": 0.13
+   },
+   "100": {
+    "auroc_high": 0.8078,
+    "spearman_within": 0.1944,
+    "spearman_pooled": 0.4396,
+    "bag_mae": 0.1188
+   },
+   "200": {
+    "auroc_high": 0.8115,
+    "spearman_within": 0.1855,
+    "spearman_pooled": 0.462,
+    "bag_mae": 0.1083
+   },
+   "400": {
+    "auroc_high": 0.7954,
+    "spearman_within": 0.1848,
+    "spearman_pooled": 0.4906,
+    "bag_mae": 0.0986
+   },
+   "771": {
+    "auroc_high": 0.7798,
+    "spearman_within": 0.2004,
+    "spearman_pooled": 0.5002,
+    "bag_mae": 0.0869
+   }
+  },
+  "granularity": {
+   "municipality": {
+    "auroc_high": 0.7824,
+    "spearman_within": 0.2129
+   },
+   "national": {
+    "auroc_high": 0.5223,
+    "spearman_within": 0.0159
+   },
+   "state": {
+    "auroc_high": 0.7682,
+    "spearman_within": 0.1493
+   }
+  },
+  "ceiling": {
+   "0": 0.2349,
+   "1": 0.2603
+  },
+  "ceiling_auroc": {
+   "0": 0.844,
+   "1": 0.8533
+  },
+  "radius_sweep": {
+   "0": 0.1969,
+   "2": 0.2233,
+   "1": 0.2004
+  },
+  "a5_weighted": {
+   "auroc_high": 0.7861,
+   "spearman_within": 0.22,
+   "bag_mae": 0.0927
+  },
+  "conapo": {
+   "agebs": 2752,
+   "municipalities_scored": 21,
+   "spearman_within": 0.386,
+   "ci95_half": 0.0758,
+   "spearman_pooled": 0.4767,
+   "auroc_high": 0.783
+  },
+  "rwi_paired": {
+   "agebs": 2958,
+   "municipalities": 22,
+   "ours_within": 0.3575,
+   "ours_ci_low": 0.2714,
+   "ours_ci_high": 0.4577,
+   "rwi_within": 0.1352,
+   "rwi_ci_low": 0.0535,
+   "rwi_ci_high": 0.2663,
+   "difference": 0.2222,
+   "ci_low": 0.0447,
+   "ci_high": 0.3056,
+   "wins": 17
+  },
+  "targeting_pooled": {
+   "0.05": -0.327,
+   "0.1": 0.13,
+   "0.2": 0.236,
+   "0.3": 0.315
+  },
+  "border": [
+   {
+    "crossing": "municipal",
+    "excess": -0.036,
+    "ci_low": -0.0523,
+    "ci_high": -0.0157
+   },
+   {
+    "crossing": "ageb",
+    "excess": 0.0018,
+    "ci_low": -0.0141,
+    "ci_high": 0.0117
+   }
+  ],
+  "maup": [
+   {
+    "tokens_low": 1,
+    "tokens_high": 3,
+    "agebs": 567,
+    "median_population": 211.0,
+    "municipalities": 15,
+    "spearman_within": 0.2242
+   },
+   {
+    "tokens_low": 4,
+    "tokens_high": 9,
+    "agebs": 849,
+    "median_population": 1948.0,
+    "municipalities": 16,
+    "spearman_within": 0.3533
+   },
+   {
+    "tokens_low": 10,
+    "tokens_high": 19,
+    "agebs": 999,
+    "median_population": 2644.0,
+    "municipalities": 20,
+    "spearman_within": 0.34
+   },
+   {
+    "tokens_low": 20,
+    "tokens_high": 49,
+    "agebs": 464,
+    "median_population": 3230.5,
+    "municipalities": 14,
+    "spearman_within": 0.5113
+   },
+   {
+    "tokens_low": 50,
+    "tokens_high": 10000,
+    "agebs": 79,
+    "median_population": 3560.0,
+    "municipalities": 2,
+    "spearman_within": 0.2733
+   }
+  ],
+  "modality_optical": {
+   "within": 0.202,
+   "auroc": 0.8209,
+   "bag_mae": 0.0935,
+   "seeds": 3
+  },
+  "modality_radar": {
+   "within": 0.074,
+   "auroc": 0.682,
+   "bag_mae": 0.1262,
+   "seeds": 3
+  },
+  "modality_degraded": {
+   "within": 0.2124,
+   "auroc": 0.8259,
+   "bag_mae": 0.0973,
+   "seeds": 3
+  },
+  "modality_worldcover": {},
+  "abmil": {
+   "map_auroc": 0.428,
+   "pooled_spearman": -0.119,
+   "bag_kappa": 0.588,
+   "llp_kfold_auroc": 0.767,
+   "llp_kfold_within": 0.195
+  },
+  "sweep_blindness": {
+   "rank_corr_mae_vs_within": -0.194,
+   "rank_corr_mae_vs_auroc": 0.339,
+   "configs": 14
+  },
+  "test": {
+   "headline_token_within": 0.1645,
+   "headline_token_within_ensemble": 0.1673,
+   "headline_auroc": 0.8094,
+   "ceiling_r1": 0.2439,
+   "ceiling_r0": 0.2182,
+   "fraction": 0.67,
+   "curve": {
+    "100": 0.1619,
+    "200": 0.148,
+    "400": 0.1531,
+    "50": 0.1361,
+    "771": 0.1648
+   },
+   "granularity": {
+    "municipality": 0.1665,
+    "national": 0.0132,
+    "state": 0.1247
+   },
+   "modality": {
+    "degraded": 0.1129,
+    "optical": 0.1655,
+    "radar": 0.0488,
+    "worldcover": 0.219
+   },
+   "weighted": 0.1696,
+   "wc_paired": {
+    "municipalities": 29,
+    "ours_within": 0.1733,
+    "wc_within": 0.219,
+    "difference": -0.0457,
+    "ci_low": -0.2027,
+    "ci_high": 0.0881,
+    "wins": 12
+   },
+   "rwi_paired": {
+    "agebs": 2811,
+    "municipalities": 22,
+    "ours_within": 0.2558,
+    "ours_ci_low": 0.1084,
+    "ours_ci_high": 0.3818,
+    "rwi_within": 0.103,
+    "rwi_ci_low": 0.0185,
+    "rwi_ci_high": 0.2142,
+    "difference": 0.1528,
+    "ci_low": -0.0437,
+    "ci_high": 0.2918,
+    "wins": 15
+   },
+   "conapo": {
+    "agebs": 2618,
+    "municipalities_scored": 20,
+    "spearman_within": 0.2655,
+    "ci95_half": 0.1466,
+    "spearman_pooled": 0.433,
+    "auroc_high": 0.7949
+   },
+   "targeting": {
+    "0.05": 0.152,
+    "0.1": 0.251,
+    "0.2": 0.495,
+    "0.3": 0.591
+   },
+   "maup": [
+    {
+     "tokens_low": 1,
+     "tokens_high": 3,
+     "agebs": 503,
+     "median_population": 222.0,
+     "municipalities": 13,
+     "spearman_within": 0.3291
+    },
+    {
+     "tokens_low": 4,
+     "tokens_high": 9,
+     "agebs": 851,
+     "median_population": 1946.0,
+     "municipalities": 17,
+     "spearman_within": 0.2671
+    },
+    {
+     "tokens_low": 10,
+     "tokens_high": 19,
+     "agebs": 890,
+     "median_population": 2722.5,
+     "municipalities": 20,
+     "spearman_within": 0.383
+    },
+    {
+     "tokens_low": 20,
+     "tokens_high": 49,
+     "agebs": 480,
+     "median_population": 3011.0,
+     "municipalities": 16,
+     "spearman_within": 0.3637
+    },
+    {
+     "tokens_low": 50,
+     "tokens_high": 10000,
+     "agebs": 87,
+     "median_population": 2998.0,
+     "municipalities": 1,
+     "spearman_within": 0.0515
+    }
+   ]
+  },
+  "fraction_ci": {
+   "val": {
+    "fraction": 0.847,
+    "ci_low": 0.594,
+    "ci_high": 1.114,
+    "municipalities": 33
+   },
+   "test": {
+    "fraction": 0.686,
+    "ci_low": 0.178,
+    "ci_high": 1.483,
+    "municipalities": 29
+   }
+  },
+  "transfer_training": {
+   "brazil": {
+    "bags": 58,
+    "municipalities_scored": 57,
+    "tokens_scored": 126730,
+    "methods": {
+     "aggregates": {
+      "within_seeds": [
+       0.1442,
+       0.1517,
+       0.1551
+      ],
+      "within": 0.1504,
+      "within_ci_low": 0.1017,
+      "within_ci_high": 0.1964,
+      "pooled": 0.3574,
+      "auroc_top_quartile": 0.6578
+     },
+     "aggregates@50": {
+      "within_seeds": [
+       0.1443,
+       0.152,
+       0.1551
+      ],
+      "within": 0.1504,
+      "within_ci_low": 0.1018,
+      "within_ci_high": 0.1964,
+      "pooled": 0.3575,
+      "auroc_top_quartile": 0.6578
+     },
+     "mexico-init": {
+      "within_seeds": [
+       0.0641,
+       0.0711,
+       0.0863
+      ],
+      "within": 0.0739,
+      "within_ci_low": 0.0172,
+      "within_ci_high": 0.125,
+      "pooled": 0.3395,
+      "auroc_top_quartile": 0.6398
+     },
+     "oracle": {
+      "within_seeds": [
+       0.256,
+       0.2374,
+       0.2471
+      ],
+      "within": 0.2468,
+      "within_ci_low": 0.1993,
+      "within_ci_high": 0.2925,
+      "pooled": 0.4688,
+      "auroc_top_quartile": 0.7008
+     },
+     "zero-shot": {
+      "within_seeds": [
+       0.0664
+      ],
+      "within": 0.0664,
+      "within_ci_low": 0.0116,
+      "within_ci_high": 0.1188,
+      "pooled": 0.3116,
+      "auroc_top_quartile": 0.6584
+     }
+    }
+   },
+   "colombia": {
+    "bags": 221,
+    "municipalities_scored": 1,
+    "tokens_scored": 12738,
+    "methods": {
+     "aggregates": {
+      "within_seeds": [
+       0.2389,
+       0.2242,
+       0.212
+      ],
+      "within": 0.2251,
+      "within_ci_low": 0.2251,
+      "within_ci_high": 0.2251,
+      "pooled": 0.2251,
+      "auroc_top_quartile": 0.6356
+     },
+     "aggregates@100": {
+      "within_seeds": [
+       0.3357,
+       0.2775,
+       0.2411
+      ],
+      "within": 0.2848,
+      "within_ci_low": 0.2848,
+      "within_ci_high": 0.2848,
+      "pooled": 0.2848,
+      "auroc_top_quartile": 0.6598
+     },
+     "aggregates@200": {
+      "within_seeds": [
+       0.237,
+       0.2279,
+       0.2129
+      ],
+      "within": 0.2259,
+      "within_ci_low": 0.2259,
+      "within_ci_high": 0.2259,
+      "pooled": 0.2259,
+      "auroc_top_quartile": 0.6359
+     },
+     "aggregates@50": {
+      "within_seeds": [
+       0.2139,
+       0.1937,
+       0.1322
+      ],
+      "within": 0.1799,
+      "within_ci_low": 0.1799,
+      "within_ci_high": 0.1799,
+      "pooled": 0.1799,
+      "auroc_top_quartile": 0.6021
+     },
+     "mexico-init": {
+      "within_seeds": [
+       0.222,
+       0.2613,
+       0.282
+      ],
+      "within": 0.2551,
+      "within_ci_low": 0.2551,
+      "within_ci_high": 0.2551,
+      "pooled": 0.2551,
+      "auroc_top_quartile": 0.6357
+     },
+     "oracle": {
+      "within_seeds": [
+       0.7334,
+       0.762,
+       0.7483
+      ],
+      "within": 0.7479,
+      "within_ci_low": 0.7479,
+      "within_ci_high": 0.7479,
+      "pooled": 0.7479,
+      "auroc_top_quartile": 0.897
+     },
+     "zero-shot": {
+      "within_seeds": [
+       0.3246
+      ],
+      "within": 0.3246,
+      "within_ci_low": 0.3246,
+      "within_ci_high": 0.3246,
+      "pooled": 0.3246,
+      "auroc_top_quartile": 0.6907
+     }
     }
    }
   }

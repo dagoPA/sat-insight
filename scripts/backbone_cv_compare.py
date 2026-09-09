@@ -8,7 +8,8 @@ interval is a 95% percentile bootstrap that resamples cities, the unit of indepe
 the design; the difference between two backbones is bootstrapped on the same city draws,
 so its interval is the standard paired one.
 
-Usage: backbone_cv_compare.py [suffix ...]   (default: base, dofal and cfm where present)
+Usage: backbone_cv_compare.py [suffix ...]   (the first suffix is the reference the
+       differences are paired against; default: base, dofal and cfm where present)
 """
 
 import sys
@@ -96,9 +97,10 @@ def main() -> None:
     summary = pd.DataFrame(rows)
 
     diffs = []
-    base = per_backbone.get("")
+    reference = suffixes[0]
+    base = per_backbone.get(reference)
     for suffix, table in per_backbone.items():
-        if suffix == "" or base is None:
+        if suffix == reference or base is None:
             continue
         merged = base.merge(table, on=["city", "municipality"], suffixes=("_base", "_other"))
         for unit in ("token", "ageb"):
@@ -110,7 +112,7 @@ def main() -> None:
             low, high = np.percentile(means, [2.5, 97.5])
             diffs.append(
                 {
-                    "comparison": f"{NAMES[suffix]} minus DOFA base",
+                    "comparison": f"{NAMES[suffix]} minus {NAMES[reference]}",
                     "unit": unit,
                     "municipalities": len(pair),
                     "base": float(pair[f"{unit}_base"].mean()),

@@ -11,6 +11,7 @@ Usage: headline_intervals.py
 
 import sys
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
@@ -43,6 +44,8 @@ def main() -> None:
     grades = load_grs().set_index("cvegeo").ordinal.astype(float)
     rows = []
     for tag, name in BACKBONES:
+        if not Path(suffixed("data/predictions_test.parquet", tag)).exists():
+            continue
         for split in ("val", "test"):
             scores = pd.read_parquet(suffixed(f"data/predictions_{split}.parquet", tag))
             for estimator, table in (

@@ -14,6 +14,7 @@ Usage: classification_view.py
 
 import sys
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
@@ -42,6 +43,8 @@ def threshold_aurocs(frame: pd.DataFrame) -> list[float]:
 def main() -> None:
     rows = []
     for tag, name in BACKBONES:
+        if not Path(suffixed("data/predictions_test.parquet", tag)).exists():
+            continue
         frames = {
             split: with_truth(per_ageb(suffixed(f"data/predictions_{split}.parquet", tag)))
             for split in ("val", "test")
