@@ -594,11 +594,7 @@ def maup(book: dict) -> None:
     )
 
 
-HEAD_NAMES = {
-    "cumulative": "cumulative thresholds (reference)",
-    "coral": "CORAL",
-    "softmax": "softmax, cross-entropy",
-}
+HEAD_NAMES = {"cumulative": "reference", "coral": "CORAL", "softmax": "softmax"}
 
 
 def heads(book: dict) -> None:
@@ -630,16 +626,15 @@ def heads(book: dict) -> None:
             cells.append(
                 f"{r.iloc[0].kappa_quadratic:.3f}" if r is not None and not r.empty else DASH
             )
-            cells.append(f"{r.iloc[0].bag_mae:.3f}" if r is not None and not r.empty else DASH)
-            rows.append(f"{name} & {label} & " + " & ".join(cells) + "\\\\")
+            rows.append(f"{name}, {label} & " + " & ".join(cells) + "\\\\")
             r = sub[sub["split"] == "cv"] if sub is not None else None
             if head != "cumulative" and r is not None and not r.empty and "diff_token" in r:
                 r = r.iloc[0]
                 if r.notna().get("diff_token", False):
                     diffs.append(
-                        f"{name} & {label} minus reference & & & "
+                        f"{name}, {label} minus reference & & & "
                         f"{signed(r.diff_token, r.diff_token_low, r.diff_token_high)} & "
-                        f"{signed(r.diff_ageb, r.diff_ageb_low, r.diff_ageb_high)} & & \\\\"
+                        f"{signed(r.diff_ageb, r.diff_ageb_low, r.diff_ageb_high)} & \\\\"
                     )
     if diffs:
         rows.append("\\midrule")
@@ -656,10 +651,9 @@ def heads(book: dict) -> None:
         "cross-validation over the 138 cities; brackets are 95\\% percentile bootstraps "
         "resampling cities, and the differences are paired against the reference head on the "
         "same city draws. $\\kappa$ is the quadratic-weighted kappa of the isotonic grade on "
-        "the test tracts; bag error is the mean absolute error of the four cumulative shares "
-        "on the test municipalities, the quantity the training minimizes.",
-        "llcccccc",
-        "Features & Head & Validation & Test & CV, token & CV, AGEB & $\\kappa$, test & Bag error, test",
+        "the test tracts.",
+        "lccccc",
+        "Features, head & Validation & Test & CV, token & CV, AGEB & $\\kappa$, test",
         rows,
         label="tab:heads",
         resize=True,
