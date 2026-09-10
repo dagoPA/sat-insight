@@ -86,7 +86,14 @@ IBGE_SECTORS = {
     "SP": "SP_setores_CD2022.gpkg",
     "MG": "MG_setores_CD2022.gpkg",
 }
-"""Census tract geometries of the three states the Brazilian boxes fall in."""
+"""Census tract geometries of the three states of the hand boxes, kept where they were
+first downloaded; every other state lives under transfer/setores with the same naming."""
+
+
+def sector_path(state: str, root: Path = DATA_ROOT) -> Path:
+    """The census tract file of one Brazilian state, by its two-letter abbreviation."""
+    return root / "transfer" / IBGE_SECTORS.get(state, f"setores/{state}_setores_CD2022.gpkg")
+
 
 BOX_SHARE_FLOOR = 0.05
 """A municipality enters a box's bag set when at least this share of its area is inside.
@@ -160,8 +167,7 @@ def brazil_sector_income(root: Path = DATA_ROOT) -> pd.DataFrame:
 
 def brazil_sectors(state: str, bbox, root: Path = DATA_ROOT) -> gpd.GeoDataFrame:
     """Census tracts of one state inside a box, with municipality key and median income."""
-    path = root / "transfer" / IBGE_SECTORS[state]
-    tracts = gpd.read_file(path, bbox=tuple(bbox)).to_crs("EPSG:4326")
+    tracts = gpd.read_file(sector_path(state, root), bbox=tuple(bbox)).to_crs("EPSG:4326")
     tracts = tracts.rename(
         columns={"CD_SETOR": "sector", "CD_MUN": "municipality", "NM_MUN": "name"}
     )

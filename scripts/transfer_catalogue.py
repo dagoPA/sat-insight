@@ -34,7 +34,7 @@ import geopandas as gpd  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from satinsight.download import DATA_ROOT  # noqa: E402
-from satinsight.transfer import IBGE_SECTORS, brazil_municipal_income, colombia_ipm  # noqa: E402
+from satinsight.transfer import brazil_municipal_income, colombia_ipm, sector_path  # noqa: E402
 
 COLOMBIA_MIN_KM2 = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
 BRAZIL_MIN_URBAN_POP = int(sys.argv[2]) if len(sys.argv) > 2 else 50_000
@@ -106,9 +106,7 @@ def brazil() -> pd.DataFrame:
     rows = []
     for state_code, group in urban.groupby("CD_UF"):
         state = UF_CODES[state_code]
-        path = DATA_ROOT / "transfer" / "setores" / f"{state}_setores_CD2022.gpkg"
-        if state in IBGE_SECTORS:
-            path = DATA_ROOT / "transfer" / IBGE_SECTORS[state]
+        path = sector_path(state, DATA_ROOT)
         if not path.exists():
             logging.warning(
                 "%s: tract geometries missing, %d municipalities skipped", state, len(group)
