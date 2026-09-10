@@ -9,11 +9,16 @@
 Features & Head & Validation & Test & CV, token & CV, AGEB & $\kappa$, test & Bag error, test\\
 \midrule
 DOFA-B & cumulative thresholds (reference) & 0.213 [0.158, 0.293] & 0.165 [0.042, 0.257] & 0.186 [0.152, 0.221] & 0.223 [0.182, 0.262] & 0.368 & 0.089\\
-DOFA-B & CORAL & -- & -- & -- & -- & -- & --\\
-DOFA-B & softmax, cross-entropy & -- & -- & -- & -- & -- & --\\
+DOFA-B & CORAL & 0.216 [0.159, 0.304] & 0.176 [0.058, 0.258] & 0.198 [0.162, 0.236] & 0.216 [0.177, 0.257] & 0.358 & 0.101\\
+DOFA-B & softmax, cross-entropy & 0.205 [0.144, 0.279] & 0.191 [0.072, 0.286] & 0.188 [0.151, 0.223] & 0.208 [0.165, 0.251] & 0.414 & 0.089\\
 DOFA-L & cumulative thresholds (reference) & 0.277 [0.221, 0.338] & 0.208 [0.133, 0.283] & 0.238 [0.210, 0.264] & 0.281 [0.245, 0.315] & 0.462 & 0.092\\
-DOFA-L & CORAL & -- & -- & -- & -- & -- & --\\
-DOFA-L & softmax, cross-entropy & -- & -- & -- & -- & -- & --\\
+DOFA-L & CORAL & 0.253 [0.177, 0.340] & 0.234 [0.172, 0.285] & 0.232 [0.197, 0.266] & 0.258 [0.219, 0.297] & 0.433 & 0.094\\
+DOFA-L & softmax, cross-entropy & 0.258 [0.205, 0.329] & 0.174 [0.084, 0.257] & 0.238 [0.211, 0.266] & 0.291 [0.257, 0.326] & 0.416 & 0.093\\
+\midrule
+DOFA-B & CORAL minus reference & & & $+0.011$ [$-0.004$, $+0.027$] & $-0.006$ [$-0.029$, $+0.017$] & & \\
+DOFA-B & softmax, cross-entropy minus reference & & & $+0.001$ [$-0.010$, $+0.013$] & $-0.015$ [$-0.031$, $+0.002$] & & \\
+DOFA-L & CORAL minus reference & & & $-0.007$ [$-0.026$, $+0.013$] & $-0.023$ [$-0.051$, $+0.007$] & & \\
+DOFA-L & softmax, cross-entropy minus reference & & & $-0.001$ [$-0.014$, $+0.012$] & $+0.010$ [$-0.010$, $+0.028$] & & \\
 \bottomrule
 \end{tabular}}
 \label{tab:heads}

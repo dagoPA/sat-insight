@@ -48,7 +48,8 @@ population and, with DOFA-L, building height; nighttime lights order tracts insi
 municipality as well as the maps do, and feeding those grids to the model as inputs
 lifts the fully supervised bound without lifting the weakly supervised map.
 Attention-based multiple-instance learning produces chance-level maps for a structural
-reason, fine-tuning the extractor lowers the bag error and not the map, seed ensembles
+reason, fine-tuning the extractor lowers the bag error and not the map, ordinal (CORAL)
+and categorical (softmax) heads leave it unchanged, seed ensembles
 yield no usable uncertainty layer, and an honest 90\% grade interval spans 1.8 of the
 five levels. Data, frozen features of both extractors, labels, splits and code are
 released.
@@ -213,7 +214,7 @@ computed city-wide at inference. Fourteen configurations varied one ingredient e
 loss, input standardization), then a combination round; standardized inputs with binary
 cross-entropy won on bag error over five grouped training folds. The scoring layer of
 that head gives each threshold its own weights. Two other parameterisations of the same
-head are compared under the full protocol in the Results: the CORAL layer of Cao et
+head are compared under the full protocol (Table~\ref{tab:heads}): the CORAL layer of Cao et
 al.~\cite{cao2020coral}, which shares one weight vector across the four thresholds and
 keeps one bias per threshold, so that the cumulative probabilities of a token are
 ordered by construction (the independent-weights form is the layer of CORN~\cite{shi2023corn}
@@ -581,6 +582,25 @@ phase-one baseline predict the municipal label (quadratic-weighted $\kappa = 0.5
 both sensors) without producing a map, so they enter no row.
 
 \input{tables/features}
+
+\textbf{Head parameterisation} (Table~\ref{tab:heads}). The reference head, four
+cumulative thresholds with independent weights, was compared with the CORAL layer and
+with a five-class softmax trained with cross-entropy on the class shares, under the full
+protocol and both extractors. Under grouped cross-validation over the 138 cities the
+three heads are indistinguishable: the paired difference against the reference is
+$+0.011$ [$-0.004$, $+0.027$] per token for CORAL and $+0.001$ [$-0.010$, $+0.013$] for
+the softmax with DOFA-B, and $-0.007$ [$-0.026$, $+0.013$] and $-0.001$ [$-0.014$,
+$+0.012$] with DOFA-L; per AGEB every interval crosses zero as well. The validation and
+test values move within the width of their intervals ($0.165$ to $0.191$ on test with
+DOFA-B, $0.174$ to $0.234$ with DOFA-L) in no consistent direction, the quadratic kappa
+of the isotonic grade is higher for the softmax with DOFA-B ($0.41$ against $0.37$) and
+lower with DOFA-L ($0.42$ against $0.46$), and the bag error is unchanged. The
+monotonicity that CORAL enforces is therefore not what limits the map, and neither is
+the choice between an ordinal and a categorical loss: the same label information reaches
+every head and the same map comes out, which places the limit on the representation and
+on the supply of labels. The reference head is kept throughout.
+
+\input{tables/heads}
 
 \textbf{Classification view} (Table~\ref{tab:classification}). Readers of the
 tract-classification literature measure agreement in grades rather than ranks. Turning
@@ -959,8 +979,10 @@ content rather than resolution is the binding property. The targeting experiment
 expresses the result as people reached, including the budget where the map underperforms
 the aggregate. A larger feature extractor raises the fully supervised bound by $0.10$
 and the map by $0.04$ on test and by $0.05$ under cross-validation over all 138 cities,
-while fine-tuning the extractor on the aggregates lowers the bag error and not the map:
-the representation and the supply of labels are both limits on the map, and with the
+while fine-tuning the extractor on the aggregates lowers the bag error and not the map,
+and reparameterising the head as CORAL or as a softmax trained with cross-entropy moves
+it by less than $0.01$ under cross-validation: the representation and the supply of
+labels are both limits on the map, and with the
 label supply saturating early, the representation is the one that still moves. Three
 negative results matter for similar efforts: attention-based pooling fails for a
 structural reason, selection on aggregate error is close to uninformative about map
