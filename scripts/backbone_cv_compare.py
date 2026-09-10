@@ -34,6 +34,10 @@ NAMES = {
     "cfm": "Copernicus-FM base",
     "ov": "DOFA base, seam-free",
     "dofalov": "DOFA large, seam-free",
+    "ov_coral": "DOFA base, seam-free, CORAL head",
+    "ov_softmax": "DOFA base, seam-free, softmax head",
+    "dofalov_coral": "DOFA large, seam-free, CORAL head",
+    "dofalov_softmax": "DOFA large, seam-free, softmax head",
 }
 RESAMPLES = 2000
 HIGH = 3

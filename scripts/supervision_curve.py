@@ -38,7 +38,7 @@ from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.context import adjacency  # noqa: E402
-from satinsight.llp import build, evaluate_map  # noqa: E402
+from satinsight.llp import bag_loss, build, evaluate_map  # noqa: E402
 from satinsight.pipeline import city_aoi  # noqa: E402
 from satinsight.splits import cities_of  # noqa: E402
 
@@ -120,8 +120,6 @@ def extra_dims(cities) -> int:
 
 
 def train_once(train_bags, val_bags, val_links, grades, seed, torch, device):
-    from torch import nn
-
     torch.manual_seed(seed)
     aux_dims = extra_dims({b.city for b in val_bags}) if LATE and EXTRAS else 0
     model = build(
@@ -131,7 +129,6 @@ def train_once(train_bags, val_bags, val_links, grades, seed, torch, device):
     sample = np.vstack([b.instances[rng_stats.permutation(len(b))[:200]] for b in train_bags])
     model.fit_scaler(sample.mean(axis=0), sample.std(axis=0))
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-4)
-    criterion = nn.BCELoss()
     train_links = links_of(train_bags, torch, device)
     rng = np.random.default_rng(seed)
     best, waited, best_state = np.inf, 0, None
@@ -143,7 +140,7 @@ def train_once(train_bags, val_bags, val_links, grades, seed, torch, device):
             optimiser.zero_grad()
             x = torch.from_numpy(bag.instances).float().to(device)
             shares, _ = model(x, src, dst)
-            loss = criterion(shares, torch.from_numpy(bag.shares).float().to(device))
+            loss = bag_loss(shares, torch.from_numpy(bag.shares).float().to(device))
             loss.backward()
             optimiser.step()
         scored = evaluate_map(model, val_bags, val_links, grades, torch, device)

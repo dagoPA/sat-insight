@@ -26,6 +26,7 @@ logging.basicConfig(
 
 import pandas as pd  # noqa: E402
 
+from satinsight import backbone  # noqa: E402
 from satinsight.agebs import catalogue_with_extra, cities_extra  # noqa: E402
 from satinsight.bagdata import load_split  # noqa: E402
 from satinsight.llp import instance_scores  # noqa: E402
@@ -36,7 +37,14 @@ from supervision_curve import grades_of, links_of, train_once  # noqa: E402
 
 EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 SENSOR = sys.argv[2] if len(sys.argv) > 2 else "s2"
-SUFFIX = "" if SENSOR == "s2" else f"_{SENSOR[3:]}"
+SUFFIX = (
+    backbone.SUFFIX
+    if backbone.sensor("s2") == SENSOR
+    else ""
+    if SENSOR == "s2"
+    else f"_{SENSOR[3:]}"
+)
+"""With the sensor of the environment the suffix also carries the head of the ablation."""
 SEEDS = (0, 1, 2)
 RADIUS = 1
 

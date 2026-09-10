@@ -18,7 +18,15 @@ import re
 from pathlib import Path
 
 TAG = os.environ.get("SATINSIGHT_BACKBONE", "").strip()
-SUFFIX = f"_{TAG}" if TAG else ""
+HEADS = ("cumulative", "coral", "softmax")
+"""Parameterisations of the instance head: independent cumulative thresholds (the
+reference), CORAL's shared weights with one bias per threshold, and a five-class softmax
+trained with cross-entropy on the class shares. Chosen through SATINSIGHT_HEAD."""
+HEAD = os.environ.get("SATINSIGHT_HEAD", "").strip() or HEADS[0]
+if HEAD not in HEADS:
+    raise ValueError(f"SATINSIGHT_HEAD must be one of {HEADS}, got {HEAD!r}")
+SUFFIX = (f"_{TAG}" if TAG else "") + (f"_{HEAD}" if HEADS[0] != HEAD else "")
+"""Result files carry the backbone tag and, for the ablation heads, the head name."""
 ENCODED = ("s2", "s1", "s2deg")
 """Sensor names whose vectors come from the backbone."""
 
@@ -52,7 +60,7 @@ def suffix_of(source: str | Path) -> str:
     The analysis tools take the predictions file as their argument, so the suffix of their
     own outputs must follow the file rather than the environment.
     """
-    match = re.search(r"predictions_(?:val|test)(?:_city)?(_[A-Za-z0-9]+)?\.parquet", str(source))
+    match = re.search(r"predictions_(?:val|test)(?:_city)?(_[A-Za-z0-9_]+)?\.parquet", str(source))
     return match.group(1) or "" if match else ""
 
 

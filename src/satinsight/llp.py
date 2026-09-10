@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 
+from satinsight import backbone
 from satinsight.context import build_layer
 
 log = logging.getLogger(__name__)
@@ -55,6 +56,22 @@ def build(
     import torch
     from torch import nn
 
+    class CoralScore(nn.Module):
+        """CORAL's scoring layer: one weight vector shared by every threshold, one bias each.
+
+        Sharing the weights makes the threshold logits differ by a constant, so the
+        cumulative probabilities of an instance are ordered whenever the biases are; they
+        start ordered and the loss keeps them so in practice.
+        """
+
+        def __init__(self, width: int, n: int) -> None:
+            super().__init__()
+            self.weight = nn.Linear(width, 1, bias=False)
+            self.bias = nn.Parameter(torch.linspace(1.0, -1.0, n))
+
+        def forward(self, h):
+            return self.weight(h) + self.bias
+
     class ProportionNet(nn.Module):
         """One prediction per instance; the bag is their mean.
 
@@ -74,7 +91,13 @@ def build(
             )
             self.neighbourhood = build_layer(hidden) if radius else None
             width = (self.neighbourhood.out_features if radius else hidden) + aux_dims
-            self.score = nn.Linear(width, n_thresholds)
+            self.head = backbone.HEAD
+            if self.head == "coral":
+                self.score = CoralScore(width, n_thresholds)
+            elif self.head == "softmax":
+                self.score = nn.Linear(width, n_thresholds + 1)
+            else:
+                self.score = nn.Linear(width, n_thresholds)
 
         def fit_scaler(self, mean, deviation):
             """Stores the per-feature centre and spread of the training instances.
@@ -110,10 +133,44 @@ def build(
                 h = self.neighbourhood(h, src, dst)
             if aux is not None:
                 h = torch.cat([h, aux], dim=1)
-            per_instance = torch.sigmoid(self.score(h))
+            logits = self.score(h)
+            if self.head == "softmax":
+                # five class probabilities, read as the same four cumulative shares
+                classes = torch.softmax(logits, dim=1)
+                per_instance = classes.flip(1).cumsum(1).flip(1)[:, 1:]
+            else:
+                per_instance = torch.sigmoid(logits)
             return per_instance.mean(dim=0), per_instance
 
     return ProportionNet()
+
+
+def class_shares(cumulative):
+    """The five class shares behind four cumulative shares (grade at least k, k = 1..4)."""
+    return torch_cat(cumulative)
+
+
+def torch_cat(cumulative):
+    import torch
+
+    first = 1.0 - cumulative[..., :1]
+    middle = cumulative[..., :-1] - cumulative[..., 1:]
+    return torch.cat([first, middle, cumulative[..., -1:]], dim=-1)
+
+
+def bag_loss(predicted, target):
+    """The loss of one bag under the configured head.
+
+    The cumulative heads penalise every threshold's predicted share with binary
+    cross-entropy against the labelled share; the softmax head turns both into five class
+    shares and takes the cross-entropy of that distribution, the loss a five-class
+    classifier trained on soft labels would use. Both see the same label information.
+    """
+    from torch.nn import functional
+
+    if backbone.HEAD == "softmax":
+        return -(class_shares(target) * class_shares(predicted).clamp_min(1e-6).log()).sum()
+    return functional.binary_cross_entropy(predicted, target)
 
 
 def instance_scores(per_instance: np.ndarray) -> np.ndarray:
@@ -122,7 +179,8 @@ def instance_scores(per_instance: np.ndarray) -> np.ndarray:
     Summing the four thresholds recovers the expected grade: an instance the model puts
     above every threshold scores four, one it puts below all of them scores zero. It is the
     same decoding the cumulative parameterisation implies at bag level, applied one step
-    down.
+    down, and for the softmax head, whose cumulative shares are sums of class
+    probabilities, it equals the expected grade of the five-class distribution.
     """
     return per_instance.sum(axis=1)
 
