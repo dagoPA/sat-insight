@@ -211,7 +211,18 @@ representation is concatenated with the mean of its 8 grid neighbors (480 m),
 computed city-wide at inference. Fourteen configurations varied one ingredient each
 (learning rate 5e-5 to 1e-3, hidden width 64 to 512, dropout 0 to 0.5, weight decay,
 loss, input standardization), then a combination round; standardized inputs with binary
-cross-entropy won on bag error over five grouped training folds. The oracle is the same
+cross-entropy won on bag error over five grouped training folds. The scoring layer of
+that head gives each threshold its own weights. Two other parameterisations of the same
+head are compared under the full protocol in the Results: the CORAL layer of Cao et
+al.~\cite{cao2020coral}, which shares one weight vector across the four thresholds and
+keeps one bias per threshold, so that the cumulative probabilities of a token are
+ordered by construction (the independent-weights form is the layer of CORN~\cite{shi2023corn}
+without its conditional training), and a five-class softmax trained with cross-entropy
+between the bag's mean class distribution and the class shares of the municipality,
+which sees the same label information as the cumulative heads; its token score is the
+expected grade, which equals the sum of the cumulative shares. Only the scoring layer
+and the loss change; selection, early stopping and evaluation are those of the reference
+head. The oracle is the same
 head trained on tract labels with the same context, and bounds what the representation
 supports ($\rho = 0.260$ with context and $0.235$ without for DOFA-B; $0.340$ and
 $0.282$ for DOFA-L, on validation). The two other axes of the
@@ -1086,6 +1097,12 @@ J.-P. Deep multi-class learning from label proportions. \emph{arXiv:1905.12909} 
 foundation model for Earth observation. \emph{arXiv:2403.15356} (2024).
 \bibitem{wang2025cfm} Wang, Y. \emph{et al.} Towards a unified Copernicus foundation
 model for Earth vision. \emph{arXiv:2503.11849} (2025).
+\bibitem{cao2020coral} Cao, W., Mirjalili, V. \& Raschka, S. Rank consistent ordinal
+regression for neural networks with application to age estimation. \emph{Pattern
+Recognition Letters} \textbf{140}, 325--331 (2020).
+\bibitem{shi2023corn} Shi, X., Cao, W. \& Raschka, S. Deep neural networks for rank-consistent
+ordinal regression based on conditional probabilities. \emph{Pattern Analysis and
+Applications} \textbf{26}, 941--955 (2023).
 \bibitem{worldcover} Zanaga, D. \emph{et al.} ESA WorldCover 10 m 2020 v100. Zenodo
 \url{https://doi.org/10.5281/zenodo.5571936} (2021).
 \bibitem{ghsl2023} Pesaresi, M. \& Politis, P. GHS-BUILT-S and GHS-BUILT-H R2023A, and

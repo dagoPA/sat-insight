@@ -153,7 +153,7 @@ def curve_table(
             & (intervals.unit == "token")
         ]
         for split in ("val", "test"):
-            r = sub[sub.split == split]
+            r = sub[sub["split"] == split]
             boot.append(
                 ci(float(r.within.iloc[0]), float(r.ci_low.iloc[0]), float(r.ci_high.iloc[0]), 2)
                 if len(r)
@@ -594,6 +594,78 @@ def maup(book: dict) -> None:
     )
 
 
+HEAD_NAMES = {
+    "cumulative": "cumulative thresholds (reference)",
+    "coral": "CORAL",
+    "softmax": "softmax, cross-entropy",
+}
+
+
+def heads(book: dict) -> None:
+    frame = read("data/head_ablation.csv")
+    rows = []
+    diffs = []
+    for _tag, name in BACKBONES:
+        for head, label in HEAD_NAMES.items():
+            sub = (
+                frame[(frame["features"] == name) & (frame["head"] == head)]
+                if frame is not None
+                else None
+            )
+            cells = []
+            for split in ("val", "test", "cv"):
+                r = sub[sub["split"] == split] if sub is not None else None
+                if r is None or r.empty:
+                    cells.append(DASH)
+                    continue
+                r = r.iloc[0]
+                cells.append(ci(r.within_token, r.within_token_low, r.within_token_high))
+            r = sub[sub["split"] == "cv"] if sub is not None else None
+            cells.append(
+                ci(r.iloc[0].within_ageb, r.iloc[0].within_ageb_low, r.iloc[0].within_ageb_high)
+                if r is not None and not r.empty
+                else DASH
+            )
+            r = sub[sub["split"] == "test"] if sub is not None else None
+            cells.append(
+                f"{r.iloc[0].kappa_quadratic:.3f}" if r is not None and not r.empty else DASH
+            )
+            cells.append(f"{r.iloc[0].bag_mae:.3f}" if r is not None and not r.empty else DASH)
+            rows.append(f"{name} & {label} & " + " & ".join(cells) + "\\\\")
+            r = sub[sub["split"] == "cv"] if sub is not None else None
+            if head != "cumulative" and r is not None and not r.empty and "diff_token" in r:
+                r = r.iloc[0]
+                if r.notna().get("diff_token", False):
+                    diffs.append(
+                        f"{name} & {label} minus reference & & & "
+                        f"{signed(r.diff_token, r.diff_token_low, r.diff_token_high)} & "
+                        f"{signed(r.diff_ageb, r.diff_ageb_low, r.diff_ageb_high)} & & \\\\"
+                    )
+    if diffs:
+        rows.append("\\midrule")
+        rows.extend(diffs)
+    table(
+        "heads",
+        "Parameterisation of the instance head under one protocol, both feature extractors. "
+        "The reference head predicts four cumulative shares with independent thresholds; CORAL "
+        "shares one weight vector across the thresholds; the softmax head predicts five class "
+        "probabilities and is trained with cross-entropy on the class shares of the bag. "
+        "Within-municipality Spearman $\\rho$ of the seed-mean token score against tract "
+        "grades, mean over municipalities, per token on the validation cities (selection) and "
+        "the held-out test cities, and per token and per AGEB under grouped five-fold "
+        "cross-validation over the 138 cities; brackets are 95\\% percentile bootstraps "
+        "resampling cities, and the differences are paired against the reference head on the "
+        "same city draws. $\\kappa$ is the quadratic-weighted kappa of the isotonic grade on "
+        "the test tracts; bag error is the mean absolute error of the four cumulative shares "
+        "on the test municipalities, the quantity the training minimizes.",
+        "llcccccc",
+        "Features & Head & Validation & Test & CV, token & CV, AGEB & $\\kappa$, test & Bag error, test",
+        rows,
+        label="tab:heads",
+        resize=True,
+    )
+
+
 def transfer(book: dict) -> None:
     names = {
         "zero-shot": "Mexican, unadapted",
@@ -678,6 +750,7 @@ def main() -> None:
         audit,
         maup,
         transfer,
+        heads,
         supp_backbone_cv,
         supp_inputs,
         supp_finetune,
