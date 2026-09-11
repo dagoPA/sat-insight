@@ -90,7 +90,9 @@ def main() -> int:
         try:
             bags = load_city(key, sensor, fuse=True)
             if not bags:
-                raise ValueError("no bags")
+                # a municipality whose tokens all fall outside its tracts has no map to
+                # draw; it is not an error and it is not worth a line every hour
+                continue
             if not models:
                 dim = bags[0].instances.shape[1]
                 for seed in SEEDS:
