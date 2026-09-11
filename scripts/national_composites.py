@@ -8,6 +8,7 @@ extractor, and none of these municipalities ever enters training. Resumable: a
 composite already on disk is skipped. Splitting into processes takes index and total.
 
 Usage: national_composites.py [index total [reverse]]
+       national_composites.py <key ...>   (only those municipalities)
 
 With `reverse` the process walks its share of the list from the end, so a forward and a
 reverse process can share one index; each stops when it meets a municipality the other
@@ -41,7 +42,9 @@ def main() -> int:
     keys = list(beyond)
     label = "run"
     reverse = len(sys.argv) == 4 and sys.argv[3] == "reverse"
-    if len(sys.argv) >= 3 and sys.argv[1].isdigit():
+    if len(sys.argv) > 1 and not sys.argv[1].isdigit():
+        keys, label = [k for k in sys.argv[1:] if k in beyond], "keys"
+    elif len(sys.argv) >= 3 and sys.argv[1].isdigit():
         index, total = int(sys.argv[1]), int(sys.argv[2])
         keys, label = keys[index::total], f"process {index}"
     if reverse:
