@@ -72,6 +72,15 @@ sh scripts/head_ablation_queue.sh ov
 sh scripts/head_ablation_queue.sh dofalov
 uv run python scripts/head_ablation.py > logs/head_ablation.log 2>&1
 
+# 5d. the three-country maps: every Mexican municipality with urban tracts, Colombia and
+# Brazil widened to every seat above 0.5 km2 and 20,000 urban residents; compositing from
+# both ends of each list, encoding with both extractors, scoring with the saved heads, and
+# the transfer curves on each country's full supply (days of downloading; all resumable)
+sh scripts/national_composite_queue.sh &
+sh scripts/national_encode_queue.sh &
+sh scripts/national_score_queue.sh &
+wait
+
 # 6. figures and source data, each checked against docs/manuscript/canonical_results.json
 for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents fig6_gallery fig7_calibration fig8_transfer; do
   uv run python scripts/$fig.py > logs/$fig.log 2>&1
