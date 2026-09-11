@@ -80,7 +80,13 @@ class Tile(NamedTuple):
         return self.y0 + self.size / 2, self.x0 + self.size / 2
 
 
-def grid(shape: tuple[int, int], size: int = WINDOW_SIZE, stride: int | None = None) -> list[Tile]:
+def grid(
+    shape: tuple[int, int],
+    size: int = WINDOW_SIZE,
+    stride: int | None = None,
+    *,
+    flush: bool = False,
+) -> list[Tile]:
     """Lays a grid of whole patches over an array of this shape.
 
     Partial patches along the right and bottom edges are dropped. A ragged instance would
@@ -92,6 +98,12 @@ def grid(shape: tuple[int, int], size: int = WINDOW_SIZE, stride: int | None = N
     window's edge then see context on both sides, and the seams between windows, which
     otherwise appear as blocks in the map, are averaged out. The stride must divide the
     token grid, so that overlapping windows share token positions exactly.
+
+    With `flush` a last window is laid against the right and the bottom edge wherever the
+    regular ones stop short, so that no ground goes unencoded. It costs a city under 4%
+    of its area and a municipality of a few tracts most of it, which is why the small
+    boxes of the national maps ask for it. Its offset is floored to a whole token so that
+    every window still lands on the same token lattice.
     """
     if size <= 0:
         raise ValueError(f"patch side must be positive, got {size}")
@@ -99,17 +111,23 @@ def grid(shape: tuple[int, int], size: int = WINDOW_SIZE, stride: int | None = N
     if stride <= 0 or stride > size or stride % TOKEN_SIZE:
         raise ValueError(f"stride must be a multiple of {TOKEN_SIZE} in (0, {size}], got {stride}")
     height, width = shape
-    rows, cols = (height - size) // stride + 1, (width - size) // stride + 1
     if height < size or width < size:
         raise ValueError(f"a {height}x{width} array holds no whole {size}x{size} patch")
 
-    covered_rows, covered_cols = (rows - 1) * stride + size, (cols - 1) * stride + size
+    def offsets(extent: int) -> list[int]:
+        steps = [i * stride for i in range((extent - size) // stride + 1)]
+        if flush and steps[-1] + size < extent:
+            steps.append((extent - size) // TOKEN_SIZE * TOKEN_SIZE)
+        return sorted(set(steps))
+
+    ys, xs = offsets(height), offsets(width)
+    covered_rows, covered_cols = max(ys) + size, max(xs) + size
     dropped = 1 - (covered_rows * covered_cols) / (height * width)
-    log.info("%dx%d patch grid, %.1f%% of the array left over", rows, cols, 100 * dropped)
+    log.info("%dx%d patch grid, %.1f%% of the array left over", len(ys), len(xs), 100 * dropped)
     return [
-        Tile(row=r, col=c, y0=r * stride, x0=c * stride, size=size)
-        for r in range(rows)
-        for c in range(cols)
+        Tile(row=r, col=c, y0=y, x0=x, size=size)
+        for r, y in enumerate(ys)
+        for c, x in enumerate(xs)
     ]
 
 
@@ -132,6 +150,8 @@ def select(
     size: int = WINDOW_SIZE,
     min_valid_fraction: float = MIN_VALID_FRACTION,
     stride: int | None = None,
+    *,
+    flush: bool = False,
 ) -> list[Tile]:
     """Patches of a city that carry enough observed pixels to be worth embedding."""
     if not bands:
@@ -141,7 +161,7 @@ def select(
     if mismatched:
         raise ValueError(f"bands disagree on shape: {shape} against {mismatched}")
 
-    todos = grid(shape, size, stride)
+    todos = grid(shape, size, stride, flush=flush)
     kept = [t for t in todos if valid_fraction(bands, t) >= min_valid_fraction]
     log.info(
         "%d of %d patches kept above %.0f%% observed",
@@ -216,10 +236,17 @@ def instances(
     """
     kept: list[Tile] = []
     indices: list[int] = []
+    seen: set[tuple[int, int]] = set()
     por_ventana = (windows[0].size // token_size) ** 2 if windows else 0
     for i, ventana in enumerate(windows):
         for j, token in enumerate(tokens(ventana, token_size)):
+            # overlapping windows share tokens; a position enters the table once, from the
+            # first window that holds it, because a repeated instance would weigh twice in
+            # its bag and appear twice on the map
+            if (token.y0, token.x0) in seen:
+                continue
             if valid_fraction(bands, token) >= min_valid_fraction:
+                seen.add((token.y0, token.x0))
                 kept.append(token)
                 indices.append(i * por_ventana + j)
     log.info(

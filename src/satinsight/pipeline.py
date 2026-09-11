@@ -125,7 +125,7 @@ def city_aoi(
     city = catalogue[key]
     area = AOI.from_polygons(key, city.name, city.state, agebs, margin_m=margin_m)
     if cover_px:
-        area = area.covering(cover_px)
+        area = area.at_least(cover_px)
     height, width = area.approximate_shape()
     log.info("%s: %d AGEB, box ~%dx%d px @10 m", city.name, len(agebs), width, height)
     return area, agebs

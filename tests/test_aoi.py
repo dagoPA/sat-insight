@@ -42,27 +42,33 @@ def test_get_on_an_unknown_key_suggests_the_available_ones():
         get("saltillo")
 
 
-def test_covering_grows_a_box_until_whole_windows_reach_past_it():
+def test_at_least_grows_a_narrow_box_to_hold_one_window():
     from satinsight.aoi import AOI
     from satinsight.tiling import grid
 
-    for bbox in (
-        (-100.01, 20.0, -99.99, 20.01),
-        (-100.04, 20.0, -99.99, 20.035),
-        (-100.4, 20.0, -99.9, 20.3),
-    ):
-        narrow = AOI(key="k", name="n", state="s", bbox=bbox)
-        wide = narrow.covering(224)
-        height, width = wide.approximate_shape()
-        tiles = grid((height, width), 224)
-        assert max(t.y0 for t in tiles) + 224 >= narrow.approximate_shape()[0]
-        assert max(t.x0 for t in tiles) + 224 >= narrow.approximate_shape()[1]
+    narrow = AOI(key="k", name="n", state="s", bbox=(-100.01, 20.0, -99.99, 20.01))
+    wide = narrow.at_least(256)
+    height, width = wide.approximate_shape()
+    assert height >= 256 and width >= 256
+    assert len(grid((height, width), 224, flush=True)) >= 1
+    assert wide.bbox[0] == narrow.bbox[0] and wide.bbox[3] == narrow.bbox[3]
+    assert wide.bbox[2] > narrow.bbox[2] and wide.bbox[1] < narrow.bbox[1]
 
 
-def test_covering_keeps_the_north_west_corner_where_the_tracts_are():
+def test_at_least_leaves_a_wide_box_alone():
     from satinsight.aoi import AOI
 
-    box = AOI(key="k", name="n", state="s", bbox=(-100.01, 20.0, -99.99, 20.01))
-    wide = box.covering(224)
-    assert wide.bbox[0] == box.bbox[0] and wide.bbox[3] == box.bbox[3]
-    assert wide.bbox[2] > box.bbox[2] and wide.bbox[1] < box.bbox[1]
+    box = AOI(key="k", name="n", state="s", bbox=(-100.4, 20.0, -99.9, 20.3))
+    assert box.at_least(256).bbox == box.bbox
+
+
+def test_flush_windows_cover_the_far_edges():
+    from satinsight.tiling import grid
+
+    for shape in ((400, 388), (253, 253), (1000, 640)):
+        plain = grid(shape, 224)
+        flush = grid(shape, 224, flush=True)
+        assert max(t.y0 for t in flush) + 224 >= shape[0] - 15
+        assert max(t.x0 for t in flush) + 224 >= shape[1] - 15
+        assert all(t.y0 % 16 == 0 and t.x0 % 16 == 0 for t in flush)
+        assert len(flush) >= len(plain)

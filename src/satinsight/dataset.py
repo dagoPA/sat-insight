@@ -85,6 +85,7 @@ def build_city(
     min_instances: int = 32,
     catalogue: dict | None = None,
     force: bool = False,
+    flush: bool = False,
 ) -> dict[str, Path]:
     """Tiles a city, assembles its bags, and encodes its patches if an encoder is given.
 
@@ -112,7 +113,7 @@ def build_city(
     catalogue = catalogue or cities_by_size(root=root, stratify=True)
     _, agebs = city_aoi(key, root, catalogue=catalogue)
 
-    windows = tiling.select(bands, size=size, min_valid_fraction=min_valid_fraction)
+    windows = tiling.select(bands, size=size, min_valid_fraction=min_valid_fraction, flush=flush)
     tokens, _ = tiling.instances(windows, bands, min_valid_fraction=min_valid_fraction)
     instances, bag_table = bags.build(tokens, grid, agebs, key, min_instances=min_instances)
 

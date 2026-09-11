@@ -48,8 +48,13 @@ def encode_city(key: str, encoder) -> tuple[pd.DataFrame, np.ndarray]:
     for sensor in ("s2", "s1"):
         bands, grid, _ = load(DATA_ROOT / "composites" / f"{key}_{sensor}.tif")
         bands = {c: bands[c] for c in CHANNELS[sensor]}
+        # a seat box is a few hundred pixels across, where the windows the regular grid
+        # drops at the right and bottom edges are most of the urban zone
         windows = tiling.select(
-            bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=backbone.STRIDE
+            bands,
+            min_valid_fraction=tiling.MIN_VALID_FRACTION,
+            stride=backbone.STRIDE,
+            flush=True,
         )
         matrix, tokens = encoders.extract(bands, windows, encoder, order=CHANNELS[sensor])
         vectors[sensor] = matrix

@@ -25,6 +25,7 @@ logging.basicConfig(
 import pandas as pd  # noqa: E402
 
 from satinsight import encoders, tiling  # noqa: E402
+from satinsight.agebs import cities_beyond  # noqa: E402
 from satinsight.cache import load  # noqa: E402
 from satinsight.dataset import CHANNELS, paths  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
@@ -40,7 +41,9 @@ BACKBONES = {
 that cover it, which removes the window seams from the map."""
 
 
-def encode_city(city: str, sensor: str, tag: str, encoder, stride: int = 224) -> str:
+def encode_city(
+    city: str, sensor: str, tag: str, encoder, stride: int = 224, flush: bool = False
+) -> str:
     where = paths(DATA_ROOT)
     out_vectors = where["vectors"] / f"{city}_{sensor}_{tag}.npz"
     out_instances = where["instances"] / f"{city}_{sensor}_{tag}.parquet"
@@ -49,7 +52,9 @@ def encode_city(city: str, sensor: str, tag: str, encoder, stride: int = 224) ->
     instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
     bands, grid, _ = load(DATA_ROOT / "composites" / f"{city}_{sensor}.tif")
     bands = {c: bands[c] for c in CHANNELS[sensor]}
-    windows = tiling.select(bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=stride)
+    windows = tiling.select(
+        bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=stride, flush=flush
+    )
     metadata = (
         encoders.window_metadata(windows, grid)
         if getattr(encoder, "needs_metadata", False)
@@ -77,6 +82,9 @@ def main() -> int:
     encoder = make()
     where = paths(DATA_ROOT)
     keys = sorted(p.stem[:-3] for p in where["instances"].glob("*_s2.parquet"))
+    # the municipalities of the national maps were tiled with a window flush against the
+    # far edges, so their instances sit at positions the regular grid never visits
+    beyond = set(cities_beyond())
     if len(sys.argv) >= 4 and sys.argv[2].isdigit():
         keys = keys[int(sys.argv[2]) :: int(sys.argv[3])]
     failed = []
@@ -85,7 +93,7 @@ def main() -> int:
             if not (where["instances"] / f"{city}_{sensor}.parquet").exists():
                 continue
             try:
-                result = encode_city(city, sensor, tag, encoder, stride)
+                result = encode_city(city, sensor, tag, encoder, stride, city in beyond)
                 print(f"{result} {city}/{sensor} ({n}/{len(keys)})", flush=True)
             except Exception as e:
                 failed.append(f"{city}/{sensor}")

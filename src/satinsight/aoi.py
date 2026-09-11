@@ -46,29 +46,27 @@ class AOI:
         height_m = self.height_degrees * METRES_PER_DEGREE
         return int(height_m / resolution_m), int(width_m / resolution_m)
 
-    def covering(self, window_px: int, *, slack_px: int = 32, resolution_m: int = 10) -> "AOI":
-        """The same box grown east and south until whole windows cover all of its ground.
+    def at_least(self, side_px: int, *, resolution_m: int = 10) -> "AOI":
+        """The same box grown east and south until neither side is under `side_px`.
 
-        The window grid starts at the top left corner and drops the partial windows at the
-        right and bottom edges, which costs a large city under 4% of its area and costs a
-        municipality of a few tracts most of it: a 400 px box holds one 224 px window, so
-        two thirds of the ground is never encoded and the tracts outside that corner get
-        no tokens at all. Growing the box east and south leaves the tracts where they are,
-        in the top left, and adds ground until the grid reaches past them. The slack
-        absorbs the few pixels by which a downloaded raster differs from the box asked for.
+        A municipality of a few tracts wraps into a box narrower than one window, which no
+        tiling can lay. Growing it east and south leaves the tracts where they are, in the
+        top left corner, and the ground added around them belongs to no tract and drops
+        out of every bag. What the regular grid leaves over at the far edges is covered by
+        the flush windows of `tiling.grid` instead of by more ground.
         """
         lon_min, lat_min, lon_max, lat_max = self.bbox
         centre_lat = (lat_min + lat_max) / 2
         height, width = self.approximate_shape(resolution_m)
-        for axis, current in (("lon", width), ("lat", height)):
-            whole = -(-current // window_px) * window_px + slack_px
-            grow = max(whole - current, 0) * resolution_m / METRES_PER_DEGREE
-            if not grow:
-                continue
-            if axis == "lon":
-                lon_max += grow / max(cos(radians(centre_lat)), 1e-6)
-            else:
-                lat_min -= grow
+        if width < side_px:
+            lon_max += (
+                (side_px - width)
+                * resolution_m
+                / METRES_PER_DEGREE
+                / max(cos(radians(centre_lat)), 1e-6)
+            )
+        if height < side_px:
+            lat_min -= (side_px - height) * resolution_m / METRES_PER_DEGREE
         return AOI(
             key=self.key,
             name=self.name,

@@ -4,7 +4,9 @@ The geometry half of build_city only: 16 px tokens, bag tables and instance tabl
 the base sensor names, so that backbone_extract.py can encode them with each feature
 extractor exactly as it encodes the catalogue. Bags here are never trained on, so the
 32-token floor of the training bags does not apply: every token that falls in a tract is
-kept, and a municipality of a single small tract still gets its map. Resumable: a
+kept, the window grid lays a flush window against the right and bottom edges so that no
+tract is left outside it, and a municipality of a single small tract still gets its map.
+Resumable: a
 municipality with both instance tables filled is skipped; an empty table left by an
 earlier floor is rebuilt and its stale vectors and scores removed.
 
@@ -57,7 +59,9 @@ def main() -> int:
         try:
             forget(key, where)
             for sensor in ("s2", "s1"):
-                build_city(key, sensor, catalogue=catalogue, min_instances=MIN_INSTANCES)
+                build_city(
+                    key, sensor, catalogue=catalogue, min_instances=MIN_INSTANCES, flush=True
+                )
             done += 1
             print(f"OK {key}", flush=True)
         except Exception as e:

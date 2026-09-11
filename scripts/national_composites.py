@@ -2,8 +2,8 @@
 
 The national maps score all of urban Mexico with the heads trained on the 771 bags. The
 138 cities and the expansion cover 430 municipalities; the 2,469 with urban tracts are
-imaged here, both sensors, boxes drawn from their tracts and grown east and south until
-whole windows cover them, which the cities of the catalogue never needed. Nothing is
+imaged here, both sensors, boxes drawn from their tracts and grown east and south when
+they are narrower than one window, which the cities of the catalogue never are. Nothing is
 encoded or bagged: the vectors follow with backbone_extract.py for each feature
 extractor, and none of these municipalities ever enters training. Resumable: a
 composite already on disk is skipped. Splitting into processes takes index and total.
@@ -36,6 +36,9 @@ from satinsight.pipeline import city_aoi, ensure_composite  # noqa: E402
 from satinsight.tiling import WINDOW_SIZE  # noqa: E402
 
 FREE_FLOOR_GB = 20
+SLACK_PX = 32
+"""Pixels above one window a box is grown to, so that a raster a few pixels smaller than
+the box it was asked for still holds a whole window."""
 
 
 def main() -> int:
@@ -67,7 +70,7 @@ def main() -> int:
             break
         start = time.time()
         try:
-            area, agebs = city_aoi(key, catalogue=catalogue, cover_px=WINDOW_SIZE)
+            area, agebs = city_aoi(key, catalogue=catalogue, cover_px=WINDOW_SIZE + SLACK_PX)
             for sensor in ("s2", "s1"):
                 ensure_composite(key, sensor, area=area)
             rows.append(
