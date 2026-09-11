@@ -42,14 +42,27 @@ def test_get_on_an_unknown_key_suggests_the_available_ones():
         get("saltillo")
 
 
-def test_at_least_widens_small_boxes_around_their_centre():
+def test_covering_grows_a_box_until_whole_windows_reach_past_it():
+    from satinsight.aoi import AOI
+    from satinsight.tiling import grid
+
+    for bbox in (
+        (-100.01, 20.0, -99.99, 20.01),
+        (-100.04, 20.0, -99.99, 20.035),
+        (-100.4, 20.0, -99.9, 20.3),
+    ):
+        narrow = AOI(key="k", name="n", state="s", bbox=bbox)
+        wide = narrow.covering(224)
+        height, width = wide.approximate_shape()
+        tiles = grid((height, width), 224)
+        assert max(t.y0 for t in tiles) + 224 >= narrow.approximate_shape()[0]
+        assert max(t.x0 for t in tiles) + 224 >= narrow.approximate_shape()[1]
+
+
+def test_covering_keeps_the_north_west_corner_where_the_tracts_are():
     from satinsight.aoi import AOI
 
-    small = AOI(key="k", name="n", state="s", bbox=(-100.01, 20.0, -99.99, 20.01))
-    wide = small.at_least(3360.0)
-    height, width = wide.approximate_shape()
-    assert 330 <= height <= 340 and 330 <= width <= 340
-    assert abs((wide.bbox[0] + wide.bbox[2]) / 2 - (-100.0)) < 1e-9
-    assert abs((wide.bbox[1] + wide.bbox[3]) / 2 - 20.005) < 1e-9
-    big = AOI(key="k", name="n", state="s", bbox=(-100.1, 20.0, -99.9, 20.1))
-    assert big.at_least(3360.0).bbox == big.bbox
+    box = AOI(key="k", name="n", state="s", bbox=(-100.01, 20.0, -99.99, 20.01))
+    wide = box.covering(224)
+    assert wide.bbox[0] == box.bbox[0] and wide.bbox[3] == box.bbox[3]
+    assert wide.bbox[2] > box.bbox[2] and wide.bbox[1] < box.bbox[1]

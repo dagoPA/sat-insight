@@ -42,11 +42,6 @@ Blue and green feed no feature: they exist so natural colour can be rendered for
 """
 
 MARGIN_M = 200.0
-MIN_SIDE_M = 3360.0
-"""Smallest side of a city box: 336 px at 10 m, one 224 px window plus one stride of
-112 px, so the sliding window has two positions on each axis. Boxes of catalogue cities
-are far larger and unaffected; the municipalities of a few tracts imaged for the
-national maps are the ones this widens."""
 """Slack around the AGEB, so none is cut by the edge of the box."""
 
 SENSORS = ("s2", "s1")
@@ -118,6 +113,7 @@ def city_aoi(
     *,
     margin_m: float = MARGIN_M,
     catalogue: dict | None = None,
+    cover_px: int | None = None,
 ) -> tuple[AOI, gpd.GeoDataFrame]:
     """Box wrapping the AGEB of a city, together with those AGEB.
 
@@ -128,7 +124,8 @@ def city_aoi(
     agebs = agebs_of_city(key, root, catalogue=catalogue)
     city = catalogue[key]
     area = AOI.from_polygons(key, city.name, city.state, agebs, margin_m=margin_m)
-    area = area.at_least(MIN_SIDE_M)
+    if cover_px:
+        area = area.covering(cover_px)
     height, width = area.approximate_shape()
     log.info("%s: %d AGEB, box ~%dx%d px @10 m", city.name, len(agebs), width, height)
     return area, agebs
