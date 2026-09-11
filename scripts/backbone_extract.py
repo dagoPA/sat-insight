@@ -16,12 +16,14 @@ Usage: backbone_extract.py <dofa_large|copernicusfm|dofa_base_ov|dofa_large_ov> 
 import logging
 import sys
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
 )
 
+import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from satinsight import encoders, tiling  # noqa: E402
@@ -41,15 +43,23 @@ BACKBONES = {
 that cover it, which removes the window seams from the map."""
 
 
+def rows_of(vectors: Path) -> int:
+    """How many tokens a saved vector file holds, read without decompressing it."""
+    with np.load(vectors, allow_pickle=False) as data:
+        return int(data["y0"].shape[0])
+
+
 def encode_city(
     city: str, sensor: str, tag: str, encoder, stride: int = 224, flush: bool = False
 ) -> str:
     where = paths(DATA_ROOT)
     out_vectors = where["vectors"] / f"{city}_{sensor}_{tag}.npz"
     out_instances = where["instances"] / f"{city}_{sensor}_{tag}.parquet"
-    if out_vectors.exists() and out_instances.exists():
-        return "SKIP"
     instances = pd.read_parquet(where["instances"] / f"{city}_{sensor}.parquet")
+    # a city retiled after it was encoded leaves vectors of the wrong length behind, and
+    # they would load as a bag whose instances no longer line up with their ground
+    if out_vectors.exists() and out_instances.exists() and rows_of(out_vectors) == len(instances):
+        return "SKIP"
     bands, grid, _ = load(DATA_ROOT / "composites" / f"{city}_{sensor}.tif")
     bands = {c: bands[c] for c in CHANNELS[sensor]}
     windows = tiling.select(
