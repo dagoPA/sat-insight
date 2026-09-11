@@ -9,6 +9,7 @@ across the whole municipality, so the box covers favelas and formal city alike, 
 exactly what a binary detection metric needs.
 
 Usage: transfer_composites.py [key ...]   (default: the hand boxes plus every catalogued seat)
+       transfer_composites.py <index> <total>   (one of `total` interleaved processes)
 """
 
 import logging
@@ -76,6 +77,10 @@ def transfer_aoi(key: str) -> AOI:
 
 def main() -> int:
     keys = sys.argv[1:] or ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()]
+    if len(sys.argv) == 3 and sys.argv[1].isdigit() and sys.argv[2].isdigit():
+        index, total = int(sys.argv[1]), int(sys.argv[2])
+        keys = ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()][index::total]
+        print(f"process {index} of {total}: {len(keys)} boxes", flush=True)
     failed = []
     for key in keys:
         area = transfer_aoi(key)

@@ -359,6 +359,42 @@ def cities_extra(
     return extra
 
 
+def cities_beyond(min_agebs: int = 1, root: Path = DATA_ROOT) -> dict[str, City]:
+    """Every municipality with urban tracts that the national set and the expansion leave out.
+
+    The national maps score all of urban Mexico with the heads trained on the 771 bags, so
+    the remaining municipalities are imaged and encoded without ever entering training.
+    A municipality already covered, as a seat of a catalogued box or as a bag inside one,
+    is skipped, and the keys of the catalogue are never touched: a newcomer whose name
+    collides with one of them carries its municipality key as a suffix.
+    """
+    from satinsight.dataset import paths
+
+    catalogue = catalogue_with_extra(root=root)
+    covered = {city.municipality for city in catalogue.values()}
+    bags_dir = paths(root)["bags"]
+    for key in catalogue:
+        bag_file = bags_dir / f"{key}.parquet"
+        if bag_file.exists():
+            covered |= set(pd.read_parquet(bag_file, columns=["municipality"]).municipality)
+    wide = cities_by_size(min_agebs=min_agebs, root=root)
+    beyond = beyond_keys(
+        set(catalogue), {k: c for k, c in wide.items() if c.municipality not in covered}
+    )
+    log.info("%d municipalities beyond the catalogue", len(beyond))
+    return beyond
+
+
+def beyond_keys(taken: set[str], newcomers: dict[str, City]) -> dict[str, City]:
+    """Keys for `newcomers` that collide with none of the `taken` keys nor with each other."""
+    out: dict[str, City] = {}
+    for key, city in newcomers.items():
+        if key in taken or key in out:
+            key = f"{key}{city.municipality}"
+        out[key] = City(key, city.name, city.state, city.municipality)
+    return out
+
+
 def catalogue_with_extra(
     min_agebs: int = MIN_AGEBS_EXTRA, root: Path = DATA_ROOT
 ) -> dict[str, City]:
