@@ -9,7 +9,9 @@ across the whole municipality, so the box covers favelas and formal city alike, 
 exactly what a binary detection metric needs.
 
 Usage: transfer_composites.py [key ...]   (default: the hand boxes plus every catalogued seat)
-       transfer_composites.py <index> <total>   (one of `total` interleaved processes)
+       transfer_composites.py <index> <total> [reverse]   (one of `total` interleaved
+       processes; `reverse` walks the same share from the end and stops on meeting the
+       forward process, read from its progress table)
 """
 
 import logging
@@ -77,12 +79,29 @@ def transfer_aoi(key: str) -> AOI:
 
 def main() -> int:
     keys = sys.argv[1:] or ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()]
-    if len(sys.argv) == 3 and sys.argv[1].isdigit() and sys.argv[2].isdigit():
+    progress = partner = None
+    if len(sys.argv) >= 3 and sys.argv[1].isdigit() and sys.argv[2].isdigit():
         index, total = int(sys.argv[1]), int(sys.argv[2])
         keys = ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()][index::total]
-        print(f"process {index} of {total}: {len(keys)} boxes", flush=True)
-    failed = []
+        reverse = len(sys.argv) == 4 and sys.argv[3] == "reverse"
+        if reverse:
+            keys = keys[::-1]
+        stem = f"data/transfer_composites_process_{index}"
+        progress = Path(f"{stem}_reverse.csv" if reverse else f"{stem}.csv")
+        partner = Path(f"{stem}.csv" if reverse else f"{stem}_reverse.csv")
+        print(
+            f"process {index} of {total}{' reverse' if reverse else ''}: {len(keys)} boxes",
+            flush=True,
+        )
+    failed, rows = [], []
     for key in keys:
+        if (
+            partner is not None
+            and partner.exists()
+            and key in set(pd.read_csv(partner, dtype=str).key)
+        ):
+            print(f"MET the partner process at {key}; stopping", flush=True)
+            break
         area = transfer_aoi(key)
         shape = area.approximate_shape()
         print(f"{key}: bbox {tuple(round(v, 3) for v in area.bbox)} · ~{shape} px", flush=True)
@@ -93,6 +112,9 @@ def main() -> int:
             except Exception as e:
                 failed.append(f"{key}/{sensor}")
                 print(f"FAIL {key}/{sensor}: {type(e).__name__}: {e}", flush=True)
+        if progress is not None:
+            rows.append({"key": key})
+            pd.DataFrame(rows).to_csv(progress, index=False)
     print(f"END: {len(failed)} failed {failed}", flush=True)
     return 1 if failed else 0
 
