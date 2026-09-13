@@ -22,12 +22,14 @@ import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
 
+import geopandas as gpd  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import seaborn as sns  # noqa: E402
 
-from satinsight.manuscript import BACKBONES, INK, STYLE  # noqa: E402
+from satinsight.download import DATA_ROOT  # noqa: E402
+from satinsight.manuscript import BACKBONES, INK, MUTED, STYLE  # noqa: E402
 
 TAG, EXTRACTOR = BACKBONES[0]
 STEM = sys.argv[1] if len(sys.argv) > 1 else "docs/manuscript/figures/fig9_three_countries"
@@ -42,6 +44,22 @@ TRAINED_ON = ("train", "expansion")
 MIN_TOKENS = 20
 BUILT_FLOOR = 0.10
 """Built-up share a transfer token needs, the floor of the transfer protocol."""
+BOUNDARIES = DATA_ROOT / "boundaries" / "ne_10m_admin_1_states_provinces.zip"
+BOUNDARY_URL = "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip"
+"""States, departments and federal units of every country, from Natural Earth, drawn under
+the municipalities so that a reader can place them."""
+ADMIN = {"mexico": "Mexico", "colombia": "Colombia", "brazil": "Brazil"}
+
+
+def divisions() -> gpd.GeoDataFrame:
+    """The first-level political division of the three countries, downloaded once."""
+    if not BOUNDARIES.exists():
+        import urllib.request
+
+        BOUNDARIES.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(BOUNDARY_URL, BOUNDARIES)
+    table = gpd.read_file(f"zip://{BOUNDARIES}")
+    return table[table.admin.isin(ADMIN.values())][["admin", "name", "geometry"]]
 
 
 def mexican_tokens() -> pd.DataFrame:
@@ -70,7 +88,9 @@ def municipal(tokens: pd.DataFrame) -> pd.DataFrame:
     return out[out.tokens >= MIN_TOKENS]
 
 
-def paint_country(ax, points: pd.DataFrame, title: str):
+def paint_country(ax, points: pd.DataFrame, title: str, border: gpd.GeoDataFrame):
+    border.plot(ax=ax, facecolor="#f4f6f7", edgecolor=MUTED, linewidth=0.35, zorder=0)
+    border.dissolve().boundary.plot(ax=ax, color=INK, linewidth=0.7, zorder=1)
     low, high = points.score.quantile([0.02, 0.98])
     drawn = ax.scatter(
         points.lon,
@@ -80,8 +100,12 @@ def paint_country(ax, points: pd.DataFrame, title: str):
         cmap="RdYlBu_r",
         linewidths=0,
         alpha=0.85,
+        zorder=2,
     )
     ax.set_title(title, color=INK, loc="left")
+    west, south, east, north = border.total_bounds
+    ax.set_xlim(west, east)
+    ax.set_ylim(south, north)
     ax.set_aspect(1 / np.cos(np.radians(points.lat.mean())))
     ax.set_xticks([])
     ax.set_yticks([])
@@ -109,6 +133,7 @@ def paint_city(ax, tokens: pd.DataFrame, title: str) -> None:
 
 def main() -> None:
     sns.set_theme(**STYLE)
+    borders = divisions()
     mexico, foreign = mexican_tokens(), foreign_tokens()
     tokens = pd.concat([mexico, foreign], ignore_index=True)
     places = municipal(tokens)
@@ -123,7 +148,12 @@ def main() -> None:
         if "split" in points.columns and points.split.notna().any():
             held = int((~points.split.isin(TRAINED_ON)).sum())
             reach += f", {held:,} of them outside the training bags"
-        painted = paint_country(axes[row][0], points, f"{chr(97 + row * 2)}, {label}: {reach}")
+        painted = paint_country(
+            axes[row][0],
+            points,
+            f"{chr(97 + row * 2)}, {label}: {reach}",
+            borders[borders.admin == ADMIN[country]],
+        )
         key, city_name = ZOOM[country]
         city = drawn[drawn.key == key] if "key" in drawn.columns else drawn.iloc[:0]
         if city.empty:
