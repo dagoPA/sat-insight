@@ -10,8 +10,8 @@ exactly what a binary detection metric needs.
 
 Usage: transfer_composites.py [key ...]   (default: the hand boxes plus every catalogued seat)
        transfer_composites.py <index> <total> [reverse]   (one of `total` interleaved
-       processes; `reverse` walks the same share from the end and stops on meeting the
-       forward process, read from its progress table)
+       processes; `reverse` walks the same share from the end and stops where the
+       forward process has already composited, read from its progress table)
 """
 
 import logging
@@ -77,6 +77,17 @@ def transfer_aoi(key: str) -> AOI:
     raise KeyError(f"unknown transfer key {key!r}")
 
 
+def covered(progress: Path) -> set[str]:
+    """Boxes the partner process actually composited, which is where the two may meet.
+
+    A box it merely attempted is not a meeting point: during a service outage every box in
+    turn fails in seconds, and a meeting on attempts would leave the whole middle of the
+    catalogue uncomposited while both processes declared themselves finished.
+    """
+    table = pd.read_csv(progress, dtype=str)
+    return set(table[table.status == "ok"].key) if "status" in table.columns else set()
+
+
 def main() -> int:
     keys = sys.argv[1:] or ["bogota", "riodejaneiro", *HAND_BOXES, *catalogued_boxes()]
     progress = partner = None
@@ -95,11 +106,7 @@ def main() -> int:
         )
     failed, rows = [], []
     for key in keys:
-        if (
-            partner is not None
-            and partner.exists()
-            and key in set(pd.read_csv(partner, dtype=str).key)
-        ):
+        if partner is not None and partner.exists() and key in covered(partner):
             print(f"MET the partner process at {key}; stopping", flush=True)
             break
         area = transfer_aoi(key)
@@ -113,7 +120,8 @@ def main() -> int:
                 failed.append(f"{key}/{sensor}")
                 print(f"FAIL {key}/{sensor}: {type(e).__name__}: {e}", flush=True)
         if progress is not None:
-            rows.append({"key": key})
+            both = not any(f.startswith(f"{key}/") for f in failed[-2:])
+            rows.append({"key": key, "status": "ok" if both else "fail"})
             pd.DataFrame(rows).to_csv(progress, index=False)
     print(f"END: {len(failed)} failed {failed}", flush=True)
     return 1 if failed else 0

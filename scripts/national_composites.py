@@ -13,7 +13,9 @@ Usage: national_composites.py [index total [reverse]]
 
 With `reverse` the process walks its share of the list from the end, so a forward and a
 reverse process can share one index; each stops when it meets a municipality the other
-has already attempted, which is read from the partner's progress table.
+has already composited, which is read from the partner's progress table. A box it merely
+attempted is not a meeting point: during a service outage every box in turn fails in
+seconds, and meeting on attempts would leave the middle of the list uncomposited.
 """
 
 import logging
@@ -41,6 +43,12 @@ SLACK_PX = 32
 the box it was asked for still holds a whole window."""
 
 
+def composited(progress: Path) -> set[str]:
+    """Municipalities the partner process actually composited."""
+    table = pd.read_csv(progress, dtype=str)
+    return set(table[table.status == "ok"].key) if "status" in table.columns else set()
+
+
 def main() -> int:
     beyond = cities_beyond()
     catalogue = {**catalogue_with_extra(), **beyond}
@@ -61,7 +69,7 @@ def main() -> int:
     print(f"{label}: {len(keys)} municipalities", flush=True)
     failed, rows = [], []
     for n, key in enumerate(keys, start=1):
-        if partner.exists() and key in set(pd.read_csv(partner, dtype=str).key):
+        if partner.exists() and key in composited(partner):
             print(f"MET the partner process at {key}; stopping", flush=True)
             break
         free = shutil.disk_usage(DATA_ROOT).free / 1024**3
