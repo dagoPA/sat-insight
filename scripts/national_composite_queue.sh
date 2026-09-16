@@ -55,11 +55,15 @@ supervise() {
 
 wait_for_service || exit 1
 uv run python scripts/transfer_catalogue.py 0.5 20000 > logs/national_catalogue.log 2>&1
+# Mexico finished first, so its two indices exit at once; the four indices of the seat
+# catalogue keep the eight download slots busy on Brazil, whose boxes are the largest.
 for i in 0 1; do
-  supervise "logs/national_transfer_composites_$i.log" scripts/transfer_composites.py "$i" 2 &
   supervise "logs/national_composites_$i.log" scripts/national_composites.py "$i" 2 &
-  supervise "logs/national_transfer_composites_${i}_reverse.log" scripts/transfer_composites.py "$i" 2 reverse &
   supervise "logs/national_composites_${i}_reverse.log" scripts/national_composites.py "$i" 2 reverse &
+done
+for i in 0 1 2 3; do
+  supervise "logs/national_transfer_composites_$i.log" scripts/transfer_composites.py "$i" 4 &
+  supervise "logs/national_transfer_composites_${i}_reverse.log" scripts/transfer_composites.py "$i" 4 reverse &
 done
 wait
 echo "TRANSFER COMPOSITES DONE" > logs/transfer_composites_done.log
