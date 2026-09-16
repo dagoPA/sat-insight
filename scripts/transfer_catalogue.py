@@ -39,6 +39,15 @@ from satinsight.transfer import brazil_municipal_income, colombia_ipm, sector_pa
 COLOMBIA_MIN_KM2 = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
 BRAZIL_MIN_URBAN_POP = int(sys.argv[2]) if len(sys.argv) > 2 else 50_000
 MARGIN_M = 1000
+MAX_SIDE_KM = 120
+"""Longest side a seat box may have.
+
+A seat box is meant to hold one urban zone. In the Amazon and the Cerrado the tracts of
+the seat district reach across whole rural districts, and the box around them spans up to
+300 km of rainforest: it is not a city, it costs hundreds of megapixels to composite, and
+it carries a municipal label that describes ground the image mostly does not show. The
+largest real metropolis in the catalogue, Bras\u00edlia, measures 82 km, so the cap keeps
+every genuine urban zone and drops the handful of districts that are not one."""
 METRES_PER_DEGREE = 111_320
 UF_CODES = {
     "12": "AC", "27": "AL", "13": "AM", "16": "AP", "29": "BA", "23": "CE", "53": "DF",
@@ -56,6 +65,16 @@ def slug(name: str, code: str) -> str:
     """ASCII key from a name, suffixed with the code so homonyms never collide."""
     plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]", "", plain.lower()) + code
+
+
+def too_wide(bbox: tuple, limit_km: float = MAX_SIDE_KM) -> bool:
+    """Whether a padded box is larger than any urban zone, in either direction."""
+    from math import cos, radians
+
+    west, south, east, north = bbox
+    middle = (south + north) / 2
+    width = (east - west) * 111.32 * cos(radians(middle))
+    return max(width, (north - south) * 111.32) > limit_km
 
 
 def padded(bounds, margin_m: float = MARGIN_M):
@@ -103,7 +122,7 @@ def brazil() -> pd.DataFrame:
     urban["pop"] = urban["pop"].astype(float)
     urban = urban[urban["pop"] >= BRAZIL_MIN_URBAN_POP]
     income = brazil_municipal_income().set_index("municipality")
-    rows = []
+    rows, oversized = [], []
     for state_code, group in urban.groupby("CD_UF"):
         state = UF_CODES[state_code]
         path = sector_path(state, DATA_ROOT)
@@ -126,6 +145,10 @@ def brazil() -> pd.DataFrame:
             chosen = seat if len(seat) else own
             if chosen.empty or row.CD_MUN not in income.index:
                 continue
+            bbox = padded(chosen.total_bounds)
+            if too_wide(bbox):
+                oversized.append(row.NM_MUN)
+                continue
             rows.append(
                 {
                     "key": slug(row.NM_MUN, row.CD_MUN),
@@ -133,12 +156,19 @@ def brazil() -> pd.DataFrame:
                     "municipality": row.CD_MUN,
                     "name": row.NM_MUN,
                     "state": state,
-                    "bbox": " ".join(str(v) for v in padded(chosen.total_bounds)),
+                    "bbox": " ".join(str(v) for v in bbox),
                     "label": round(float(income.loc[row.CD_MUN, "mean_income"]), 2),
                     "size": int(row.pop),
                 }
             )
         logging.info("%s: %d municipalities boxed", state, len(group))
+    if oversized:
+        logging.info(
+            "brazil: %d seats dropped for a box wider than %d km: %s",
+            len(oversized),
+            MAX_SIDE_KM,
+            ", ".join(sorted(oversized)[:8]),
+        )
     logging.info("brazil: %d seats above %d urban residents", len(rows), BRAZIL_MIN_URBAN_POP)
     return pd.DataFrame(rows)
 
