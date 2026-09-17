@@ -39,6 +39,10 @@ from satinsight.transfer import brazil_municipal_income, colombia_ipm, sector_pa
 COLOMBIA_MIN_KM2 = float(sys.argv[1]) if len(sys.argv) > 1 else 1.5
 BRAZIL_MIN_URBAN_POP = int(sys.argv[2]) if len(sys.argv) > 2 else 50_000
 MARGIN_M = 1000
+BRIDGE_M = 2500.0
+"""Gap that still joins two urban tracts into one mass, as for the Mexican boxes."""
+METRIC_CRS = "EPSG:5880"
+"""SIRGAS 2000 Brazil Polyconic, metres over the whole country, for the buffering."""
 MAX_SIDE_KM = 120
 """Longest side a seat box may have.
 
@@ -75,6 +79,24 @@ def too_wide(bbox: tuple, limit_km: float = MAX_SIDE_KM) -> bool:
     middle = (south + north) / 2
     width = (east - west) * 111.32 * cos(radians(middle))
     return max(width, (north - south) * 111.32) > limit_km
+
+
+def main_mass(tracts: gpd.GeoDataFrame, bridge_m: float = BRIDGE_M) -> gpd.GeoDataFrame:
+    """The urban mass with the most tracts, as the Mexican boxes keep the mass of the seat.
+
+    A seat district's urban tracts include villages tens of kilometres from the town, all
+    labelled urban and all inside the district; Xinguara's 80 tracts cover 26 km2 yet
+    their box spans 96 km. Dilating the tracts and joining what touches rebuilds the
+    masses, and the one with the most tracts is the town.
+    """
+    metric = tracts.to_crs(METRIC_CRS)
+    union = metric.geometry.buffer(bridge_m).union_all()
+    parts = list(getattr(union, "geoms", [union]))
+    if len(parts) <= 1:
+        return tracts
+    points = metric.geometry.representative_point()
+    counts = [int(points.within(part).sum()) for part in parts]
+    return tracts[points.within(parts[counts.index(max(counts))]).to_numpy()]
 
 
 def padded(bounds, margin_m: float = MARGIN_M):
@@ -145,7 +167,7 @@ def brazil() -> pd.DataFrame:
             chosen = seat if len(seat) else own
             if chosen.empty or row.CD_MUN not in income.index:
                 continue
-            bbox = padded(chosen.total_bounds)
+            bbox = padded(main_mass(chosen).total_bounds)
             if too_wide(bbox):
                 oversized.append(row.NM_MUN)
                 continue
