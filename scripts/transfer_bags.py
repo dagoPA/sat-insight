@@ -90,9 +90,28 @@ JOIN_M = 120
 METRIC_CRS = {"colombia": "EPSG:3116", "brazil": "EPSG:5880"}
 
 
+MIN_CLASSIFIED = 0.5
+"""Share of the grid WorldCover must classify before its built fraction is trusted.
+
+A remote read that fails quietly leaves the mosaic unclassified, every token reads as
+unbuilt, and the box comes out with no bags and no error; 21 Brazilian boxes did during
+one network stall. Below this share the box fails instead, and the resumable queue
+retries it."""
+
+
 def built_fraction(key: str, tokens: pd.DataFrame) -> np.ndarray:
     _, grid, _ = load(DATA_ROOT / "composites" / f"{key}_s2.tif")
     classes = landcover.mosaic(transfer_aoi(key), grid)
+    classified = float((classes != landcover.NO_DATA).mean())
+    if classified < MIN_CLASSIFIED:
+        raise RuntimeError(
+            f"{key}: WorldCover classifies {100 * classified:.0f}% of the grid; the read failed"
+        )
+    return built_share(classes, tokens)
+
+
+def built_share(classes: np.ndarray, tokens: pd.DataFrame) -> np.ndarray:
+    """Share of built-up pixels under each token, ignoring pixels without cover."""
     out = np.empty(len(tokens))
     for i, (y0, x0) in enumerate(zip(tokens.y0, tokens.x0, strict=True)):
         window = classes[y0 : y0 + TOKEN_SIZE, x0 : x0 + TOKEN_SIZE]
