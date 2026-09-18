@@ -183,18 +183,42 @@ def brazil_municipalities(state: str, bbox, root: Path = DATA_ROOT) -> gpd.GeoDa
     return tracts.dissolve(by="municipality")[["name", "geometry"]].reset_index()
 
 
-def municipalities_in_box(polygons: gpd.GeoDataFrame, bbox, floor: float = BOX_SHARE_FLOOR):
-    """Keeps the municipalities with at least `floor` of their area inside the box."""
+SHARE_CRS = "EPSG:3857"
+"""Where the area shares are measured; the ratio of two areas at one latitude survives
+the projection's distortion, and a geographic CRS gives no area at all."""
+
+
+def municipalities_in_box(
+    polygons: gpd.GeoDataFrame, bbox, floor: float = BOX_SHARE_FLOOR, own: str | None = None
+):
+    """Keeps the municipalities with at least `floor` of their area inside the box.
+
+    The municipality the box was drawn for, `own`, always enters: a seat box wraps the
+    urban zone of a municipality that is mostly rural, so the box holds a few percent of
+    its area, and the share floor, meant to drop neighbours that only graze the box,
+    would drop the very municipality whose label the box carries. Half of Colombia's
+    catalogue produced empty bags that way before the rule was made explicit.
+    """
     from shapely.geometry import box as make_box
 
     window = make_box(*bbox)
     inside = polygons[polygons.intersects(window)].copy()
-    share = inside.geometry.intersection(window).area / inside.geometry.area
-    kept = inside[share >= floor]
+    metric = inside.to_crs(SHARE_CRS)
+    share = (
+        metric.geometry.intersection(
+            gpd.GeoSeries([window], crs=polygons.crs).to_crs(SHARE_CRS).iloc[0]
+        ).area
+        / metric.geometry.area
+    )
+    keep = (share >= floor).to_numpy().copy()
+    if own is not None:
+        keep = keep | (inside["municipality"] == own).to_numpy()
+    kept = inside[keep]
     log.info(
-        "%d of %d municipalities keep at least %.0f%% of their area in the box",
+        "%d of %d municipalities keep at least %.0f%% of their area in the box%s",
         len(kept),
         len(inside),
         100 * floor,
+        "" if own is None or own in set(kept["municipality"]) else f"; {own} absent",
     )
     return kept.reset_index(drop=True)

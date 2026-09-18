@@ -80,6 +80,7 @@ sh scripts/national_composite_queue.sh &
 sh scripts/national_encode_queue.sh &
 sh scripts/national_score_queue.sh &
 wait
+sh scripts/transfer_rebuild_queue.sh
 for tag in ov dofalov; do
   SATINSIGHT_BACKBONE=$tag uv run python scripts/transfer_scores.py > "logs/transfer_scores_$tag.log" 2>&1
 done

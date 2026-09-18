@@ -72,12 +72,18 @@ def catalogue() -> pd.DataFrame:
     if not path.exists():
         return hand
     boxed = pd.read_csv(path, dtype={"municipality": str, "state": str})
-    return pd.concat([hand, boxed[["key", "country", "state"]]], ignore_index=True)
+    return pd.concat([hand, boxed[["key", "country", "state", "municipality"]]], ignore_index=True)
 
 
 CATALOGUE = catalogue().set_index("key")
 COUNTRY = CATALOGUE.country.to_dict()
 STATE = {k: v for k, v in CATALOGUE.state.to_dict().items() if isinstance(v, str)}
+OWN = (
+    {k: v for k, v in CATALOGUE.municipality.to_dict().items() if isinstance(v, str)}
+    if "municipality" in CATALOGUE.columns
+    else {}
+)
+"""The municipality each catalogued box was drawn for, which always enters its bags."""
 BUILT_CODE = 50
 BUILT_FLOOR = 0.10
 JOIN_M = 120
@@ -142,14 +148,16 @@ def build(key: str) -> pd.DataFrame:
     bbox = transfer_aoi(key).bbox
 
     if country == "colombia":
-        polygons = municipalities_in_box(colombia_municipalities(), bbox)
+        polygons = municipalities_in_box(colombia_municipalities(), bbox, own=OWN.get(key))
         labels = colombia_ipm()[["municipality", "poor_share"]]
         tokens["municipality"] = assign_municipality(points, polygons).to_numpy()
         tokens = tokens.merge(labels, on="municipality", how="left")
         tokens["truth"] = colombia_truth(key, points).to_numpy()
         tokens["unit"] = None
     else:
-        polygons = municipalities_in_box(brazil_municipalities(STATE[key], bbox), bbox)
+        polygons = municipalities_in_box(
+            brazil_municipalities(STATE[key], bbox), bbox, own=OWN.get(key)
+        )
         labels = brazil_municipal_income()[["municipality", "mean_income"]]
         tokens["municipality"] = assign_municipality(points, polygons).to_numpy()
         tokens = tokens.merge(labels, on="municipality", how="left")
