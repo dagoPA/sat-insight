@@ -18,6 +18,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
 )
 
+import pandas as pd  # noqa: E402
+
 from satinsight import backbone, encoders  # noqa: E402
 from satinsight.download import DATA_ROOT  # noqa: E402
 
@@ -36,6 +38,34 @@ def composited_keys() -> list[str]:
     return [k for k in keys if (root / f"{k}_s2.tif").exists() and (root / f"{k}_s1.tif").exists()]
 
 
+def stale(key: str, tokens_path) -> bool:
+    """Whether a saved token table was cut from a composite other than the one on disk.
+
+    A box recomposited on a tighter or wider footprint keeps its old token table, whose
+    grid positions then point at the wrong ground: 21 Amazonian seats came out with no
+    built token at all that way. A table is stale when its positions reach past the
+    raster or stop more than one token short of its far edges.
+    """
+    import rasterio
+
+    from satinsight.tiling import TOKEN_SIZE
+
+    with rasterio.open(DATA_ROOT / "composites" / f"{key}_s2.tif") as source:
+        height, width = source.height, source.width
+    table = pd.read_parquet(tokens_path, columns=["y0", "x0"])
+    if table.empty:
+        return True
+    far_y, far_x = int(table.y0.max()) + TOKEN_SIZE, int(table.x0.max()) + TOKEN_SIZE
+    beyond = far_y > height or far_x > width
+    # with the flush window the last token ends within one token of each far edge
+    short = far_y < height - TOKEN_SIZE or far_x < width - TOKEN_SIZE
+    if beyond or short:
+        print(
+            f"STALE {key}: tokens reach ({far_y}, {far_x}) on a {height}x{width} raster", flush=True
+        )
+    return beyond or short
+
+
 def main() -> int:
     keys = sys.argv[1:] or composited_keys()
     encoder = backbone.encoder()
@@ -46,7 +76,7 @@ def main() -> int:
             out / f"tokens_{key}{backbone.SUFFIX}.parquet",
             out / f"vectors_{key}{backbone.SUFFIX}.npz",
         )
-        if tokens_path.exists() and vectors_path.exists():
+        if tokens_path.exists() and vectors_path.exists() and not stale(key, tokens_path):
             print(f"SKIP {key}", flush=True)
             continue
         try:
