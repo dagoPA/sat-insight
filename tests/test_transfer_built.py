@@ -29,7 +29,7 @@ def test_a_mosaic_left_unclassified_is_refused(monkeypatch):
 
     empty = np.full((32, 32), landcover.NO_DATA, dtype="uint8")
     monkeypatch.setattr(transfer_bags, "load", lambda path: (None, None, None))
-    monkeypatch.setattr(transfer_bags, "transfer_aoi", lambda key: None)
+    monkeypatch.setattr(transfer_bags, "raster_aoi", lambda key: None)
     monkeypatch.setattr(transfer_bags.landcover, "mosaic", lambda aoi, grid: empty)
     with pytest.raises(RuntimeError, match="read failed"):
         transfer_bags.built_fraction("anywhere", pd.DataFrame({"y0": [0], "x0": [0]}))
