@@ -38,6 +38,24 @@ def composited_keys() -> list[str]:
     return [k for k in keys if (root / f"{k}_s2.tif").exists() and (root / f"{k}_s1.tif").exists()]
 
 
+def one_grid(key: str) -> None:
+    """Refuses a box whose two composites do not share shape and reference system.
+
+    The fused vector of a token pairs the optical and the radar rows at one grid
+    position, which only names the same ground when both composites were laid on one
+    grid. A radar composite built in the neighbouring UTM zone differs by a few pixels
+    and a projection's skew, and the pairing would go quietly wrong.
+    """
+    import rasterio
+
+    grids = {}
+    for sensor in ("s2", "s1"):
+        with rasterio.open(DATA_ROOT / "composites" / f"{key}_{sensor}.tif") as source:
+            grids[sensor] = (source.height, source.width, str(source.crs))
+    if grids["s2"] != grids["s1"]:
+        raise RuntimeError(f"{key}: composites on different grids {grids}; recomposite the radar")
+
+
 def stale(key: str, tokens_path) -> bool:
     """Whether a saved token table was cut from a composite other than the one on disk.
 
@@ -80,6 +98,7 @@ def main() -> int:
             print(f"SKIP {key}", flush=True)
             continue
         try:
+            one_grid(key)
             table, fused = encode_city(key, encoder)
             encoders.save(fused, vectors_path, y0=table.y0.to_numpy(), x0=table.x0.to_numpy())
             table.to_parquet(tokens_path, index=False)
