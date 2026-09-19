@@ -64,7 +64,7 @@ def test_a_broken_read_does_not_desynchronise_the_polarisations(monkeypatch):
     scenes, and the ratio between them would stop meaning what it claims to mean.
     """
 
-    def read(href, bbox, shape=None):
+    def read(href, bbox, shape=None, crs=None):
         if href == "b/vh":
             raise OSError("broken read")
         return np.ones(SHAPE, dtype="float32")
@@ -78,7 +78,7 @@ def test_a_broken_read_does_not_desynchronise_the_polarisations(monkeypatch):
 
 
 def test_it_aborts_when_almost_every_read_fails(monkeypatch):
-    def read(href, bbox, shape=None):
+    def read(href, bbox, shape=None, crs=None):
         raise OSError("HTTP response code: 403")
 
     monkeypatch.setattr(composite, "read_window", read)
@@ -101,7 +101,7 @@ def test_the_orbit_is_chosen_by_measured_coverage(monkeypatch):
     scenes = [sar_scene(f"edge{i}", orbit=166) for i in range(5)]
     scenes += [sar_scene(f"full{i}", orbit=173) for i in range(2)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         array = np.full(shape, np.nan, dtype="float32")
         if href.startswith("full"):
             array[:] = 1.0
@@ -126,7 +126,7 @@ def test_at_equal_coverage_the_orbit_with_more_scenes_wins(monkeypatch):
 
 
 def test_an_entirely_unreadable_orbit_counts_as_no_coverage(monkeypatch):
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         raise OSError("403")
 
     monkeypatch.setattr(composite, "read_window", read)
@@ -141,7 +141,7 @@ def test_a_dropped_read_does_not_sink_its_orbit(monkeypatch):
     """
     scenes = [sar_scene(f"good{i}", orbit=20) for i in range(4)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         if href.startswith("good0"):
             raise OSError("connection dropped")
         return np.ones(shape, dtype="float32")
@@ -195,7 +195,7 @@ def test_the_tile_that_does_not_touch_the_box_is_dropped(monkeypatch):
     scenes = [optical_scene(f"far{i}", "13QFD", cloud_cover=1.0) for i in range(19)]
     scenes += [optical_scene("over", "13QFC", cloud_cover=40.0)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         return np.full(shape, 0 if href.startswith("far") else 4, dtype="uint8")
 
     monkeypatch.setattr(composite, "read_window", read)
@@ -207,7 +207,7 @@ def test_a_split_box_keeps_both_tiles(monkeypatch):
     scenes = [optical_scene(f"a{i}", "14QKH") for i in range(3)]
     scenes += [optical_scene(f"b{i}", "14QLH") for i in range(3)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         array = np.zeros(shape, dtype="uint8")
         if href.startswith("a"):
             array[:, : shape[1] // 2] = 4
@@ -230,7 +230,7 @@ def test_optical_coverage_measures_the_ground_a_zone_sees(monkeypatch):
     sliver = [optical_scene(f"s{i}", "22KGF") for i in range(3)]
     whole = [optical_scene(f"w{i}", "23KLP") for i in range(3)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         array = np.zeros(shape, dtype="uint8")
         if href.startswith("s"):
             array[:, : shape[1] // 8] = 4
@@ -246,7 +246,7 @@ def test_optical_coverage_joins_the_tiles_of_one_zone(monkeypatch):
     left = [optical_scene(f"l{i}", "14QKH") for i in range(2)]
     right = [optical_scene(f"r{i}", "14QLH") for i in range(2)]
 
-    def read(href, bbox, shape):
+    def read(href, bbox, shape, crs=None):
         array = np.zeros(shape, dtype="uint8")
         if href.startswith("l"):
             array[:, : shape[1] // 2] = 4
@@ -256,3 +256,18 @@ def test_optical_coverage_joins_the_tiles_of_one_zone(monkeypatch):
 
     assert composite.optical_coverage(left, BBOX, read=read) == pytest.approx(0.5)
     assert composite.optical_coverage(left + right, BBOX, read=read) == pytest.approx(1.0)
+
+
+def test_the_radar_composite_reads_every_scene_in_the_requested_system(monkeypatch):
+    seen = []
+
+    def read(href, bbox, shape, crs=None):
+        seen.append(crs)
+        return np.full(shape, 0.2, dtype="float32")
+
+    monkeypatch.setattr(composite, "read_window", read)
+    scenes = [sar_scene(f"s{i}") for i in range(3)]
+    composite_s1(scenes, BBOX, SHAPE, crs="EPSG:32618")
+    # the coverage probes read in the scene's own system; every polarisation read follows
+    # the requested one, and the polarisation reads come last
+    assert seen[-1] == "EPSG:32618" and seen.count("EPSG:32618") == 6

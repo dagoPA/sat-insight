@@ -312,11 +312,13 @@ def composite_s1(
     shape: tuple[int, int] | None = None,
     max_scenes: int = 24,
     failure_fraction: float | None = FAILURE_FRACTION,
+    crs: str | None = None,
 ) -> tuple[dict[str, np.ndarray], dict[str, object]]:
     """Per-pixel median of Sentinel-1 RTC scenes from a single orbit geometry.
 
     Returns the composited polarisations in linear power together with the metadata of the
-    chosen acquisition.
+    chosen acquisition. With `crs` every scene is read in that system, so the radar lands
+    on the optical composite's grid whatever zone its scenes were published in.
 
     Aborts when too many reads fail. `failure_fraction` at `None` turns that check off for
     whoever wants a partial composite on purpose; at zero it tolerates not one failed read.
@@ -336,9 +338,9 @@ def composite_s1(
         # one and the other would come out computed over different sets of scenes.
         try:
             got = {
-                polarisation: read_window(item.assets[polarisation].href, bbox, shape).astype(
-                    "float32"
-                )
+                polarisation: read_window(
+                    item.assets[polarisation].href, bbox, shape, crs=crs
+                ).astype("float32")
                 for polarisation in stacks
             }
         except Exception:

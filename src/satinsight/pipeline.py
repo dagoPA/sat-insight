@@ -139,8 +139,10 @@ def build_composite(
     period: str = CENSUS_PERIOD,
     max_scenes: int | None = None,
     catalogue=None,
+    root: Path = DATA_ROOT,
 ) -> tuple[dict[str, np.ndarray], Grid, dict]:
-    """Composites a city and a sensor from the catalogue, without consulting disk."""
+    """Composites a city and a sensor from the catalogue, reading disk only for the
+    optical grid the radar of the same city must share."""
     if sensor not in SENSORS:
         raise ValueError(f"unknown sensor: {sensor!r}. Valid: {', '.join(SENSORS)}")
 
@@ -169,7 +171,14 @@ def build_composite(
 
             return optical_coverage(group, area.bbox)
 
-    grid, scenes = grid_from_scenes(area.bbox, scenes, score=score)
+    optical = cache.composite_path(key, "s2", root / "composites")
+    if sensor == "s1" and optical.exists():
+        # the radar lands on the optical grid, zone included, so that the two composites
+        # of a box on a zone edge tile identically and their tokens share the ground
+        grid = grid_of(optical)
+        log.info("%s/s1 on the optical grid: %s, %dx%d px", key, grid.crs, *grid.shape)
+    else:
+        grid, scenes = grid_from_scenes(area.bbox, scenes, score=score)
     log.info("%s/%s: %d scenes, grid %.1f MP", key, sensor, len(scenes), grid.megapixels)
 
     if sensor == "s2":
@@ -179,7 +188,7 @@ def build_composite(
         depth = int(meta["median_depth"])
     else:
         cap = max_scenes or CAP_S1
-        bands, meta = composite_s1(scenes, area.bbox, grid.shape, cap)
+        bands, meta = composite_s1(scenes, area.bbox, grid.shape, cap, crs=grid.crs)
         tags = dict(meta)
         depth = int(meta["scenes_used"])
 
@@ -243,9 +252,22 @@ def ensure_composite(
 
     if area is None:
         area, _ = city_aoi(key, root)
-    bands, grid, tags = build_composite(key, sensor, area, period=period, **kwargs)
+    bands, grid, tags = build_composite(key, sensor, area, period=period, root=root, **kwargs)
     cache.save(bands, grid, destination, **tags)
     return bands, grid, tags
+
+
+def grid_of(path: Path) -> Grid:
+    """The grid of a composite on disk, read from its header alone."""
+    import rasterio
+
+    with rasterio.open(path) as source:
+        return Grid(
+            transform=source.transform,
+            shape=(source.height, source.width),
+            crs=str(source.crs),
+            bounds=tuple(source.bounds),
+        )
 
 
 def _safe_divide(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
