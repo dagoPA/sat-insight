@@ -11,9 +11,11 @@ Copernicus-FM also takes the location, date and footprint of each window; they c
 the composite grid, with the date fixed at the middle of the composited year.
 
 Usage: backbone_extract.py <dofa_large|copernicusfm|dofa_base_ov|dofa_large_ov> [index total]
+       SATINSIGHT_EXTRACT_SCOPE=catalogue restricts the run to the catalogue cities
 """
 
 import logging
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -43,6 +45,9 @@ BACKBONES = {
 that cover it, which removes the window seams from the map."""
 
 
+SCOPE = os.environ.get("SATINSIGHT_EXTRACT_SCOPE", "").strip()
+
+
 def rows_of(vectors: Path) -> int:
     """How many tokens a saved vector file holds, read without decompressing it."""
     with np.load(vectors, allow_pickle=False) as data:
@@ -62,6 +67,15 @@ def encode_city(
         return "SKIP"
     bands, grid, _ = load(DATA_ROOT / "composites" / f"{city}_{sensor}.tif")
     bands = {c: bands[c] for c in CHANNELS[sensor]}
+    # the instance table says which windows it was cut with: positions the regular grid
+    # never visits come from the flush window of the national tiler
+    shape = next(iter(bands.values())).shape
+    regular = {
+        (t.y0, t.x0)
+        for w in tiling.grid(shape, tiling.WINDOW_SIZE, stride)
+        for t in tiling.tokens(w, tiling.TOKEN_SIZE)
+    }
+    flush = flush or not set(zip(instances.y0, instances.x0, strict=True)) <= regular
     windows = tiling.select(
         bands, min_valid_fraction=tiling.MIN_VALID_FRACTION, stride=stride, flush=flush
     )
@@ -92,6 +106,12 @@ def main() -> int:
     encoder = make()
     where = paths(DATA_ROOT)
     keys = sorted(p.stem[:-3] for p in where["instances"].glob("*_s2.parquet"))
+    if SCOPE == "catalogue":
+        # the reference extractions of the ablation only ever concern the catalogue; the
+        # municipalities of the national maps are encoded with the sliding window alone
+        from satinsight.agebs import catalogue_with_extra
+
+        keys = [k for k in keys if k in catalogue_with_extra()]
     # the municipalities of the national maps were tiled with a window flush against the
     # far edges, so their instances sit at positions the regular grid never visits
     beyond = set(cities_beyond())

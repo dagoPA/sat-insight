@@ -24,7 +24,10 @@ done
 #    the rest of urban Mexico through the national tiler, then every other extractor
 uv run python scripts/retile_radar.py $(cat "$CATALOGUE_KEYS") > logs/retile_radar.log 2>&1
 uv run python scripts/national_tiles.py > logs/national_tiles_grid.log 2>&1
-for name in dofa_large copernicusfm dofa_base_ov dofa_large_ov; do
+for name in dofa_large copernicusfm; do
+  SATINSIGHT_EXTRACT_SCOPE=catalogue uv run python scripts/backbone_extract.py $name > "logs/backbone_${name}_grid.log" 2>&1
+done
+for name in dofa_base_ov dofa_large_ov; do
   uv run python scripts/backbone_extract.py $name > "logs/backbone_${name}_grid.log" 2>&1
 done
 step "vectors rebuilt"
