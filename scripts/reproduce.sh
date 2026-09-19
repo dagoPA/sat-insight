@@ -64,6 +64,10 @@ uv run python scripts/backbone_extract.py dofa_large > logs/backbone_dofa_large.
 sh scripts/backbone_queue.sh
 sh scripts/backbone_protocol_queue.sh s2_dofal
 sh scripts/backbone_cv_queue.sh   # grouped cross-validation of the three backbones and the pooled comparison
+# the sliding-window extraction the manuscript rests on (DOFA-B and DOFA-L, stride 112,
+# central-window rule): its cross-validation, then the full protocol of both extractors
+sh scripts/overlap_cv_queue.sh
+sh scripts/seamfree_protocol_queue.sh
 
 # 5c. partial fine-tuning of the base backbone: cache the frozen prefix, train the suffix
 uv run python scripts/finetune_cache.py 10 > logs/finetune_cache.log 2>&1
@@ -71,6 +75,11 @@ sh scripts/finetune_queue.sh
 sh scripts/head_ablation_queue.sh ov
 sh scripts/head_ablation_queue.sh dofalov
 uv run python scripts/head_ablation.py > logs/head_ablation.log 2>&1
+for tag in base dofal cfm ov dofalov; do   # the canonical results file, one block per extraction
+  uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
+done
+uv run python scripts/headline_intervals.py > logs/headline_intervals.log 2>&1
+uv run python scripts/classification_view.py > logs/classification_view.log 2>&1
 
 # 5d. the three-country maps: every Mexican municipality with urban tracts, Colombia and
 # Brazil widened to every seat above 0.5 km2 and 20,000 urban residents; compositing from

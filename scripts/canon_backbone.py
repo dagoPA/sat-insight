@@ -6,7 +6,8 @@ block from the files under data/ and, run for DOFA base itself, checks that it
 reproduces the published numbers: any block it cannot reproduce is printed and the run
 fails, so the derivation written here is the one the paper actually used.
 
-Usage: canon_backbone.py [tag]   (no tag verifies DOFA base; "dofal" writes book["dofal"])
+Usage: canon_backbone.py [tag]   (no tag verifies DOFA base; "base" rewrites the root
+       block after the data changed; "dofal" writes book["dofal"])
 """
 
 import json
@@ -27,7 +28,7 @@ sys.path.insert(0, "scripts")
 from backbone_paired import within  # noqa: E402
 
 TAG = sys.argv[1] if len(sys.argv) > 1 else ""
-SUFFIX = f"_{TAG}" if TAG else ""
+SUFFIX = f"_{TAG}" if TAG and TAG != "base" else ""
 SENSOR_SUFFIX = f"_s2_{TAG}" if TAG else ""
 SEEDS = (0, 1, 2)
 BUDGETS = (0.05, 0.1, 0.2, 0.3)
@@ -272,6 +273,14 @@ def main() -> int:
         problems = compare(block, book)
         print("\n".join(problems) if problems else "DOFA base canon reproduced", flush=True)
         return 1 if problems else 0
+    if TAG == "base":
+        # the base numbers are the root of the canon; rewriting them is the deliberate act
+        # that follows a change of the data, never a side effect of a verification run
+        for key, value in block.items():
+            book[key] = value
+        CANON_PATH.write_text(json.dumps(book, indent=1, ensure_ascii=False))
+        print("DOFA base canon rewritten", flush=True)
+        return 0
     book[TAG] = block
     CANON_PATH.write_text(json.dumps(book, indent=1, ensure_ascii=False))
     print(json.dumps(block, indent=1)[:3000], flush=True)

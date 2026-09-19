@@ -52,8 +52,10 @@ uv run python scripts/wc_paired_test.py > "logs/wc_paired_test_$tag.log" 2>&1
 uv run python scripts/llp_sweep.py 5 30 1 > "logs/llp_sweep_$tag.log" 2>&1
 
 # 7. transfer: encode every composited box with this backbone, bag it, train
-uv run python scripts/transfer_encode.py > "logs/transfer_encode_$tag.log" 2>&1
-uv run python scripts/transfer_bags.py > "logs/transfer_bags_$tag.log" 2>&1
-uv run python scripts/transfer_train.py 40 5 > "logs/transfer_train_$tag.log" 2>&1
+if [ -z "$SKIP_TRANSFER" ]; then   # the three-country queue trains the transfer once, on the full supply
+  uv run python scripts/transfer_encode.py > "logs/transfer_encode_$tag.log" 2>&1
+  uv run python scripts/transfer_bags.py > "logs/transfer_bags_$tag.log" 2>&1
+  uv run python scripts/transfer_train.py 40 5 > "logs/transfer_train_$tag.log" 2>&1
+fi
 
 echo "BACKBONE FULL PROTOCOL DONE $tag" > "logs/backbone_full_${tag}_done.log"
