@@ -99,9 +99,28 @@ one network stall. Below this share the box fails instead, and the resumable que
 retries it."""
 
 
+def raster_aoi(key: str):
+    """The footprint of the composite on disk, which is the ground the tokens cover.
+
+    A box recomposited on a tighter footprint, or one that kept a wider composite from
+    an earlier catalogue, has tokens over ground the catalogue box no longer describes.
+    The land cover and the municipalities are therefore taken over the raster itself,
+    and the catalogue box only says what to composite.
+    """
+    import rasterio
+    from rasterio.warp import transform_bounds
+
+    from satinsight.aoi import AOI
+
+    with rasterio.open(DATA_ROOT / "composites" / f"{key}_s2.tif") as source:
+        bbox = transform_bounds(source.crs, "EPSG:4326", *source.bounds)
+    named = transfer_aoi(key)
+    return AOI(key=key, name=named.name, state=named.state, bbox=tuple(bbox))
+
+
 def built_fraction(key: str, tokens: pd.DataFrame) -> np.ndarray:
     _, grid, _ = load(DATA_ROOT / "composites" / f"{key}_s2.tif")
-    classes = landcover.mosaic(transfer_aoi(key), grid)
+    classes = landcover.mosaic(raster_aoi(key), grid)
     classified = float((classes != landcover.NO_DATA).mean())
     if classified < MIN_CLASSIFIED:
         raise RuntimeError(
@@ -164,7 +183,7 @@ def build(key: str) -> pd.DataFrame:
     tokens["row"] = np.arange(len(tokens))
     tokens["built"] = built_fraction(key, tokens)
     points = as_points(tokens)
-    bbox = transfer_aoi(key).bbox
+    bbox = raster_aoi(key).bbox
 
     if country == "colombia":
         polygons = municipalities_in_box(colombia_municipalities(), bbox, own=OWN.get(key))
