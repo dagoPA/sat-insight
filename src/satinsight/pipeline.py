@@ -150,9 +150,9 @@ def build_composite(
     if not scenes:
         raise RuntimeError(f"the catalogue returned no {sensor} scenes for {key}")
 
-    # for radar the UTM zone is chosen by the coverage each one reaches and not by how many
-    # scenes it brings: the two zones of a city on the edge can see different halves
-    score = None
+    # the UTM zone is chosen by the coverage each one reaches and not by how many scenes
+    # it brings: the two zones of a city on the edge can see different halves, and for
+    # optical scenes the tiles of the chosen zone may reach only a sliver of the box
     if sensor == "s1":
 
         def score(group):
@@ -161,6 +161,13 @@ def build_composite(
 
             orbits = group_by_orbit(group)
             return max((useful_coverage(v, area.bbox) for v in orbits.values()), default=0.0)
+
+    else:
+
+        def score(group):
+            from satinsight.composite import optical_coverage
+
+            return optical_coverage(group, area.bbox)
 
     grid, scenes = grid_from_scenes(area.bbox, scenes, score=score)
     log.info("%s/%s: %d scenes, grid %.1f MP", key, sensor, len(scenes), grid.megapixels)

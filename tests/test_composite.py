@@ -223,3 +223,36 @@ def test_no_useful_tile_at_all_fails(monkeypatch):
     monkeypatch.setattr(composite, "read_window", lambda h, b, f: np.zeros(f, dtype="uint8"))
     with pytest.raises(RuntimeError, match="none of the"):
         composite.useful_tiles([optical_scene("x", "14QKH")], BBOX)
+
+
+def test_optical_coverage_measures_the_ground_a_zone_sees(monkeypatch):
+    """Uberaba's case: two zones with equal scene counts, one reaching a sliver of the box."""
+    sliver = [optical_scene(f"s{i}", "22KGF") for i in range(3)]
+    whole = [optical_scene(f"w{i}", "23KLP") for i in range(3)]
+
+    def read(href, bbox, shape):
+        array = np.zeros(shape, dtype="uint8")
+        if href.startswith("s"):
+            array[:, : shape[1] // 8] = 4
+        else:
+            array[:] = 4
+        return array
+
+    assert composite.optical_coverage(sliver, BBOX, read=read) == pytest.approx(0.125)
+    assert composite.optical_coverage(whole, BBOX, read=read) == pytest.approx(1.0)
+
+
+def test_optical_coverage_joins_the_tiles_of_one_zone(monkeypatch):
+    left = [optical_scene(f"l{i}", "14QKH") for i in range(2)]
+    right = [optical_scene(f"r{i}", "14QLH") for i in range(2)]
+
+    def read(href, bbox, shape):
+        array = np.zeros(shape, dtype="uint8")
+        if href.startswith("l"):
+            array[:, : shape[1] // 2] = 4
+        else:
+            array[:, shape[1] // 2 :] = 5
+        return array
+
+    assert composite.optical_coverage(left, BBOX, read=read) == pytest.approx(0.5)
+    assert composite.optical_coverage(left + right, BBOX, read=read) == pytest.approx(1.0)

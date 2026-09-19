@@ -253,6 +253,40 @@ def useful_coverage(
     return float(np.mean(fractions)) if fractions else 0.0
 
 
+def optical_coverage(
+    items: list["Item"],
+    bbox: Bbox,
+    samples: int = 2,
+    read=None,
+) -> float:
+    """Fraction of the box that the tiles of these optical scenes observe, taken together.
+
+    The counterpart of `useful_coverage` for Sentinel-2, so that a box on a UTM boundary
+    picks its zone by the ground it can see and not by how many scenes it brings. Over
+    Uberaba the two zones bring 72 scenes each, and the one chosen by count reaches a
+    sliver of the box: the median came out with no observations at all. Each tile of the
+    group is probed at low resolution through its clearest scenes, the observed pixels of
+    all tiles are joined, because a box split between two tiles of one zone is seen whole
+    only by both, and the joined fraction is what the zone offers.
+    """
+    read = read or read_window
+    seen = np.zeros(PROBE_SHAPE, dtype=bool)
+    groups: dict[str, list] = defaultdict(list)
+    for item in items:
+        groups[item.properties.get("s2:mgrs_tile", "?")].append(item)
+    probed = False
+    for scenes in groups.values():
+        for scene in by_cloud_cover(scenes)[:samples]:
+            try:
+                scl = read(scene.assets["SCL"].href, bbox, PROBE_SHAPE)
+            except Exception:
+                log.warning("probe failed on %s, left out", scene.id, exc_info=True)
+                continue
+            probed = True
+            seen |= np.asarray(scl) > 0
+    return float(seen.mean()) if probed else 0.0
+
+
 def useful_orbit(
     items: list["Item"],
     bbox: Bbox,
