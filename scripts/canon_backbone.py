@@ -27,8 +27,12 @@ from satinsight.manuscript import CANON_PATH  # noqa: E402
 sys.path.insert(0, "scripts")
 from backbone_paired import within  # noqa: E402
 
-TAG = sys.argv[1] if len(sys.argv) > 1 else ""
-SUFFIX = f"_{TAG}" if TAG and TAG != "base" else ""
+ARGUMENT = sys.argv[1] if len(sys.argv) > 1 else ""
+REWRITE_ROOT = ARGUMENT == "base"
+"""The root block holds DOFA base; "base" rewrites it, and every file name is the
+unsuffixed one, exactly as when the block is only verified."""
+TAG = "" if REWRITE_ROOT else ARGUMENT
+SUFFIX = f"_{TAG}" if TAG else ""
 SENSOR_SUFFIX = f"_s2_{TAG}" if TAG else ""
 SEEDS = (0, 1, 2)
 BUDGETS = (0.05, 0.1, 0.2, 0.3)
@@ -269,11 +273,11 @@ def compare(computed, published, path="", tolerance=1e-3) -> list[str]:
 def main() -> int:
     book = json.loads(CANON_PATH.read_text())
     block = build()
-    if not TAG:
+    if not TAG and not REWRITE_ROOT:
         problems = compare(block, book)
         print("\n".join(problems) if problems else "DOFA base canon reproduced", flush=True)
         return 1 if problems else 0
-    if TAG == "base":
+    if REWRITE_ROOT:
         # the base numbers are the root of the canon; rewriting them is the deliberate act
         # that follows a change of the data, never a side effect of a verification run
         for key, value in block.items():

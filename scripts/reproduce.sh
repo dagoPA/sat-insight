@@ -75,7 +75,7 @@ sh scripts/finetune_queue.sh
 sh scripts/head_ablation_queue.sh ov
 sh scripts/head_ablation_queue.sh dofalov
 uv run python scripts/head_ablation.py > logs/head_ablation.log 2>&1
-for tag in base dofal cfm ov dofalov; do   # the canonical results file, one block per extraction
+for tag in base dofal ov dofalov; do   # the results file, one block per extraction
   uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
 done
 uv run python scripts/headline_intervals.py > logs/headline_intervals.log 2>&1

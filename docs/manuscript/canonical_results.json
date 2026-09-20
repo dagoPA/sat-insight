@@ -1,48 +1,48 @@
 {
  "curve": {
   "50": {
-   "auroc_high": 0.789,
-   "spearman_within": 0.1502,
+   "auroc_high": 0.7896,
+   "spearman_within": 0.1523,
    "spearman_pooled": 0.4025,
-   "bag_mae": 0.1379
+   "bag_mae": 0.1374
   },
   "100": {
-   "auroc_high": 0.7921,
-   "spearman_within": 0.1412,
-   "spearman_pooled": 0.3953,
-   "bag_mae": 0.1299
+   "auroc_high": 0.792,
+   "spearman_within": 0.1446,
+   "spearman_pooled": 0.399,
+   "bag_mae": 0.1297
   },
   "200": {
-   "auroc_high": 0.7839,
-   "spearman_within": 0.1511,
-   "spearman_pooled": 0.4205,
-   "bag_mae": 0.1151
+   "auroc_high": 0.7864,
+   "spearman_within": 0.1518,
+   "spearman_pooled": 0.4226,
+   "bag_mae": 0.1137
   },
   "400": {
    "auroc_high": 0.7779,
-   "spearman_within": 0.1822,
-   "spearman_pooled": 0.4375,
-   "bag_mae": 0.102
+   "spearman_within": 0.183,
+   "spearman_pooled": 0.4438,
+   "bag_mae": 0.1021
   },
   "771": {
-   "auroc_high": 0.8022,
-   "spearman_within": 0.227,
-   "spearman_pooled": 0.4628,
-   "bag_mae": 0.0975
+   "auroc_high": 0.7877,
+   "spearman_within": 0.2143,
+   "spearman_pooled": 0.4616,
+   "bag_mae": 0.094
   }
  },
  "granularity": {
   "municipality": {
-   "auroc_high": 0.8021,
-   "spearman_within": 0.2248
+   "auroc_high": 0.8012,
+   "spearman_within": 0.2218
   },
   "national": {
-   "auroc_high": 0.511,
-   "spearman_within": 0.0086
+   "auroc_high": 0.5084,
+   "spearman_within": 0.0081
   },
   "state": {
-   "auroc_high": 0.7777,
-   "spearman_within": 0.1517
+   "auroc_high": 0.7648,
+   "spearman_within": 0.1333
   }
  },
  "ceiling": {
@@ -54,55 +54,55 @@
   "1": 0.8511
  },
  "radius_sweep": {
-  "0": 0.1785,
-  "2": 0.2281,
-  "1": 0.227
+  "0": 0.1772,
+  "2": 0.2156,
+  "1": 0.2143
  },
  "a5_weighted": {
-  "auroc_high": 0.8013,
-  "spearman_within": 0.2325,
-  "bag_mae": 0.0953
+  "auroc_high": 0.7975,
+  "spearman_within": 0.2267,
+  "bag_mae": 0.0951
  },
  "conapo": {
   "agebs": 2752,
   "municipalities_scored": 21,
-  "spearman_within": 0.3606,
-  "ci95_half": 0.0734,
-  "spearman_pooled": 0.4775,
-  "auroc_high": 0.7923
+  "spearman_within": 0.3506,
+  "ci95_half": 0.0685,
+  "spearman_pooled": 0.4742,
+  "auroc_high": 0.7894
  },
  "rwi_paired": {
   "agebs": 2958,
   "municipalities": 22,
-  "ours_within": 0.3538,
+  "ours_within": 0.3598,
+  "ours_ci_low": 0.3084,
+  "ours_ci_high": 0.4454,
   "rwi_within": 0.1352,
-  "difference": 0.2186,
-  "ci_low": 0.0793,
-  "ci_high": 0.2876,
-  "wins": 18,
-  "ours_ci_low": 0.2924,
-  "ours_ci_high": 0.4439,
   "rwi_ci_low": 0.0535,
-  "rwi_ci_high": 0.2663
+  "rwi_ci_high": 0.2663,
+  "difference": 0.2245,
+  "ci_low": 0.1008,
+  "ci_high": 0.2873,
+  "wins": 19
  },
  "targeting_pooled": {
-  "0.05": -0.05,
-  "0.1": 0.255,
-  "0.2": 0.345,
-  "0.3": 0.434
+  "0.05": -0.037,
+  "0.1": 0.253,
+  "0.2": 0.284,
+  "0.3": 0.441
  },
  "border": [
   {
    "crossing": "municipal",
-   "excess": 0.0187,
-   "ci_low": -0.0024,
-   "ci_high": 0.1551
+   "excess": 0.0068,
+   "ci_low": -0.0156,
+   "ci_high": 0.1497
   },
   {
    "crossing": "ageb",
-   "excess": 0.0009,
-   "ci_low": -0.0196,
-   "ci_high": 0.0059
+   "excess": 0.0012,
+   "ci_low": -0.0211,
+   "ci_high": 0.0033
   }
  ],
  "maup": [
@@ -112,7 +112,7 @@
    "agebs": 567,
    "median_population": 211.0,
    "municipalities": 15,
-   "spearman_within": 0.257
+   "spearman_within": 0.2473
   },
   {
    "tokens_low": 4,
@@ -128,7 +128,7 @@
    "agebs": 999,
    "median_population": 2644.0,
    "municipalities": 20,
-   "spearman_within": 0.352
+   "spearman_within": 0.3503
   },
   {
    "tokens_low": 20,
@@ -136,7 +136,7 @@
    "agebs": 464,
    "median_population": 3230.5,
    "municipalities": 14,
-   "spearman_within": 0.432
+   "spearman_within": 0.4229
   },
   {
    "tokens_low": 50,
@@ -144,7 +144,7 @@
    "agebs": 79,
    "median_population": 3560.0,
    "municipalities": 2,
-   "spearman_within": 0.127
+   "spearman_within": 0.1231
   }
  ],
  "zeroshot": [
@@ -197,13 +197,8 @@
   "map_auroc": 0.463,
   "pooled_spearman": -0.107,
   "bag_kappa": 0.621,
-  "entropy_flat": {
-   "bag_auroc_before": 0.899,
-   "after": 0.895
-  },
   "llp_kfold_auroc": 0.761,
-  "llp_kfold_within": 0.165,
-  "note": "110-city national pool; predates and is unaffected by the expansion leak"
+  "llp_kfold_within": 0.165
  },
  "sweep_blindness": {
   "rank_corr_mae_vs_within": -0.141,
@@ -228,99 +223,99 @@
  },
  "test": {
   "headline_token_within": 0.196,
-  "headline_token_within_ensemble": 0.198,
-  "headline_auroc": 0.8215,
-  "ceiling_r1": 0.2327,
-  "ceiling_r0": 0.2027,
+  "headline_token_within_ensemble": 0.1986,
+  "headline_auroc": 0.8179,
+  "ceiling_r1": 0.2346,
+  "ceiling_r0": 0.1983,
   "fraction": 0.84,
   "curve": {
-   "100": 0.1577,
-   "200": 0.1606,
-   "400": 0.1923,
-   "50": 0.156,
-   "771": 0.1851
+   "100": 0.1716,
+   "200": 0.173,
+   "400": 0.1979,
+   "50": 0.1603,
+   "771": 0.201
   },
   "granularity": {
-   "municipality": 0.1948,
-   "national": 0.0045,
-   "state": 0.1679
+   "municipality": 0.1952,
+   "national": -0.0003,
+   "state": 0.1476
   },
   "modality": {
-   "degraded": 0.1289,
-   "optical": 0.1787,
-   "radar": 0.084,
+   "degraded": 0.129,
+   "optical": 0.1786,
+   "radar": 0.0816,
    "worldcover": 0.219
   },
-  "weighted": 0.1815,
+  "weighted": 0.1729,
   "wc_paired": {
    "municipalities": 29,
-   "ours_within": 0.1956,
+   "ours_within": 0.1952,
    "wc_within": 0.219,
-   "difference": -0.0234,
-   "ci_low": -0.183,
-   "ci_high": 0.1001,
+   "difference": -0.0238,
+   "ci_low": -0.1816,
+   "ci_high": 0.1009,
    "wins": 16
   },
   "rwi_paired": {
-   "agebs": 2811,
+   "agebs": 2813,
    "municipalities": 22,
-   "ours_within": 0.2324,
-   "rwi_within": 0.103,
-   "difference": 0.1294,
-   "ci_low": -0.0648,
-   "ci_high": 0.2579,
-   "wins": 15,
-   "ours_ci_low": 0.0788,
-   "ours_ci_high": 0.3581,
-   "rwi_ci_low": 0.0185,
-   "rwi_ci_high": 0.2142
+   "ours_within": 0.2356,
+   "ours_ci_low": 0.0838,
+   "ours_ci_high": 0.3591,
+   "rwi_within": 0.0973,
+   "rwi_ci_low": 0.0158,
+   "rwi_ci_high": 0.2008,
+   "difference": 0.1383,
+   "ci_low": -0.0535,
+   "ci_high": 0.264,
+   "wins": 16
   },
   "conapo": {
-   "agebs": 2618,
+   "agebs": 2619,
    "municipalities_scored": 20,
-   "spearman_within": 0.2573,
-   "ci95_half": 0.1456,
-   "spearman_pooled": 0.3885,
-   "auroc_high": 0.7682
+   "spearman_within": 0.2586,
+   "ci95_half": 0.1381,
+   "spearman_pooled": 0.3853,
+   "auroc_high": 0.7666
   },
   "targeting": {
-   "0.05": 0.305,
-   "0.1": 0.34,
-   "0.2": 0.491,
-   "0.3": 0.66
+   "0.05": 0.292,
+   "0.1": 0.364,
+   "0.2": 0.516,
+   "0.3": 0.662
   },
   "maup": [
    {
     "tokens_low": 1,
     "tokens_high": 3,
-    "agebs": 503,
-    "median_population": 222.0,
+    "agebs": 504,
+    "median_population": 216.5,
     "municipalities": 13,
-    "spearman_within": 0.282
+    "spearman_within": 0.283
    },
    {
     "tokens_low": 4,
     "tokens_high": 9,
-    "agebs": 851,
-    "median_population": 1946.0,
+    "agebs": 852,
+    "median_population": 1942.5,
     "municipalities": 17,
-    "spearman_within": 0.254
+    "spearman_within": 0.2584
    },
    {
     "tokens_low": 10,
     "tokens_high": 19,
-    "agebs": 890,
-    "median_population": 2722.5,
+    "agebs": 889,
+    "median_population": 2723.0,
     "municipalities": 20,
-    "spearman_within": 0.377
+    "spearman_within": 0.3696
    },
    {
     "tokens_low": 20,
     "tokens_high": 49,
-    "agebs": 480,
-    "median_population": 3011.0,
+    "agebs": 481,
+    "median_population": 3008.0,
     "municipalities": 16,
-    "spearman_within": 0.286
+    "spearman_within": 0.2893
    },
    {
     "tokens_low": 50,
@@ -328,23 +323,21 @@
     "agebs": 87,
     "median_population": 2998.0,
     "municipalities": 1,
-    "spearman_within": -0.129
+    "spearman_within": -0.0515
    }
-  ],
-  "border": "underpowered: no usable same-grade municipal-border pairs among test cities",
-  "note": "single opening 31-08-2026; selection anchored to validation; nothing may be tuned against these numbers"
+  ]
  },
  "fraction_ci": {
   "val": {
-   "fraction": 0.958,
-   "ci_low": 0.642,
-   "ci_high": 1.263,
+   "fraction": 0.941,
+   "ci_low": 0.645,
+   "ci_high": 1.236,
    "municipalities": 33
   },
   "test": {
-   "fraction": 0.85,
-   "ci_low": 0.291,
-   "ci_high": 1.831,
+   "fraction": 0.846,
+   "ci_low": 0.323,
+   "ci_high": 1.726,
    "municipalities": 29
   }
  },
@@ -770,34 +763,34 @@
  "dofal": {
   "curve": {
    "50": {
-    "auroc_high": 0.8208,
-    "spearman_within": 0.1827,
-    "spearman_pooled": 0.4254,
-    "bag_mae": 0.116
+    "auroc_high": 0.8222,
+    "spearman_within": 0.1826,
+    "spearman_pooled": 0.4274,
+    "bag_mae": 0.1163
    },
    "100": {
-    "auroc_high": 0.8287,
-    "spearman_within": 0.1993,
+    "auroc_high": 0.8294,
+    "spearman_within": 0.1987,
     "spearman_pooled": 0.4559,
-    "bag_mae": 0.1152
+    "bag_mae": 0.1161
    },
    "200": {
-    "auroc_high": 0.821,
-    "spearman_within": 0.2307,
-    "spearman_pooled": 0.4746,
-    "bag_mae": 0.114
+    "auroc_high": 0.8149,
+    "spearman_within": 0.2228,
+    "spearman_pooled": 0.4656,
+    "bag_mae": 0.1152
    },
    "400": {
-    "auroc_high": 0.8129,
-    "spearman_within": 0.2223,
-    "spearman_pooled": 0.4983,
-    "bag_mae": 0.0997
+    "auroc_high": 0.8083,
+    "spearman_within": 0.2178,
+    "spearman_pooled": 0.4951,
+    "bag_mae": 0.1009
    },
    "771": {
-    "auroc_high": 0.8023,
-    "spearman_within": 0.2424,
-    "spearman_pooled": 0.5093,
-    "bag_mae": 0.0909
+    "auroc_high": 0.8037,
+    "spearman_within": 0.2367,
+    "spearman_pooled": 0.5054,
+    "bag_mae": 0.0924
    }
   },
   "granularity": {
@@ -816,16 +809,16 @@
   },
   "ceiling": {
    "0": 0.2604,
-   "1": 0.3184
+   "1": 0.3238
   },
   "ceiling_auroc": {
    "0": 0.8652,
-   "1": 0.8767
+   "1": 0.8745
   },
   "radius_sweep": {
    "0": 0.2053,
    "2": 0.2417,
-   "1": 0.2424
+   "1": 0.2367
   },
   "a5_weighted": {
    "auroc_high": 0.8007,
@@ -844,15 +837,15 @@
    "agebs": 2958,
    "municipalities": 22,
    "ours_within": 0.3545,
+   "ours_ci_low": 0.3117,
+   "ours_ci_high": 0.4109,
    "rwi_within": 0.1352,
+   "rwi_ci_low": 0.0535,
+   "rwi_ci_high": 0.2663,
    "difference": 0.2193,
    "ci_low": 0.0986,
    "ci_high": 0.2902,
-   "wins": 18,
-   "ours_ci_low": 0.3117,
-   "ours_ci_high": 0.4109,
-   "rwi_ci_low": 0.0535,
-   "rwi_ci_high": 0.2663
+   "wins": 18
   },
   "targeting_pooled": {
    "0.05": 0.039,
@@ -949,11 +942,11 @@
   },
   "test": {
    "headline_token_within": 0.2261,
-   "headline_token_within_ensemble": 0.2418,
+   "headline_token_within_ensemble": 0.2432,
    "headline_auroc": 0.8063,
-   "ceiling_r1": 0.2949,
+   "ceiling_r1": 0.2893,
    "ceiling_r0": 0.2497,
-   "fraction": 0.77,
+   "fraction": 0.78,
    "curve": {
     "100": 0.2,
     "200": 0.1723,
@@ -986,15 +979,15 @@
     "agebs": 2811,
     "municipalities": 22,
     "ours_within": 0.2671,
+    "ours_ci_low": 0.1447,
+    "ours_ci_high": 0.3655,
     "rwi_within": 0.103,
+    "rwi_ci_low": 0.0185,
+    "rwi_ci_high": 0.2142,
     "difference": 0.1641,
     "ci_low": -0.0214,
     "ci_high": 0.2905,
-    "wins": 18,
-    "ours_ci_low": 0.1447,
-    "ours_ci_high": 0.3655,
-    "rwi_ci_low": 0.0185,
-    "rwi_ci_high": 0.2142
+    "wins": 18
    },
    "conapo": {
     "agebs": 2618,
@@ -1055,15 +1048,15 @@
   },
   "fraction_ci": {
    "val": {
-    "fraction": 0.776,
-    "ci_low": 0.628,
-    "ci_high": 0.924,
+    "fraction": 0.768,
+    "ci_low": 0.603,
+    "ci_high": 0.905,
     "municipalities": 33
    },
    "test": {
-    "fraction": 0.82,
-    "ci_low": 0.575,
-    "ci_high": 1.184,
+    "fraction": 0.84,
+    "ci_low": 0.61,
+    "ci_high": 1.246,
     "municipalities": 29
    }
   },
@@ -1403,108 +1396,108 @@
  "ov": {
   "curve": {
    "50": {
-    "auroc_high": 0.8009,
-    "spearman_within": 0.1991,
-    "spearman_pooled": 0.4414,
-    "bag_mae": 0.13
+    "auroc_high": 0.8016,
+    "spearman_within": 0.2031,
+    "spearman_pooled": 0.441,
+    "bag_mae": 0.1294
    },
    "100": {
-    "auroc_high": 0.8078,
-    "spearman_within": 0.1944,
-    "spearman_pooled": 0.4396,
-    "bag_mae": 0.1188
+    "auroc_high": 0.8077,
+    "spearman_within": 0.1924,
+    "spearman_pooled": 0.4379,
+    "bag_mae": 0.117
    },
    "200": {
-    "auroc_high": 0.8115,
-    "spearman_within": 0.1855,
-    "spearman_pooled": 0.462,
-    "bag_mae": 0.1083
+    "auroc_high": 0.8128,
+    "spearman_within": 0.1893,
+    "spearman_pooled": 0.4671,
+    "bag_mae": 0.1092
    },
    "400": {
-    "auroc_high": 0.7954,
-    "spearman_within": 0.1848,
-    "spearman_pooled": 0.4906,
-    "bag_mae": 0.0986
+    "auroc_high": 0.7966,
+    "spearman_within": 0.1824,
+    "spearman_pooled": 0.4905,
+    "bag_mae": 0.0987
    },
    "771": {
-    "auroc_high": 0.7798,
-    "spearman_within": 0.2004,
-    "spearman_pooled": 0.5002,
-    "bag_mae": 0.0869
+    "auroc_high": 0.7871,
+    "spearman_within": 0.1972,
+    "spearman_pooled": 0.5065,
+    "bag_mae": 0.0867
    }
   },
   "granularity": {
    "municipality": {
-    "auroc_high": 0.7824,
-    "spearman_within": 0.2129
+    "auroc_high": 0.7932,
+    "spearman_within": 0.2026
    },
    "national": {
-    "auroc_high": 0.5223,
-    "spearman_within": 0.0159
+    "auroc_high": 0.5078,
+    "spearman_within": 0.0181
    },
    "state": {
-    "auroc_high": 0.7682,
-    "spearman_within": 0.1493
+    "auroc_high": 0.7816,
+    "spearman_within": 0.1555
    }
   },
   "ceiling": {
-   "0": 0.2349,
-   "1": 0.2603
+   "0": 0.2353,
+   "1": 0.2679
   },
   "ceiling_auroc": {
-   "0": 0.844,
-   "1": 0.8533
+   "0": 0.8444,
+   "1": 0.8582
   },
   "radius_sweep": {
-   "0": 0.1969,
-   "2": 0.2233,
-   "1": 0.2004
+   "0": 0.1953,
+   "2": 0.2189,
+   "1": 0.1972
   },
   "a5_weighted": {
-   "auroc_high": 0.7861,
-   "spearman_within": 0.22,
-   "bag_mae": 0.0927
+   "auroc_high": 0.7969,
+   "spearman_within": 0.2227,
+   "bag_mae": 0.092
   },
   "conapo": {
    "agebs": 2752,
    "municipalities_scored": 21,
-   "spearman_within": 0.386,
-   "ci95_half": 0.0758,
-   "spearman_pooled": 0.4767,
-   "auroc_high": 0.783
+   "spearman_within": 0.3861,
+   "ci95_half": 0.0742,
+   "spearman_pooled": 0.492,
+   "auroc_high": 0.786
   },
   "rwi_paired": {
    "agebs": 2958,
    "municipalities": 22,
-   "ours_within": 0.3575,
-   "ours_ci_low": 0.2714,
-   "ours_ci_high": 0.4577,
+   "ours_within": 0.3494,
+   "ours_ci_low": 0.2625,
+   "ours_ci_high": 0.4658,
    "rwi_within": 0.1352,
    "rwi_ci_low": 0.0535,
    "rwi_ci_high": 0.2663,
-   "difference": 0.2222,
-   "ci_low": 0.0447,
-   "ci_high": 0.3056,
+   "difference": 0.2142,
+   "ci_low": 0.0443,
+   "ci_high": 0.2974,
    "wins": 17
   },
   "targeting_pooled": {
-   "0.05": -0.327,
-   "0.1": 0.13,
-   "0.2": 0.236,
-   "0.3": 0.315
+   "0.05": -0.227,
+   "0.1": 0.195,
+   "0.2": 0.197,
+   "0.3": 0.33
   },
   "border": [
    {
     "crossing": "municipal",
     "excess": -0.036,
-    "ci_low": -0.0523,
-    "ci_high": -0.0157
+    "ci_low": -0.0457,
+    "ci_high": -0.0216
    },
    {
     "crossing": "ageb",
-    "excess": 0.0018,
-    "ci_low": -0.0141,
-    "ci_high": 0.0117
+    "excess": 0.0014,
+    "ci_low": -0.0131,
+    "ci_high": 0.0143
    }
   ],
   "maup": [
@@ -1514,7 +1507,7 @@
     "agebs": 567,
     "median_population": 211.0,
     "municipalities": 15,
-    "spearman_within": 0.2242
+    "spearman_within": 0.2374
    },
    {
     "tokens_low": 4,
@@ -1522,7 +1515,7 @@
     "agebs": 849,
     "median_population": 1948.0,
     "municipalities": 16,
-    "spearman_within": 0.3533
+    "spearman_within": 0.3422
    },
    {
     "tokens_low": 10,
@@ -1530,7 +1523,7 @@
     "agebs": 999,
     "median_population": 2644.0,
     "municipalities": 20,
-    "spearman_within": 0.34
+    "spearman_within": 0.3376
    },
    {
     "tokens_low": 20,
@@ -1538,7 +1531,7 @@
     "agebs": 464,
     "median_population": 3230.5,
     "municipalities": 14,
-    "spearman_within": 0.5113
+    "spearman_within": 0.5051
    },
    {
     "tokens_low": 50,
@@ -1546,135 +1539,135 @@
     "agebs": 79,
     "median_population": 3560.0,
     "municipalities": 2,
-    "spearman_within": 0.2733
+    "spearman_within": 0.2917
    }
   ],
   "modality_optical": {
-   "within": 0.202,
-   "auroc": 0.8209,
+   "within": 0.2019,
+   "auroc": 0.821,
    "bag_mae": 0.0935,
    "seeds": 3
   },
   "modality_radar": {
-   "within": 0.074,
-   "auroc": 0.682,
-   "bag_mae": 0.1262,
+   "within": 0.0714,
+   "auroc": 0.6781,
+   "bag_mae": 0.1265,
    "seeds": 3
   },
   "modality_degraded": {
-   "within": 0.2124,
+   "within": 0.2125,
    "auroc": 0.8259,
    "bag_mae": 0.0973,
    "seeds": 3
   },
   "modality_worldcover": {},
   "abmil": {
-   "map_auroc": 0.428,
-   "pooled_spearman": -0.119,
-   "bag_kappa": 0.588,
+   "map_auroc": 0.422,
+   "pooled_spearman": -0.117,
+   "bag_kappa": 0.593,
    "llp_kfold_auroc": 0.767,
-   "llp_kfold_within": 0.195
+   "llp_kfold_within": 0.196
   },
   "sweep_blindness": {
-   "rank_corr_mae_vs_within": -0.194,
-   "rank_corr_mae_vs_auroc": 0.339,
+   "rank_corr_mae_vs_within": -0.286,
+   "rank_corr_mae_vs_auroc": 0.207,
    "configs": 14
   },
   "test": {
-   "headline_token_within": 0.1645,
-   "headline_token_within_ensemble": 0.1673,
-   "headline_auroc": 0.8094,
-   "ceiling_r1": 0.2439,
-   "ceiling_r0": 0.2182,
-   "fraction": 0.67,
+   "headline_token_within": 0.1809,
+   "headline_token_within_ensemble": 0.183,
+   "headline_auroc": 0.8156,
+   "ceiling_r1": 0.2477,
+   "ceiling_r0": 0.2197,
+   "fraction": 0.73,
    "curve": {
-    "100": 0.1619,
-    "200": 0.148,
-    "400": 0.1531,
-    "50": 0.1361,
-    "771": 0.1648
+    "100": 0.1729,
+    "200": 0.1559,
+    "400": 0.1519,
+    "50": 0.1451,
+    "771": 0.1883
    },
    "granularity": {
-    "municipality": 0.1665,
-    "national": 0.0132,
-    "state": 0.1247
+    "municipality": 0.1802,
+    "national": 0.0195,
+    "state": 0.1211
    },
    "modality": {
-    "degraded": 0.1129,
-    "optical": 0.1655,
-    "radar": 0.0488,
+    "degraded": 0.113,
+    "optical": 0.1619,
+    "radar": 0.0447,
     "worldcover": 0.219
    },
-   "weighted": 0.1696,
+   "weighted": 0.1888,
    "wc_paired": {
     "municipalities": 29,
-    "ours_within": 0.1733,
+    "ours_within": 0.1808,
     "wc_within": 0.219,
-    "difference": -0.0457,
-    "ci_low": -0.2027,
-    "ci_high": 0.0881,
-    "wins": 12
+    "difference": -0.0383,
+    "ci_low": -0.1965,
+    "ci_high": 0.0956,
+    "wins": 13
    },
    "rwi_paired": {
-    "agebs": 2811,
+    "agebs": 2813,
     "municipalities": 22,
-    "ours_within": 0.2558,
-    "ours_ci_low": 0.1084,
-    "ours_ci_high": 0.3818,
-    "rwi_within": 0.103,
-    "rwi_ci_low": 0.0185,
-    "rwi_ci_high": 0.2142,
-    "difference": 0.1528,
-    "ci_low": -0.0437,
-    "ci_high": 0.2918,
-    "wins": 15
+    "ours_within": 0.2863,
+    "ours_ci_low": 0.1673,
+    "ours_ci_high": 0.3901,
+    "rwi_within": 0.0973,
+    "rwi_ci_low": 0.0158,
+    "rwi_ci_high": 0.2008,
+    "difference": 0.189,
+    "ci_low": 0.038,
+    "ci_high": 0.3044,
+    "wins": 17
    },
    "conapo": {
-    "agebs": 2618,
+    "agebs": 2619,
     "municipalities_scored": 20,
-    "spearman_within": 0.2655,
-    "ci95_half": 0.1466,
-    "spearman_pooled": 0.433,
-    "auroc_high": 0.7949
+    "spearman_within": 0.2783,
+    "ci95_half": 0.1405,
+    "spearman_pooled": 0.4496,
+    "auroc_high": 0.8024
    },
    "targeting": {
-    "0.05": 0.152,
-    "0.1": 0.251,
-    "0.2": 0.495,
-    "0.3": 0.591
+    "0.05": 0.09,
+    "0.1": 0.253,
+    "0.2": 0.486,
+    "0.3": 0.586
    },
    "maup": [
     {
      "tokens_low": 1,
      "tokens_high": 3,
-     "agebs": 503,
-     "median_population": 222.0,
+     "agebs": 504,
+     "median_population": 216.5,
      "municipalities": 13,
-     "spearman_within": 0.3291
+     "spearman_within": 0.3336
     },
     {
      "tokens_low": 4,
      "tokens_high": 9,
-     "agebs": 851,
-     "median_population": 1946.0,
+     "agebs": 852,
+     "median_population": 1942.5,
      "municipalities": 17,
-     "spearman_within": 0.2671
+     "spearman_within": 0.2783
     },
     {
      "tokens_low": 10,
      "tokens_high": 19,
-     "agebs": 890,
-     "median_population": 2722.5,
+     "agebs": 889,
+     "median_population": 2723.0,
      "municipalities": 20,
-     "spearman_within": 0.383
+     "spearman_within": 0.3987
     },
     {
      "tokens_low": 20,
      "tokens_high": 49,
-     "agebs": 480,
-     "median_population": 3011.0,
+     "agebs": 481,
+     "median_population": 3008.0,
      "municipalities": 16,
-     "spearman_within": 0.3637
+     "spearman_within": 0.3757
     },
     {
      "tokens_low": 50,
@@ -1682,176 +1675,49 @@
      "agebs": 87,
      "median_population": 2998.0,
      "municipalities": 1,
-     "spearman_within": 0.0515
+     "spearman_within": 0.103
     }
    ]
   },
   "fraction_ci": {
    "val": {
-    "fraction": 0.847,
-    "ci_low": 0.594,
-    "ci_high": 1.114,
+    "fraction": 0.76,
+    "ci_low": 0.515,
+    "ci_high": 1.003,
     "municipalities": 33
    },
    "test": {
-    "fraction": 0.686,
-    "ci_low": 0.178,
-    "ci_high": 1.483,
+    "fraction": 0.739,
+    "ci_low": 0.288,
+    "ci_high": 1.514,
     "municipalities": 29
    }
   },
   "transfer_training": {
-   "brazil": {
-    "bags": 76,
-    "municipalities_scored": 75,
-    "tokens_scored": 146599,
-    "methods": {
-     "aggregates": {
-      "within_seeds": [
-       0.122,
-       0.137,
-       0.1301
-      ],
-      "within": 0.1297,
-      "within_ci_low": 0.0875,
-      "within_ci_high": 0.1701,
-      "pooled": 0.3456,
-      "auroc_top_quartile": 0.6514
-     },
-     "aggregates@50": {
-      "within_seeds": [
-       0.1221,
-       0.1183,
-       0.1248
-      ],
-      "within": 0.1217,
-      "within_ci_low": 0.0776,
-      "within_ci_high": 0.1621,
-      "pooled": 0.3336,
-      "auroc_top_quartile": 0.6488
-     },
-     "mexico-init": {
-      "within_seeds": [
-       0.0853,
-       0.0955,
-       0.1003
-      ],
-      "within": 0.0937,
-      "within_ci_low": 0.0452,
-      "within_ci_high": 0.1399,
-      "pooled": 0.3296,
-      "auroc_top_quartile": 0.6351
-     },
-     "oracle": {
-      "within_seeds": [
-       0.2325,
-       0.2414,
-       0.232
-      ],
-      "within": 0.2353,
-      "within_ci_low": 0.1924,
-      "within_ci_high": 0.2765,
-      "pooled": 0.4604,
-      "auroc_top_quartile": 0.6981
-     },
-     "zero-shot": {
-      "within_seeds": [
-       0.0904
-      ],
-      "within": 0.0904,
-      "within_ci_low": 0.0424,
-      "within_ci_high": 0.1341,
-      "pooled": 0.2985,
-      "auroc_top_quartile": 0.6476
-     }
-    }
-   },
    "colombia": {
-    "bags": 221,
+    "bags": 576,
     "municipalities_scored": 1,
     "tokens_scored": 12738,
     "methods": {
      "aggregates": {
       "within_seeds": [
-       0.233,
-       0.2278,
-       0.2112
+       0.1742
       ],
-      "within": 0.224,
-      "within_ci_low": 0.224,
-      "within_ci_high": 0.224,
-      "pooled": 0.224,
-      "auroc_top_quartile": 0.6349
-     },
-     "aggregates@100": {
-      "within_seeds": [
-       0.3357,
-       0.2809,
-       0.2416
-      ],
-      "within": 0.2861,
-      "within_ci_low": 0.2861,
-      "within_ci_high": 0.2861,
-      "pooled": 0.2861,
-      "auroc_top_quartile": 0.6606
-     },
-     "aggregates@200": {
-      "within_seeds": [
-       0.2412,
-       0.2253,
-       0.2123
-      ],
-      "within": 0.2263,
-      "within_ci_low": 0.2263,
-      "within_ci_high": 0.2263,
-      "pooled": 0.2263,
-      "auroc_top_quartile": 0.6362
-     },
-     "aggregates@50": {
-      "within_seeds": [
-       0.2147,
-       0.1934,
-       0.1318
-      ],
-      "within": 0.1799,
-      "within_ci_low": 0.1799,
-      "within_ci_high": 0.1799,
-      "pooled": 0.1799,
-      "auroc_top_quartile": 0.6021
-     },
-     "mexico-init": {
-      "within_seeds": [
-       0.2217,
-       0.2614,
-       0.2819
-      ],
-      "within": 0.255,
-      "within_ci_low": 0.255,
-      "within_ci_high": 0.255,
-      "pooled": 0.255,
-      "auroc_top_quartile": 0.6357
-     },
-     "oracle": {
-      "within_seeds": [
-       0.7334,
-       0.762,
-       0.7483
-      ],
-      "within": 0.7479,
-      "within_ci_low": 0.7479,
-      "within_ci_high": 0.7479,
-      "pooled": 0.7479,
-      "auroc_top_quartile": 0.897
+      "within": 0.1742,
+      "within_ci_low": 0.1742,
+      "within_ci_high": 0.1742,
+      "pooled": 0.1742,
+      "auroc_top_quartile": 0.6224
      },
      "zero-shot": {
       "within_seeds": [
-       0.3246
+       0.2887
       ],
-      "within": 0.3246,
-      "within_ci_low": 0.3246,
-      "within_ci_high": 0.3246,
-      "pooled": 0.3246,
-      "auroc_top_quartile": 0.6907
+      "within": 0.2887,
+      "within_ci_low": 0.2887,
+      "within_ci_high": 0.2887,
+      "pooled": 0.2887,
+      "auroc_top_quartile": 0.6699
      }
     }
    }
@@ -1860,108 +1726,108 @@
  "dofalov": {
   "curve": {
    "50": {
-    "auroc_high": 0.8148,
-    "spearman_within": 0.2023,
-    "spearman_pooled": 0.4398,
-    "bag_mae": 0.1186
+    "auroc_high": 0.8149,
+    "spearman_within": 0.2041,
+    "spearman_pooled": 0.44,
+    "bag_mae": 0.1176
    },
    "100": {
-    "auroc_high": 0.8157,
-    "spearman_within": 0.1976,
-    "spearman_pooled": 0.4644,
-    "bag_mae": 0.1112
+    "auroc_high": 0.8139,
+    "spearman_within": 0.2056,
+    "spearman_pooled": 0.4667,
+    "bag_mae": 0.1095
    },
    "200": {
-    "auroc_high": 0.8157,
-    "spearman_within": 0.2183,
-    "spearman_pooled": 0.4943,
-    "bag_mae": 0.1065
+    "auroc_high": 0.8176,
+    "spearman_within": 0.2197,
+    "spearman_pooled": 0.4946,
+    "bag_mae": 0.1078
    },
    "400": {
-    "auroc_high": 0.8122,
-    "spearman_within": 0.2374,
-    "spearman_pooled": 0.5212,
-    "bag_mae": 0.0946
+    "auroc_high": 0.8029,
+    "spearman_within": 0.2335,
+    "spearman_pooled": 0.5141,
+    "bag_mae": 0.0933
    },
    "771": {
-    "auroc_high": 0.8013,
-    "spearman_within": 0.2766,
-    "spearman_pooled": 0.5435,
-    "bag_mae": 0.0861
+    "auroc_high": 0.8007,
+    "spearman_within": 0.279,
+    "spearman_pooled": 0.541,
+    "bag_mae": 0.0864
    }
   },
   "granularity": {
    "municipality": {
-    "auroc_high": 0.8042,
-    "spearman_within": 0.287
+    "auroc_high": 0.8066,
+    "spearman_within": 0.2926
    },
    "national": {
-    "auroc_high": 0.5049,
-    "spearman_within": 0.0043
+    "auroc_high": 0.4976,
+    "spearman_within": 0.0033
    },
    "state": {
-    "auroc_high": 0.7789,
-    "spearman_within": 0.136
+    "auroc_high": 0.7899,
+    "spearman_within": 0.1374
    }
   },
   "ceiling": {
-   "0": 0.2818,
-   "1": 0.34
+   "0": 0.281,
+   "1": 0.3569
   },
   "ceiling_auroc": {
-   "0": 0.8597,
-   "1": 0.8764
+   "0": 0.8629,
+   "1": 0.8715
   },
   "radius_sweep": {
-   "0": 0.2293,
-   "2": 0.2794,
-   "1": 0.2766
+   "0": 0.2257,
+   "2": 0.2821,
+   "1": 0.279
   },
   "a5_weighted": {
-   "auroc_high": 0.803,
-   "spearman_within": 0.2742,
-   "bag_mae": 0.0881
+   "auroc_high": 0.8012,
+   "spearman_within": 0.2811,
+   "bag_mae": 0.0894
   },
   "conapo": {
    "agebs": 2752,
    "municipalities_scored": 21,
-   "spearman_within": 0.3315,
-   "ci95_half": 0.086,
-   "spearman_pooled": 0.5017,
-   "auroc_high": 0.7908
+   "spearman_within": 0.3413,
+   "ci95_half": 0.0822,
+   "spearman_pooled": 0.5125,
+   "auroc_high": 0.7928
   },
   "rwi_paired": {
    "agebs": 2958,
    "municipalities": 22,
-   "ours_within": 0.3315,
-   "ours_ci_low": 0.2582,
-   "ours_ci_high": 0.4202,
+   "ours_within": 0.3489,
+   "ours_ci_low": 0.286,
+   "ours_ci_high": 0.4197,
    "rwi_within": 0.1352,
    "rwi_ci_low": 0.0535,
    "rwi_ci_high": 0.2663,
-   "difference": 0.1962,
-   "ci_low": 0.0376,
-   "ci_high": 0.2734,
-   "wins": 17
+   "difference": 0.2137,
+   "ci_low": 0.0503,
+   "ci_high": 0.2929,
+   "wins": 18
   },
   "targeting_pooled": {
-   "0.05": -0.25,
-   "0.1": 0.064,
-   "0.2": 0.16,
-   "0.3": 0.263
+   "0.05": -0.147,
+   "0.1": 0.213,
+   "0.2": 0.257,
+   "0.3": 0.291
   },
   "border": [
    {
     "crossing": "municipal",
-    "excess": -0.0287,
-    "ci_low": -0.0775,
-    "ci_high": 0.0673
+    "excess": -0.0425,
+    "ci_low": -0.0758,
+    "ci_high": 0.0404
    },
    {
     "crossing": "ageb",
-    "excess": 0.0013,
-    "ci_low": -0.0046,
-    "ci_high": 0.024
+    "excess": 0.0028,
+    "ci_low": 0.0006,
+    "ci_high": 0.0375
    }
   ],
   "maup": [
@@ -1979,7 +1845,7 @@
     "agebs": 849,
     "median_population": 1948.0,
     "municipalities": 16,
-    "spearman_within": 0.3279
+    "spearman_within": 0.357
    },
    {
     "tokens_low": 10,
@@ -1987,7 +1853,7 @@
     "agebs": 999,
     "median_population": 2644.0,
     "municipalities": 20,
-    "spearman_within": 0.305
+    "spearman_within": 0.3061
    },
    {
     "tokens_low": 20,
@@ -1995,7 +1861,7 @@
     "agebs": 464,
     "median_population": 3230.5,
     "municipalities": 14,
-    "spearman_within": 0.4715
+    "spearman_within": 0.4812
    },
    {
     "tokens_low": 50,
@@ -2003,135 +1869,135 @@
     "agebs": 79,
     "median_population": 3560.0,
     "municipalities": 2,
-    "spearman_within": 0.1815
+    "spearman_within": 0.1867
    }
   ],
   "modality_optical": {
-   "within": 0.25,
+   "within": 0.2502,
    "auroc": 0.8613,
    "bag_mae": 0.0893,
    "seeds": 3
   },
   "modality_radar": {
-   "within": 0.0466,
-   "auroc": 0.5807,
-   "bag_mae": 0.1358,
+   "within": 0.0473,
+   "auroc": 0.5813,
+   "bag_mae": 0.1336,
    "seeds": 3
   },
   "modality_degraded": {
-   "within": 0.2142,
-   "auroc": 0.8188,
+   "within": 0.2129,
+   "auroc": 0.8196,
    "bag_mae": 0.0878,
    "seeds": 3
   },
   "modality_worldcover": {},
   "abmil": {
-   "map_auroc": 0.459,
-   "pooled_spearman": -0.129,
-   "bag_kappa": 0.685,
-   "llp_kfold_auroc": 0.788,
-   "llp_kfold_within": 0.207
+   "map_auroc": 0.427,
+   "pooled_spearman": -0.154,
+   "bag_kappa": 0.677,
+   "llp_kfold_auroc": 0.794,
+   "llp_kfold_within": 0.223
   },
   "sweep_blindness": {
-   "rank_corr_mae_vs_within": 0.423,
-   "rank_corr_mae_vs_auroc": 0.507,
+   "rank_corr_mae_vs_within": 0.634,
+   "rank_corr_mae_vs_auroc": 0.577,
    "configs": 14
   },
   "test": {
-   "headline_token_within": 0.2072,
-   "headline_token_within_ensemble": 0.2135,
-   "headline_auroc": 0.8009,
-   "ceiling_r1": 0.3423,
-   "ceiling_r0": 0.2717,
-   "fraction": 0.61,
+   "headline_token_within": 0.2022,
+   "headline_token_within_ensemble": 0.2001,
+   "headline_auroc": 0.8044,
+   "ceiling_r1": 0.3131,
+   "ceiling_r0": 0.2591,
+   "fraction": 0.65,
    "curve": {
-    "100": 0.2253,
-    "200": 0.2248,
-    "400": 0.2257,
-    "50": 0.2216,
-    "771": 0.225
+    "100": 0.2276,
+    "200": 0.2239,
+    "400": 0.221,
+    "50": 0.2249,
+    "771": 0.1899
    },
    "granularity": {
-    "municipality": 0.2141,
-    "national": -0.0029,
-    "state": 0.1907
+    "municipality": 0.1926,
+    "national": 0.001,
+    "state": 0.1976
    },
    "modality": {
-    "degraded": 0.2385,
-    "optical": 0.2126,
-    "radar": 0.0459,
+    "degraded": 0.2469,
+    "optical": 0.2168,
+    "radar": 0.0463,
     "worldcover": 0.219
    },
-   "weighted": 0.2113,
+   "weighted": 0.2014,
    "wc_paired": {
     "municipalities": 29,
-    "ours_within": 0.2209,
+    "ours_within": 0.2057,
     "wc_within": 0.219,
-    "difference": 0.0019,
-    "ci_low": -0.0845,
-    "ci_high": 0.0888,
-    "wins": 17
+    "difference": -0.0133,
+    "ci_low": -0.1211,
+    "ci_high": 0.0832,
+    "wins": 16
    },
    "rwi_paired": {
-    "agebs": 2811,
+    "agebs": 2813,
     "municipalities": 22,
-    "ours_within": 0.315,
-    "ours_ci_low": 0.2055,
-    "ours_ci_high": 0.4063,
-    "rwi_within": 0.103,
-    "rwi_ci_low": 0.0185,
-    "rwi_ci_high": 0.2142,
-    "difference": 0.212,
-    "ci_low": 0.039,
-    "ci_high": 0.3414,
-    "wins": 18
+    "ours_within": 0.312,
+    "ours_ci_low": 0.168,
+    "ours_ci_high": 0.4292,
+    "rwi_within": 0.0973,
+    "rwi_ci_low": 0.0158,
+    "rwi_ci_high": 0.2008,
+    "difference": 0.2147,
+    "ci_low": 0.0101,
+    "ci_high": 0.365,
+    "wins": 17
    },
    "conapo": {
-    "agebs": 2618,
+    "agebs": 2619,
     "municipalities_scored": 20,
-    "spearman_within": 0.3434,
-    "ci95_half": 0.1306,
-    "spearman_pooled": 0.4833,
-    "auroc_high": 0.7976
+    "spearman_within": 0.3524,
+    "ci95_half": 0.1352,
+    "spearman_pooled": 0.5085,
+    "auroc_high": 0.8062
    },
    "targeting": {
-    "0.05": 0.184,
-    "0.1": 0.357,
-    "0.2": 0.611,
-    "0.3": 0.683
+    "0.05": 0.234,
+    "0.1": 0.335,
+    "0.2": 0.608,
+    "0.3": 0.677
    },
    "maup": [
     {
      "tokens_low": 1,
      "tokens_high": 3,
-     "agebs": 503,
-     "median_population": 222.0,
+     "agebs": 504,
+     "median_population": 216.5,
      "municipalities": 13,
-     "spearman_within": 0.3945
+     "spearman_within": 0.4441
     },
     {
      "tokens_low": 4,
      "tokens_high": 9,
-     "agebs": 851,
-     "median_population": 1946.0,
+     "agebs": 852,
+     "median_population": 1942.5,
      "municipalities": 17,
-     "spearman_within": 0.3788
+     "spearman_within": 0.3932
     },
     {
      "tokens_low": 10,
      "tokens_high": 19,
-     "agebs": 890,
-     "median_population": 2722.5,
+     "agebs": 889,
+     "median_population": 2723.0,
      "municipalities": 20,
-     "spearman_within": 0.3461
+     "spearman_within": 0.3544
     },
     {
      "tokens_low": 20,
      "tokens_high": 49,
-     "agebs": 480,
-     "median_population": 3011.0,
+     "agebs": 481,
+     "median_population": 3008.0,
      "municipalities": 16,
-     "spearman_within": 0.389
+     "spearman_within": 0.4171
     },
     {
      "tokens_low": 50,
@@ -2139,21 +2005,21 @@
      "agebs": 87,
      "median_population": 2998.0,
      "municipalities": 1,
-     "spearman_within": -0.0515
+     "spearman_within": 0.0773
     }
    ]
   },
   "fraction_ci": {
    "val": {
-    "fraction": 0.842,
-    "ci_low": 0.643,
-    "ci_high": 1.02,
+    "fraction": 0.832,
+    "ci_low": 0.671,
+    "ci_high": 0.947,
     "municipalities": 33
    },
    "test": {
-    "fraction": 0.624,
-    "ci_low": 0.445,
-    "ci_high": 0.845,
+    "fraction": 0.639,
+    "ci_low": 0.417,
+    "ci_high": 0.892,
     "municipalities": 29
    }
   },

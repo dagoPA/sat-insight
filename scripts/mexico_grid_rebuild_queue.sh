@@ -85,7 +85,9 @@ uv run python scripts/head_ablation.py > logs/head_ablation.log 2>&1
 step "ablations done"
 
 # 6. the canon, the headline intervals, and the classification view
-for tag in base dofal cfm ov dofalov; do
+# Copernicus-FM has no block of its own in the results file; it enters only the
+# cross-validation comparison
+for tag in base dofal ov dofalov; do
   uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
 done
 uv run python scripts/headline_intervals.py > logs/headline_intervals.log 2>&1
