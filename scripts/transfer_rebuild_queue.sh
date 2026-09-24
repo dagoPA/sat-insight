@@ -10,6 +10,8 @@
 cd "$(dirname "$0")/.." || exit 1
 export GDAL_HTTP_TIMEOUT=120 GDAL_HTTP_CONNECTTIMEOUT=30 GDAL_HTTP_MAX_RETRY=3 GDAL_HTTP_RETRY_DELAY=5
 STALL=${STALL:-900}
+TAGS=${TAGS:-"ov dofalov"}
+# the extractors to run, so that a finished one is skipped when the queue is relaunched
 MARKER=logs/transfer_rebuild_started
 
 watched() {
@@ -44,13 +46,13 @@ if [ ! -f "$MARKER" ]; then
   rm -f data/transfer/scores/*_ov.parquet data/transfer/scores/*_dofalov.parquet
   date > "$MARKER"
 fi
-for tag in ov dofalov; do
+for tag in $TAGS; do
   export SATINSIGHT_BACKBONE=$tag
   watched "logs/national_transfer_encode_$tag.log" scripts/transfer_encode.py
   watched "logs/transfer_rebag_$tag.log" scripts/transfer_bags.py
   watched "logs/transfer_scores_$tag.log" scripts/transfer_scores.py
 done
-for tag in ov dofalov; do
+for tag in $TAGS; do
   export SATINSIGHT_BACKBONE=$tag
   : > "logs/national_transfer_train_$tag.log"
   # an epoch over thousands of bags logs nothing for a long while; the training stall is

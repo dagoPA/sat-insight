@@ -449,6 +449,7 @@ def main() -> None:
         "(within-municipality Spearman vs fine truth, grouped folds) ====="
     )
     print(summary.round(3).to_string(), flush=True)
+    print(f"END: {len(rows)} runs written to {OUT}", flush=True)
 
 
 if __name__ == "__main__":

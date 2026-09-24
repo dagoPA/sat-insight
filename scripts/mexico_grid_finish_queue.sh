@@ -7,6 +7,10 @@
 cd "$(dirname "$0")/.." || exit 1
 step() { echo "$(date '+%F %T') $*" >> logs/mexico_grid_rebuild_queue.log; }
 
+# a training run left alive on purpose finishes first, so that its table is complete
+if [ -n "$WAIT_PID" ]; then
+  while kill -0 "$WAIT_PID" 2>/dev/null; do sleep 60; done
+fi
 sh scripts/transfer_rebuild_queue.sh
 step "transfer training done"
 uv run python scripts/national_targeting.py > logs/national_targeting.log 2>&1
