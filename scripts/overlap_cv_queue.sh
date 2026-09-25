@@ -8,5 +8,8 @@ for sensor in s2_ov s2_dofalov; do
   tag=${sensor#s2}
   uv run python scripts/backbone_cv.py "$sensor" 5 30 > "logs/backbone_cv${tag}.log" 2>&1
 done
-uv run python scripts/backbone_cv_compare.py base dofal ov dofalov > logs/backbone_cv_compare_ov.log 2>&1
+# the seam-free base extractor is the reference the manuscript pairs every difference
+# against, and the block of the results file is written from the comparison tables
+uv run python scripts/backbone_cv_compare.py ov dofalov base dofal cfm > logs/backbone_cv_compare_ov.log 2>&1
+uv run python scripts/canon_cv.py > logs/canon_cv.log 2>&1
 echo "OVERLAP CV DONE" > logs/overlap_cv_done.log

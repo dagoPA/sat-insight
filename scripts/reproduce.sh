@@ -75,9 +75,6 @@ sh scripts/finetune_queue.sh
 sh scripts/head_ablation_queue.sh ov
 sh scripts/head_ablation_queue.sh dofalov
 uv run python scripts/head_ablation.py > logs/head_ablation.log 2>&1
-for tag in base dofal ov dofalov; do   # the results file, one block per extraction
-  uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
-done
 uv run python scripts/headline_intervals.py > logs/headline_intervals.log 2>&1
 uv run python scripts/classification_view.py > logs/classification_view.log 2>&1
 
@@ -93,7 +90,12 @@ sh scripts/transfer_rebuild_queue.sh
 for tag in ov dofalov; do
   SATINSIGHT_BACKBONE=$tag uv run python scripts/transfer_scores.py > "logs/transfer_scores_$tag.log" 2>&1
 done
-uv run python scripts/national_targeting.py > logs/national_targeting.log 2>&1
+for tag in base dofal ov dofalov; do   # the results file, one block per extraction,
+  uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1   # after the transfer
+done
+for tag in ov dofalov; do
+  SATINSIGHT_BACKBONE=$tag uv run python scripts/national_targeting.py > "logs/national_targeting_$tag.log" 2>&1
+done
 uv run python scripts/fig9_three_countries.py > logs/fig9.log 2>&1
 
 # 6. figures and source data, each checked against docs/manuscript/canonical_results.json

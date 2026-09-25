@@ -13,7 +13,12 @@ if [ -n "$WAIT_PID" ]; then
 fi
 sh scripts/transfer_rebuild_queue.sh
 step "transfer training done"
-uv run python scripts/national_targeting.py > logs/national_targeting.log 2>&1
+# the transfer block of each extractor lives in the results file, so both blocks are
+# rewritten now that the training tables exist; the targeting runs per extractor
+for tag in ov dofalov; do
+  uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
+  SATINSIGHT_BACKBONE=$tag uv run python scripts/national_targeting.py > "logs/national_targeting_$tag.log" 2>&1
+done
 step "national targeting done"
 for fig in fig1_design fig2_curve fig3_dissociation fig4_validation fig5_incumbents fig6_gallery fig7_calibration fig8_transfer fig9_three_countries; do
   uv run python scripts/$fig.py > "logs/$fig.log" 2>&1

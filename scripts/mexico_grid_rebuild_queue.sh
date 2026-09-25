@@ -102,7 +102,12 @@ for tag in ov dofalov; do
   SATINSIGHT_BACKBONE=$tag uv run python scripts/transfer_scores.py > "logs/transfer_scores_$tag.log" 2>&1
 done
 sh scripts/transfer_rebuild_queue.sh
-uv run python scripts/national_targeting.py > logs/national_targeting.log 2>&1
+# the transfer block of each extractor lives in the results file, so both blocks are
+# rewritten once the training tables exist; the targeting runs per extractor
+for tag in ov dofalov; do
+  uv run python scripts/canon_backbone.py $tag > "logs/canon_$tag.log" 2>&1
+  SATINSIGHT_BACKBONE=$tag uv run python scripts/national_targeting.py > "logs/national_targeting_$tag.log" 2>&1
+done
 step "three countries done"
 
 # 8. figures, source data and tables
