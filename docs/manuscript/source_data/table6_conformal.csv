@@ -1,3 +1,0 @@
-rule,nominal,half_width_grades,coverage,worst_city_coverage,worst_city,best_city_coverage,cities_below_nominal,cities
-marginal,0.9,1.2580645161290323,0.8695343050124422,0.7727272727272727,guerrero,0.9343283582089552,12,14
-clustered,0.9,1.6618872682523356,0.94987557767508,0.8478260869565217,madera,1.0,2,14

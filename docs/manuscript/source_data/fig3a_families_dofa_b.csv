@@ -1,0 +1,5 @@
+family,map_auroc
+attention MIL (ABMIL),0.422
+label proportions,0.767
++ sweep + context,0.7871
+oracle (instance labels),0.8582
